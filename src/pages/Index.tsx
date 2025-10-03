@@ -11,7 +11,7 @@ const Index = () => {
             <span className="text-foreground">Expansio Learn Hub</span>
           </div>
           <Link to="/auth">
-            <Button className="rounded-full px-6 font-inter">Get Started</Button>
+            <Button className="rounded-full px-6 font-inter">Login</Button>
           </Link>
         </div>
       </nav>
