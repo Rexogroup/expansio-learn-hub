@@ -22,6 +22,9 @@ interface SalesCall {
   notes: string | null;
   is_featured: boolean;
   order_index: number;
+  brand_id: string | null;
+  call_sequence: number | null;
+  call_label: string | null;
 }
 
 export function SalesCallManager() {
@@ -29,6 +32,7 @@ export function SalesCallManager() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -41,11 +45,29 @@ export function SalesCallManager() {
     notes: "",
     is_featured: false,
     order_index: 0,
+    brand_id: "",
+    call_sequence: "",
+    call_label: "",
   });
 
   useEffect(() => {
     fetchCalls();
+    fetchBrands();
   }, []);
+
+  const fetchBrands = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("brands")
+        .select("id, name")
+        .order("name");
+
+      if (error) throw error;
+      setBrands(data || []);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+    }
+  };
 
   const fetchCalls = async () => {
     try {
@@ -126,6 +148,9 @@ export function SalesCallManager() {
         notes: formData.notes || null,
         is_featured: formData.is_featured,
         order_index: formData.order_index,
+        brand_id: formData.brand_id || null,
+        call_sequence: formData.call_sequence ? parseInt(formData.call_sequence) : null,
+        call_label: formData.call_label || null,
         created_by: session.session.user.id,
       };
 
@@ -166,6 +191,9 @@ export function SalesCallManager() {
       notes: call.notes || "",
       is_featured: call.is_featured,
       order_index: call.order_index,
+      brand_id: call.brand_id || "",
+      call_sequence: call.call_sequence?.toString() || "",
+      call_label: call.call_label || "",
     });
   };
 
@@ -198,6 +226,9 @@ export function SalesCallManager() {
       notes: "",
       is_featured: false,
       order_index: 0,
+      brand_id: "",
+      call_sequence: "",
+      call_label: "",
     });
   };
 
@@ -212,6 +243,45 @@ export function SalesCallManager() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="brand">Brand *</Label>
+                <select
+                  id="brand"
+                  value={formData.brand_id}
+                  onChange={(e) => setFormData({ ...formData, brand_id: e.target.value })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  required
+                >
+                  <option value="">Select a brand</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="call_sequence">Call Sequence</Label>
+                <Input
+                  id="call_sequence"
+                  type="number"
+                  value={formData.call_sequence}
+                  onChange={(e) => setFormData({ ...formData, call_sequence: e.target.value })}
+                  placeholder="e.g., 1, 2, 3"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="call_label">Call Label</Label>
+                <Input
+                  id="call_label"
+                  value={formData.call_label}
+                  onChange={(e) => setFormData({ ...formData, call_label: e.target.value })}
+                  placeholder="e.g., Discovery Call, Demo"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
                 <Input

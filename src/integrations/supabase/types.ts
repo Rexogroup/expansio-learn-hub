@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      brands: {
+        Row: {
+          arr_value: string | null
+          created_at: string
+          created_by: string
+          id: string
+          logo_url: string | null
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          arr_value?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          arr_value?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           created_at: string | null
@@ -211,6 +244,9 @@ export type Database = {
       }
       sales_calls: {
         Row: {
+          brand_id: string | null
+          call_label: string | null
+          call_sequence: number | null
           created_at: string
           created_by: string
           deal_size: string | null
@@ -229,6 +265,9 @@ export type Database = {
           video_url: string
         }
         Insert: {
+          brand_id?: string | null
+          call_label?: string | null
+          call_sequence?: number | null
           created_at?: string
           created_by: string
           deal_size?: string | null
@@ -247,6 +286,9 @@ export type Database = {
           video_url: string
         }
         Update: {
+          brand_id?: string | null
+          call_label?: string | null
+          call_sequence?: number | null
           created_at?: string
           created_by?: string
           deal_size?: string | null
@@ -264,7 +306,15 @@ export type Database = {
           updated_at?: string
           video_url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_calls_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sections: {
         Row: {
