@@ -49,7 +49,7 @@ export const Navbar = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    navigate("/");
   };
 
   return (
@@ -91,7 +91,7 @@ export const Navbar = () => {
               </DropdownMenu>
             </>
           ) : (
-            <Link to="/auth">
+            <Link to="/">
               <Button>Sign In</Button>
             </Link>
           )}
