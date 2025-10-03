@@ -244,13 +244,20 @@ export const LessonManager = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="video">Video URL (YouTube, Vimeo, etc.)</Label>
+                <Label htmlFor="video">Video Embed URL</Label>
                 <Input
                   id="video"
                   value={formData.video_url}
                   onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                  placeholder="https://www.youtube.com/embed/..."
+                  placeholder="https://www.loom.com/embed/..."
                 />
+                <p className="text-xs text-muted-foreground">
+                  Paste the embed URL from Loom, YouTube, Vimeo, or other video platforms. 
+                  <br />
+                  <strong>Loom:</strong> Share → Embed → Copy the URL from the embed code
+                  <br />
+                  <strong>YouTube:</strong> Share → Embed → Copy the src URL (https://www.youtube.com/embed/...)
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="order">Order</Label>
