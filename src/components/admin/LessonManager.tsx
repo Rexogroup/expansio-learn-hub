@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -236,13 +236,11 @@ export const LessonManager = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="content">Content (HTML supported)</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  rows={6}
-                  placeholder="<h2>Introduction</h2><p>Lesson content...</p>"
+                <Label htmlFor="content">Content</Label>
+                <RichTextEditor
+                  content={formData.content}
+                  onChange={(content) => setFormData({ ...formData, content })}
+                  placeholder="Start writing your lesson content..."
                 />
               </div>
               <div className="space-y-2">

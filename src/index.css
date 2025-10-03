@@ -111,7 +111,61 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
-  }
+body {
+  @apply bg-background text-foreground;
+}
+
+/* Rich Text Editor Styles */
+.rich-text-content .ProseMirror {
+  @apply focus:outline-none;
+}
+
+.rich-text-content .ProseMirror p {
+  @apply my-3;
+}
+
+.rich-text-content .ProseMirror h1 {
+  @apply text-3xl font-bold my-4;
+}
+
+.rich-text-content .ProseMirror h2 {
+  @apply text-2xl font-bold my-3;
+}
+
+.rich-text-content .ProseMirror h3 {
+  @apply text-xl font-bold my-2;
+}
+
+.rich-text-content .ProseMirror ul,
+.rich-text-content .ProseMirror ol {
+  @apply pl-6 my-3;
+}
+
+.rich-text-content .ProseMirror ul {
+  @apply list-disc;
+}
+
+.rich-text-content .ProseMirror ol {
+  @apply list-decimal;
+}
+
+.rich-text-content .ProseMirror blockquote {
+  @apply border-l-4 border-primary pl-4 italic my-3;
+}
+
+.rich-text-content .ProseMirror code {
+  @apply bg-muted px-1 py-0.5 rounded text-sm;
+}
+
+.rich-text-content .ProseMirror img {
+  @apply max-w-full h-auto rounded-md my-3;
+}
+
+.rich-text-content .ProseMirror a {
+  @apply text-primary underline hover:text-primary/80;
+}
+
+.rich-text-content .ProseMirror mark {
+  @apply bg-yellow-200 dark:bg-yellow-800;
+}
 }
