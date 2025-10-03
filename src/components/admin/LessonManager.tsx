@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, BookOpen } from "lucide-react";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface Lesson {
   id: string;
@@ -39,6 +40,7 @@ export const LessonManager = () => {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [filterCourseId, setFilterCourseId] = useState<string>("");
   const [filterSectionId, setFilterSectionId] = useState<string>("");
+  const [previewLesson, setPreviewLesson] = useState<Lesson | null>(null);
   const [formData, setFormData] = useState({
     section_id: "",
     title: "",
@@ -383,7 +385,16 @@ export const LessonManager = () => {
                   <Button
                     size="icon"
                     variant="ghost"
+                    onClick={() => setPreviewLesson(lesson)}
+                    title="Preview lesson"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
                     onClick={() => openEditDialog(lesson)}
+                    title="Edit lesson"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -391,6 +402,7 @@ export const LessonManager = () => {
                     size="icon"
                     variant="ghost"
                     onClick={() => handleDelete(lesson.id)}
+                    title="Delete lesson"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -413,6 +425,45 @@ export const LessonManager = () => {
           </Card>
         ))}
       </div>
+
+      <Dialog open={!!previewLesson} onOpenChange={() => setPreviewLesson(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Preview: {previewLesson?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {previewLesson?.video_url && (
+              <Card>
+                <CardContent className="pt-6">
+                  <AspectRatio ratio={16 / 9}>
+                    <iframe
+                      src={previewLesson.video_url}
+                      className="w-full h-full rounded-lg"
+                      allowFullScreen
+                    />
+                  </AspectRatio>
+                </CardContent>
+              </Card>
+            )}
+            {previewLesson?.content && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lesson Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: previewLesson.content }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
