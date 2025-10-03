@@ -37,6 +37,8 @@ export const LessonManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [filterCourseId, setFilterCourseId] = useState<string>("");
+  const [filterSectionId, setFilterSectionId] = useState<string>("");
   const [formData, setFormData] = useState({
     section_id: "",
     title: "",
@@ -165,6 +167,24 @@ export const LessonManager = () => {
     ? sections.filter((s) => s.course_id === selectedCourseId)
     : [];
 
+  const filterSectionsForFilter = filterCourseId
+    ? sections.filter((s) => s.course_id === filterCourseId)
+    : [];
+
+  const filteredLessons = lessons.filter((lesson) => {
+    if (filterCourseId) {
+      const section = sections.find((s) => s.id === lesson.section_id);
+      if (section?.course_id !== filterCourseId) return false;
+    }
+    if (filterSectionId && lesson.section_id !== filterSectionId) return false;
+    return true;
+  });
+
+  const clearFilters = () => {
+    setFilterCourseId("");
+    setFilterSectionId("");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -289,8 +309,67 @@ export const LessonManager = () => {
         </Dialog>
       </div>
 
+      <Card className="bg-muted/50 border-border/50">
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="filter-course">Filter by Course</Label>
+              <Select
+                value={filterCourseId}
+                onValueChange={(value) => {
+                  setFilterCourseId(value);
+                  setFilterSectionId("");
+                }}
+              >
+                <SelectTrigger id="filter-course">
+                  <SelectValue placeholder="All Courses" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="filter-section">Filter by Section</Label>
+              <Select
+                value={filterSectionId}
+                onValueChange={setFilterSectionId}
+                disabled={!filterCourseId}
+              >
+                <SelectTrigger id="filter-section">
+                  <SelectValue placeholder="All Sections" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filterSectionsForFilter.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                disabled={!filterCourseId && !filterSectionId}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
+          <div className="mt-4 text-sm text-muted-foreground">
+            Showing {filteredLessons.length} of {lessons.length} lessons
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {lessons.map((lesson) => (
+        {filteredLessons.map((lesson) => (
           <Card key={lesson.id} className="border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-start justify-between gap-2">
