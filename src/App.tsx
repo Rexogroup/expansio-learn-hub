@@ -14,6 +14,13 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => (
+  <>
+    <ThemeToggle />
+    {children}
+  </>
+);
+
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <QueryClientProvider client={queryClient}>
@@ -24,9 +31,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/course/:id" element={<CourseView />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/courses" element={<AuthenticatedLayout><Courses /></AuthenticatedLayout>} />
+            <Route path="/course/:id" element={<AuthenticatedLayout><CourseView /></AuthenticatedLayout>} />
+            <Route path="/admin" element={<AuthenticatedLayout><Admin /></AuthenticatedLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
