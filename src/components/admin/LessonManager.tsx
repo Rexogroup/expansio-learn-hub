@@ -455,7 +455,7 @@ export const LessonManager = () => {
                 </CardHeader>
                 <CardContent>
                   <div
-                    className="prose prose-sm max-w-none dark:prose-invert"
+                    className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none dark:prose-invert"
                     dangerouslySetInnerHTML={{ __html: previewLesson.content }}
                   />
                 </CardContent>

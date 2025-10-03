@@ -200,7 +200,7 @@ export default function CourseView() {
                     </div>
                   )}
                   {selectedLesson.content && (
-                    <div className="prose prose-slate max-w-none dark:prose-invert">
+                    <div className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none dark:prose-invert">
                       <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
                     </div>
                   )}
