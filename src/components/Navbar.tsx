@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { BookOpen, LogOut, LayoutDashboard, User as UserIcon } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,6 +64,7 @@ export const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           {user ? (
             <>
               <Link to="/courses">
