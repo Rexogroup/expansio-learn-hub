@@ -38,7 +38,7 @@ export function BrandCard({ name, logo_url, arr_value, calls }: BrandCardProps) 
               <img
                 src={logo_url}
                 alt={name}
-                className="w-16 h-16 object-contain rounded-lg"
+                className="w-24 h-24 object-contain rounded-lg"
               />
             )}
             <div>
