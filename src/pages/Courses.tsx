@@ -44,7 +44,7 @@ export default function Courses() {
       <Navbar />
       <div className="container mx-auto px-4 py-12">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-4 text-foreground">
             Available Courses
           </h1>
           <p className="text-xl text-muted-foreground">
