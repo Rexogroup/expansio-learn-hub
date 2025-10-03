@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Phone, Tag, Briefcase, DollarSign, FileText, Star } from "lucide-react";
+import { Phone, Tag, Briefcase, DollarSign, FileText, Star, ArrowLeft, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface KeyMoment {
   timestamp: string;
@@ -24,6 +26,16 @@ interface SalesCall {
   notes: string | null;
   is_featured: boolean;
   key_moments: KeyMoment[] | null;
+  brand_id: string | null;
+  call_sequence: number | null;
+  call_label: string | null;
+}
+
+interface NavigationCall {
+  id: string;
+  title: string;
+  call_label: string | null;
+  call_sequence: number | null;
 }
 
 export default function SalesCallView() {
@@ -32,6 +44,10 @@ export default function SalesCallView() {
   const [watched, setWatched] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [nextCall, setNextCall] = useState<NavigationCall | null>(null);
+  const [previousCall, setPreviousCall] = useState<NavigationCall | null>(null);
+  const [totalCalls, setTotalCalls] = useState<number>(0);
+  const [brandName, setBrandName] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -59,6 +75,46 @@ export default function SalesCallView() {
           : null,
       };
       setCall(parsedCall);
+
+      // Fetch navigation data if call has a brand_id and call_sequence
+      if (callData.brand_id && callData.call_sequence !== null) {
+        // Fetch next call
+        const { data: nextCallData } = await supabase
+          .from("sales_calls")
+          .select("id, title, call_label, call_sequence")
+          .eq("brand_id", callData.brand_id)
+          .eq("call_sequence", callData.call_sequence + 1)
+          .maybeSingle();
+        
+        setNextCall(nextCallData);
+
+        // Fetch previous call
+        const { data: prevCallData } = await supabase
+          .from("sales_calls")
+          .select("id, title, call_label, call_sequence")
+          .eq("brand_id", callData.brand_id)
+          .eq("call_sequence", callData.call_sequence - 1)
+          .maybeSingle();
+        
+        setPreviousCall(prevCallData);
+
+        // Get total calls count and brand name
+        const { count } = await supabase
+          .from("sales_calls")
+          .select("*", { count: 'exact', head: true })
+          .eq("brand_id", callData.brand_id);
+        
+        setTotalCalls(count || 0);
+
+        // Fetch brand name
+        const { data: brandData } = await supabase
+          .from("brands")
+          .select("name")
+          .eq("id", callData.brand_id)
+          .maybeSingle();
+        
+        setBrandName(brandData?.name || "");
+      }
 
       const { data: session } = await supabase.auth.getSession();
       if (session?.session?.user) {
@@ -173,6 +229,67 @@ export default function SalesCallView() {
                 )}
               </CardContent>
             </Card>
+
+            {(previousCall || nextCall) && (
+              <Card className="shadow-lg border-primary/20 bg-gradient-to-r from-card/50 to-card/80 backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {brandName && call.call_sequence !== null && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground font-medium">
+                          {brandName}
+                        </span>
+                        <span className="text-muted-foreground">
+                          Call {call.call_sequence} of {totalCalls}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-3">
+                      {previousCall ? (
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="flex-1 justify-start"
+                        >
+                          <Link to={`/sales-call/${previousCall.id}`}>
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            <div className="text-left overflow-hidden">
+                              <div className="text-xs text-muted-foreground">Previous</div>
+                              <div className="text-sm font-medium truncate">
+                                {previousCall.call_label || previousCall.title}
+                              </div>
+                            </div>
+                          </Link>
+                        </Button>
+                      ) : (
+                        <div className="flex-1" />
+                      )}
+                      
+                      {nextCall ? (
+                        <Button
+                          asChild
+                          variant="default"
+                          className="flex-1 justify-end"
+                        >
+                          <Link to={`/sales-call/${nextCall.id}`}>
+                            <div className="text-right overflow-hidden">
+                              <div className="text-xs opacity-80">Next</div>
+                              <div className="text-sm font-medium truncate">
+                                {nextCall.call_label || nextCall.title}
+                              </div>
+                            </div>
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </Link>
+                        </Button>
+                      ) : (
+                        <div className="flex-1" />
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {call.notes && (
               <Card className="shadow-lg border-border/50 bg-card/50 backdrop-blur-sm">
