@@ -21,6 +21,16 @@ export function VideoThumbnail({ videoUrl, fallbackThumbnail, alt, className }: 
 
     const generateThumbnail = () => {
       try {
+        // Seek to 2 seconds into the video to avoid black frames
+        video.currentTime = Math.min(2, video.duration * 0.1);
+      } catch (error) {
+        console.error("Error seeking video:", error);
+        setIsLoading(false);
+      }
+    };
+
+    const captureThumbnail = () => {
+      try {
         const canvas = document.createElement("canvas");
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -39,10 +49,12 @@ export function VideoThumbnail({ videoUrl, fallbackThumbnail, alt, className }: 
       }
     };
 
-    video.addEventListener("loadeddata", generateThumbnail);
+    video.addEventListener("loadedmetadata", generateThumbnail);
+    video.addEventListener("seeked", captureThumbnail);
     
     return () => {
-      video.removeEventListener("loadeddata", generateThumbnail);
+      video.removeEventListener("loadedmetadata", generateThumbnail);
+      video.removeEventListener("seeked", captureThumbnail);
     };
   }, [fallbackThumbnail, videoUrl]);
 
