@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, X } from "lucide-react";
 
 interface Course {
   id: string;
@@ -22,6 +22,8 @@ export const CourseManager = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -47,6 +49,23 @@ export const CourseManager = () => {
     setCourses(data || []);
   };
 
+  const uploadThumbnail = async (file: File, userId: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}/${Math.random()}.${fileExt}`;
+
+    const { error: uploadError, data } = await supabase.storage
+      .from('course-thumbnails')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('course-thumbnails')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -54,17 +73,28 @@ export const CourseManager = () => {
     if (!session) return;
 
     try {
+      let thumbnailUrl = formData.thumbnail_url;
+
+      if (thumbnailFile) {
+        thumbnailUrl = await uploadThumbnail(thumbnailFile, session.user.id);
+      }
+
+      const courseData = {
+        ...formData,
+        thumbnail_url: thumbnailUrl,
+      };
+
       if (editingCourse) {
         const { error } = await supabase
           .from("courses")
-          .update(formData)
+          .update(courseData)
           .eq("id", editingCourse.id);
 
         if (error) throw error;
         toast.success("Course updated");
       } else {
         const { error } = await supabase.from("courses").insert({
-          ...formData,
+          ...courseData,
           created_by: session.user.id,
         });
 
@@ -102,6 +132,26 @@ export const CourseManager = () => {
       is_published: false,
     });
     setEditingCourse(null);
+    setThumbnailFile(null);
+    setThumbnailPreview("");
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeThumbnail = () => {
+    setThumbnailFile(null);
+    setThumbnailPreview("");
+    setFormData({ ...formData, thumbnail_url: "" });
   };
 
   const openEditDialog = (course: Course) => {
@@ -112,6 +162,7 @@ export const CourseManager = () => {
       thumbnail_url: course.thumbnail_url || "",
       is_published: course.is_published,
     });
+    setThumbnailPreview(course.thumbnail_url || "");
     setIsDialogOpen(true);
   };
 
@@ -153,13 +204,47 @@ export const CourseManager = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="thumbnail">Thumbnail URL</Label>
-                <Input
-                  id="thumbnail"
-                  value={formData.thumbnail_url}
-                  onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                  placeholder="https://..."
-                />
+                <Label htmlFor="thumbnail">Thumbnail Image</Label>
+                <div className="flex flex-col gap-4">
+                  {thumbnailPreview ? (
+                    <div className="relative w-full h-48 border border-border rounded-lg overflow-hidden">
+                      <img
+                        src={thumbnailPreview}
+                        alt="Thumbnail preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        className="absolute top-2 right-2"
+                        onClick={removeThumbnail}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="thumbnail"
+                      className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                    >
+                      <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Click to upload thumbnail
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-1">
+                        PNG, JPG up to 10MB
+                      </span>
+                    </label>
+                  )}
+                  <Input
+                    id="thumbnail"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleThumbnailChange}
+                  />
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
