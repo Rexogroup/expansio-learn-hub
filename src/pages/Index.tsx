@@ -8,7 +8,7 @@ const Index = () => {
     <div className="min-h-screen">
       <nav className="bg-white border-b">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xl font-bold font-playfair tracking-wider">
+          <div className="flex items-center gap-2 text-xl font-bold font-inter tracking-wider">
             <BookOpen className="w-6 h-6 text-primary" />
             <span className="text-foreground">
               LEARNHUB
@@ -28,7 +28,7 @@ const Index = () => {
                 PROFESSIONAL LEARNING
               </span>
             </div>
-            <h1 className="text-5xl lg:text-7xl font-playfair font-bold text-white leading-tight">
+            <h1 className="text-5xl lg:text-7xl font-inter font-bold text-white leading-tight">
               Expand your knowledge on autopilot.
             </h1>
             <p className="text-xl text-white/80 font-inter max-w-2xl mx-auto">
@@ -48,7 +48,7 @@ const Index = () => {
       <section className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-playfair font-bold mb-4 text-foreground">Everything You Need</h2>
+            <h2 className="text-4xl font-inter font-bold mb-4 text-foreground">Everything You Need</h2>
             <p className="text-xl text-muted-foreground font-inter">
               Powerful features for effective training delivery
             </p>
@@ -58,7 +58,7 @@ const Index = () => {
               <div className="w-16 h-16 mx-auto bg-primary rounded-lg flex items-center justify-center">
                 <Video className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-playfair font-bold text-foreground">Rich Media Support</h3>
+              <h3 className="text-xl font-inter font-bold text-foreground">Rich Media Support</h3>
               <p className="text-muted-foreground font-inter">
                 Host videos, images, and interactive content in your lessons
               </p>
@@ -67,7 +67,7 @@ const Index = () => {
               <div className="w-16 h-16 mx-auto bg-primary rounded-lg flex items-center justify-center">
                 <FileText className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-playfair font-bold text-foreground">Flexible Content</h3>
+              <h3 className="text-xl font-inter font-bold text-foreground">Flexible Content</h3>
               <p className="text-muted-foreground font-inter">
                 Create sections, headlines, and organize content your way
               </p>
@@ -76,7 +76,7 @@ const Index = () => {
               <div className="w-16 h-16 mx-auto bg-primary rounded-lg flex items-center justify-center">
                 <Users className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-playfair font-bold text-foreground">Client Access</h3>
+              <h3 className="text-xl font-inter font-bold text-foreground">Client Access</h3>
               <p className="text-muted-foreground font-inter">
                 Secure login for clients to access their training materials
               </p>
@@ -87,7 +87,7 @@ const Index = () => {
 
       <section className="py-24 bg-[#0c2847]">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-playfair font-bold mb-6 text-white">Ready to Get Started?</h2>
+          <h2 className="text-4xl font-inter font-bold mb-6 text-white">Ready to Get Started?</h2>
           <p className="text-xl text-white/80 font-inter mb-8 max-w-2xl mx-auto">
             Join thousands of organizations delivering exceptional training experiences
           </p>
