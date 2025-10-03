@@ -8,6 +8,7 @@ interface SalesCall {
   id: string;
   title: string;
   thumbnail_url: string | null;
+  video_url: string | null;
   duration: number | null;
   call_sequence: number | null;
   call_label: string | null;
@@ -35,7 +36,7 @@ export default function SalesVault() {
     try {
       const [brandsResponse, callsResponse] = await Promise.all([
         supabase.from("brands").select("*").order("order_index", { ascending: true }),
-        supabase.from("sales_calls").select("id, title, thumbnail_url, duration, call_sequence, call_label, brand_id"),
+        supabase.from("sales_calls").select("id, title, thumbnail_url, video_url, duration, call_sequence, call_label, brand_id"),
       ]);
 
       if (brandsResponse.error) throw brandsResponse.error;

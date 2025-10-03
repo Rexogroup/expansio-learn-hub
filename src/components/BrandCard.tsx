@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Play } from "lucide-react";
+import { VideoThumbnail } from "./VideoThumbnail";
 
 interface SalesCall {
   id: string;
   title: string;
   thumbnail_url: string | null;
+  video_url: string | null;
   duration: number | null;
   call_sequence: number | null;
   call_label: string | null;
@@ -66,17 +68,12 @@ export function BrandCard({ name, logo_url, arr_value, calls }: BrandCardProps) 
               >
                 <div className="w-48 space-y-2">
                   <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                    {call.thumbnail_url ? (
-                      <img
-                        src={call.thumbnail_url}
-                        alt={call.title}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Play className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                    )}
+                    <VideoThumbnail
+                      videoUrl={call.video_url || ""}
+                      fallbackThumbnail={call.thumbnail_url}
+                      alt={call.title}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Play className="w-12 h-12 text-white" />
                     </div>
