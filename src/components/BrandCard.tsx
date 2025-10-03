@@ -44,7 +44,10 @@ export function BrandCard({ name, logo_url, arr_value, calls }: BrandCardProps) 
             <div>
               <CardTitle className="text-2xl">{name}</CardTitle>
               {arr_value && (
-                <Badge variant="secondary" className="mt-2">
+                <Badge 
+                  variant="secondary" 
+                  className="mt-2 px-4 py-1.5 text-base font-semibold rounded-full bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all"
+                >
                   ARR: {arr_value}
                 </Badge>
               )}
