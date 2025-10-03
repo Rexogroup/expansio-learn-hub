@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Trash2, Upload, Plus } from "lucide-react";
+import { Trash2, Upload, Plus, Loader2 } from "lucide-react";
 
 interface SalesCall {
   id: string;
@@ -33,6 +34,10 @@ export function SalesCallManager() {
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadingFile, setUploadingFile] = useState<'video' | 'thumbnail' | null>(null);
+  const [uploadedBytes, setUploadedBytes] = useState<number>(0);
+  const [totalBytes, setTotalBytes] = useState<number>(0);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -86,8 +91,21 @@ export function SalesCallManager() {
     }
   };
 
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
   const handleFileUpload = async (file: File, type: "video" | "thumbnail") => {
     setUploading(true);
+    setUploadingFile(type);
+    setUploadProgress(0);
+    setUploadedBytes(0);
+    setTotalBytes(file.size);
+
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session?.user) throw new Error("Not authenticated");
@@ -96,11 +114,49 @@ export function SalesCallManager() {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("sales-calls")
-        .upload(filePath, file);
+      // Get the storage URL and auth token
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const token = authSession?.access_token;
+      
+      const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+      const uploadUrl = `${projectUrl}/storage/v1/object/sales-calls/${filePath}`;
 
-      if (uploadError) throw uploadError;
+      // Create XMLHttpRequest for progress tracking
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const progress = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress(progress);
+            setUploadedBytes(e.loaded);
+            setTotalBytes(e.total);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Upload failed'));
+        });
+
+        xhr.open('POST', uploadUrl);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.setRequestHeader('apikey', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+        xhr.setRequestHeader('x-upsert', 'false');
+
+        const formData = new FormData();
+        formData.append('cacheControl', '3600');
+        formData.append('', file);
+
+        xhr.send(formData);
+      });
 
       const { data: { publicUrl } } = supabase.storage
         .from("sales-calls")
@@ -115,8 +171,15 @@ export function SalesCallManager() {
     } catch (error) {
       console.error("Error uploading file:", error);
       toast.error("Failed to upload file");
+      setUploadProgress(0);
     } finally {
       setUploading(false);
+      setUploadingFile(null);
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploadedBytes(0);
+        setTotalBytes(0);
+      }, 2000);
     }
   };
 
@@ -367,38 +430,72 @@ export function SalesCallManager() {
 
             <div className="space-y-2">
               <Label htmlFor="video">Video File *</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="video"
-                  type="file"
-                  accept="video/*,audio/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file, "video");
-                  }}
-                  disabled={uploading}
-                />
-                {formData.video_url && (
-                  <Button type="button" variant="outline" size="sm" disabled>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Uploaded
-                  </Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    id="video"
+                    type="file"
+                    accept="video/*,audio/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, "video");
+                    }}
+                    disabled={uploading}
+                  />
+                  {formData.video_url && !uploadingFile && (
+                    <Button type="button" variant="outline" size="sm" disabled>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Uploaded
+                    </Button>
+                  )}
+                </div>
+                {uploadingFile === 'video' && (
+                  <div className="space-y-2 p-3 border rounded-lg bg-muted/50">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="font-medium">Uploading video...</span>
+                      </div>
+                      <span className="text-muted-foreground font-mono">{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2" />
+                    <div className="text-xs text-muted-foreground">
+                      {formatBytes(uploadedBytes)} / {formatBytes(totalBytes)}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="thumbnail">Thumbnail (optional)</Label>
-              <Input
-                id="thumbnail"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, "thumbnail");
-                }}
-                disabled={uploading}
-              />
+              <div className="space-y-2">
+                <Input
+                  id="thumbnail"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, "thumbnail");
+                  }}
+                  disabled={uploading}
+                />
+                {uploadingFile === 'thumbnail' && (
+                  <div className="space-y-2 p-3 border rounded-lg bg-muted/50">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="font-medium">Uploading thumbnail...</span>
+                      </div>
+                      <span className="text-muted-foreground font-mono">{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2" />
+                    <div className="text-xs text-muted-foreground">
+                      {formatBytes(uploadedBytes)} / {formatBytes(totalBytes)}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
