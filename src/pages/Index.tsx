@@ -2,17 +2,13 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Video, FileText, Users } from "lucide-react";
 import heroImage from "@/assets/hero-lms.jpg";
-
 const Index = () => {
-  return (
-    <div className="min-h-screen">
+  return <div className="min-h-screen">
       <nav className="bg-white border-b">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xl font-bold font-inter tracking-wider">
             <BookOpen className="w-6 h-6 text-primary" />
-            <span className="text-foreground">
-              LEARNHUB
-            </span>
+            <span className="text-foreground">Expansio Learn Hub</span>
           </div>
           <Link to="/auth">
             <Button className="rounded-full px-6 font-inter">Get Started</Button>
@@ -98,8 +94,6 @@ const Index = () => {
           </Link>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
