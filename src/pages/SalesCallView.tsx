@@ -231,59 +231,54 @@ export default function SalesCallView() {
             </Card>
 
             {(previousCall || nextCall) && (
-              <Card className="shadow-lg border-primary/20 bg-gradient-to-r from-card/50 to-card/80 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
+              <Card className="shadow-xl border-primary/10 bg-card backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
                     {brandName && call.call_sequence !== null && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground font-medium">
+                      <div className="flex items-center justify-between text-xs px-1">
+                        <span className="text-muted-foreground/80 font-medium">
                           {brandName}
                         </span>
-                        <span className="text-muted-foreground">
-                          Call {call.call_sequence} of {totalCalls}
+                        <span className="text-muted-foreground/60">
+                          {call.call_sequence} of {totalCalls}
                         </span>
                       </div>
                     )}
                     
-                    <div className="flex gap-3">
+                    <div className="flex items-center justify-between gap-3">
                       {previousCall ? (
                         <Button
                           asChild
-                          variant="outline"
-                          className="flex-1 justify-start"
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-full px-4 h-9 border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all"
                         >
-                          <Link to={`/sales-call/${previousCall.id}`}>
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            <div className="text-left overflow-hidden">
-                              <div className="text-xs text-muted-foreground">Previous</div>
-                              <div className="text-sm font-medium truncate">
-                                {previousCall.call_label || previousCall.title}
-                              </div>
-                            </div>
+                          <Link to={`/sales-call/${previousCall.id}`} className="flex items-center gap-2">
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span className="text-sm font-medium">
+                              {previousCall.call_label || "Previous"}
+                            </span>
                           </Link>
                         </Button>
                       ) : (
-                        <div className="flex-1" />
+                        <div />
                       )}
                       
                       {nextCall ? (
                         <Button
                           asChild
-                          variant="default"
-                          className="flex-1 justify-end"
+                          size="sm"
+                          className="rounded-full px-4 h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all"
                         >
-                          <Link to={`/sales-call/${nextCall.id}`}>
-                            <div className="text-right overflow-hidden">
-                              <div className="text-xs opacity-80">Next</div>
-                              <div className="text-sm font-medium truncate">
-                                {nextCall.call_label || nextCall.title}
-                              </div>
-                            </div>
-                            <ArrowRight className="w-4 h-4 ml-2" />
+                          <Link to={`/sales-call/${nextCall.id}`} className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              {nextCall.call_label || "Next"}
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         </Button>
                       ) : (
-                        <div className="flex-1" />
+                        <div />
                       )}
                     </div>
                   </div>
