@@ -27,7 +27,7 @@ export default function Courses() {
         .from("courses")
         .select("*")
         .eq("is_published", true)
-        .order("created_at", { ascending: false });
+        .order("order_index", { ascending: true });
 
       if (error) throw error;
       setCourses(data || []);

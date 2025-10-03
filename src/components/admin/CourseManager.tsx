@@ -16,6 +16,7 @@ interface Course {
   description: string | null;
   thumbnail_url: string | null;
   is_published: boolean;
+  order_index: number;
 }
 
 export const CourseManager = () => {
@@ -29,6 +30,7 @@ export const CourseManager = () => {
     description: "",
     thumbnail_url: "",
     is_published: false,
+    order_index: 0,
   });
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export const CourseManager = () => {
     const { data, error } = await supabase
       .from("courses")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("order_index", { ascending: true });
 
     if (error) {
       toast.error("Failed to fetch courses");
@@ -130,6 +132,7 @@ export const CourseManager = () => {
       description: "",
       thumbnail_url: "",
       is_published: false,
+      order_index: 0,
     });
     setEditingCourse(null);
     setThumbnailFile(null);
@@ -161,6 +164,7 @@ export const CourseManager = () => {
       description: course.description || "",
       thumbnail_url: course.thumbnail_url || "",
       is_published: course.is_published,
+      order_index: course.order_index,
     });
     setThumbnailPreview(course.thumbnail_url || "");
     setIsDialogOpen(true);
@@ -202,6 +206,17 @@ export const CourseManager = () => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="order_index">Display Order</Label>
+                <Input
+                  id="order_index"
+                  type="number"
+                  min="0"
+                  value={formData.order_index}
+                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })}
+                />
+                <p className="text-xs text-muted-foreground">Lower numbers appear first</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="thumbnail">Thumbnail Image</Label>
