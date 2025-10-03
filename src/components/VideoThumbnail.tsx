@@ -21,8 +21,8 @@ export function VideoThumbnail({ videoUrl, fallbackThumbnail, alt, className }: 
 
     const generateThumbnail = () => {
       try {
-        // Seek to 2 seconds into the video to avoid black frames
-        video.currentTime = Math.min(2, video.duration * 0.1);
+        // Seek to 10 seconds into the video to capture a frame with people
+        video.currentTime = Math.min(10, video.duration - 1);
       } catch (error) {
         console.error("Error seeking video:", error);
         setIsLoading(false);

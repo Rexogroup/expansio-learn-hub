@@ -66,7 +66,7 @@ export function BrandCard({ name, logo_url, arr_value, calls }: BrandCardProps) 
                 to={`/sales-call/${call.id}`}
                 className="flex-shrink-0 group"
               >
-                <div className="w-72 space-y-2">
+                <div className="w-96 space-y-2">
                   <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
                     <VideoThumbnail
                       videoUrl={call.video_url || ""}
