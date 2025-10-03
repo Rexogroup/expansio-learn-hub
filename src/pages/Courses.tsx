@@ -11,6 +11,7 @@ interface Course {
   description: string | null;
   thumbnail_url: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export default function Courses() {
@@ -84,9 +85,15 @@ export default function Courses() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="w-4 h-4" />
-                      <span>Added {new Date(course.created_at).toLocaleDateString()}</span>
+                    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        <span>Added {new Date(course.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        <span>Last updated {new Date(course.updated_at).toLocaleDateString()}</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
