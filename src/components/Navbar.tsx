@@ -68,6 +68,9 @@ export const Navbar = () => {
               <Link to="/courses">
                 <Button variant="ghost">Courses</Button>
               </Link>
+              <Link to="/sales-vault">
+                <Button variant="ghost">Sales Vault</Button>
+              </Link>
               {isAdmin && (
                 <Link to="/admin">
                   <Button variant="ghost">

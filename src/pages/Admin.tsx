@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseManager } from "@/components/admin/CourseManager";
 import { SectionManager } from "@/components/admin/SectionManager";
 import { LessonManager } from "@/components/admin/LessonManager";
+import { SalesCallManager } from "@/components/admin/SalesCallManager";
 import { toast } from "sonner";
 
 export default function Admin() {
@@ -77,10 +78,11 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="courses" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="courses">Courses</TabsTrigger>
             <TabsTrigger value="sections">Sections</TabsTrigger>
             <TabsTrigger value="lessons">Lessons</TabsTrigger>
+            <TabsTrigger value="sales-calls">Sales Calls</TabsTrigger>
           </TabsList>
           <TabsContent value="courses" className="mt-6">
             <CourseManager />
@@ -90,6 +92,9 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="lessons" className="mt-6">
             <LessonManager />
+          </TabsContent>
+          <TabsContent value="sales-calls" className="mt-6">
+            <SalesCallManager />
           </TabsContent>
         </Tabs>
       </div>

@@ -171,6 +171,101 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_call_progress: {
+        Row: {
+          call_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          watched: boolean | null
+          watched_at: string | null
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          watched?: boolean | null
+          watched_at?: string | null
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          watched?: boolean | null
+          watched_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_call_progress_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "sales_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_calls: {
+        Row: {
+          created_at: string
+          created_by: string
+          deal_size: string | null
+          description: string | null
+          duration: number | null
+          id: string
+          industry: string | null
+          is_featured: boolean | null
+          key_moments: Json | null
+          notes: string | null
+          order_index: number
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          deal_size?: string | null
+          description?: string | null
+          duration?: number | null
+          id?: string
+          industry?: string | null
+          is_featured?: boolean | null
+          key_moments?: Json | null
+          notes?: string | null
+          order_index?: number
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deal_size?: string | null
+          description?: string | null
+          duration?: number | null
+          id?: string
+          industry?: string | null
+          is_featured?: boolean | null
+          key_moments?: Json | null
+          notes?: string | null
+          order_index?: number
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       sections: {
         Row: {
           course_id: string

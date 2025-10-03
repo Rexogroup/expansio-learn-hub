@@ -8,6 +8,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import Auth from "./pages/Auth";
 import Courses from "./pages/Courses";
 import CourseView from "./pages/CourseView";
+import SalesVault from "./pages/SalesVault";
+import SalesCallView from "./pages/SalesCallView";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="/" element={<Auth />} />
             <Route path="/courses" element={<AuthenticatedLayout><Courses /></AuthenticatedLayout>} />
             <Route path="/course/:id" element={<AuthenticatedLayout><CourseView /></AuthenticatedLayout>} />
+            <Route path="/sales-vault" element={<AuthenticatedLayout><SalesVault /></AuthenticatedLayout>} />
+            <Route path="/sales-call/:id" element={<AuthenticatedLayout><SalesCallView /></AuthenticatedLayout>} />
             <Route path="/admin" element={<AuthenticatedLayout><Admin /></AuthenticatedLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
