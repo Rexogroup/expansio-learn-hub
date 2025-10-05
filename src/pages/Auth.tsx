@@ -54,6 +54,19 @@ export default function Auth() {
     }
   }, [inviteCode, navigate]);
 
+  // Handle hash-based invite links like #/signup?invite=CODE
+  useEffect(() => {
+    const hash = window.location.hash || "";
+    if (hash.startsWith("#/signup")) {
+      const query = hash.split("?")[1] || "";
+      const params = new URLSearchParams(query);
+      const code = params.get("invite");
+      if (code) {
+        navigate(`/signup?invite=${code}`, { replace: true });
+      }
+    }
+  }, [navigate]);
+
   const validateInvite = async () => {
     try {
       const { data: invite, error } = await supabase

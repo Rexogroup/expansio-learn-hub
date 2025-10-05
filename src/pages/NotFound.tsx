@@ -1,13 +1,35 @@
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useEffect } from "react";
-
+ 
 const NotFound = () => {
   const location = useLocation();
-
+  const navigate = useNavigate();
+ 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
 
+    // Safety net: if an invite code is present (in search or hash), redirect to the signup page
+    let code: string | null = null;
+
+    // From standard query string
+    const searchParams = new URLSearchParams(location.search);
+    code = searchParams.get("invite");
+
+    // Fallback: check hash-based links like #/signup?invite=CODE
+    if (!code && typeof window !== "undefined") {
+      const hash = window.location.hash || "";
+      const hashQuery = hash.includes("?") ? hash.split("?")[1] : "";
+      if (hashQuery) {
+        const hashParams = new URLSearchParams(hashQuery);
+        code = hashParams.get("invite");
+      }
+    }
+
+    if (code) {
+      navigate(`/signup?invite=${code}`, { replace: true });
+    }
+  }, [location.pathname, location.search, navigate]);
+ 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="text-center">
@@ -20,5 +42,5 @@ const NotFound = () => {
     </div>
   );
 };
-
+ 
 export default NotFound;
