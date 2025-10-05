@@ -37,9 +37,22 @@ export default function Auth() {
   }, [navigate]);
 
   useEffect(() => {
-    if (inviteCode) {
+    // Check for invite code in URL params
+    let code = inviteCode;
+    
+    // Also check hash-based links like #/signup?invite=CODE
+    if (!code && typeof window !== "undefined") {
+      const hash = window.location.hash || "";
+      const hashQuery = hash.includes("?") ? hash.split("?")[1] : "";
+      if (hashQuery) {
+        const hashParams = new URLSearchParams(hashQuery);
+        code = hashParams.get("invite");
+      }
+    }
+    
+    if (code) {
       // Redirect to signup page with invite code
-      navigate(`/signup?invite=${inviteCode}`);
+      navigate(`/signup?invite=${code}`, { replace: true });
     }
   }, [inviteCode, navigate]);
 
