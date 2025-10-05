@@ -134,11 +134,11 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="content">
               <p class="greeting">Hi ${firstName},</p>
               
-              <p>You've been invited to access the <strong>Expansio Learning Platform</strong>!</p>
+              <p style="color: #ffffff;">You've been invited to access the <strong>Expansio Learning Platform</strong>!</p>
               
               ${company ? `<p class="company-badge">Organization: ${company}</p>` : ''}
               
-              <p>Our platform provides comprehensive courses and sales training resources to help you excel in your career.</p>
+              <p style="color: #ffffff;">Our platform provides comprehensive courses and sales training resources to help you excel in your career.</p>
               
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${inviteUrl}" class="button">Create My Account →</a>
