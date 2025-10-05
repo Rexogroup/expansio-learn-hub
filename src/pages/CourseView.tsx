@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { BookOpen, CheckCircle2, Circle } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize";
 
 interface Lesson {
@@ -250,11 +250,6 @@ export default function CourseView() {
                                   }
                                   onClick={(e) => e.stopPropagation()}
                                 />
-                              )}
-                              {lesson.completed ? (
-                                <CheckCircle2 className="w-4 h-4 text-primary" />
-                              ) : (
-                                <Circle className="w-4 h-4 text-muted-foreground" />
                               )}
                               <span className="text-sm flex-1">{lesson.title}</span>
                             </div>
