@@ -23,6 +23,19 @@ export default function Signup() {
   } | null>(null);
   const [inviteValidated, setInviteValidated] = useState(false);
 
+  // Handle hash-based invite links like #/signup?invite=CODE
+  useEffect(() => {
+    const hash = window.location.hash || "";
+    if (hash.startsWith("#/signup")) {
+      const query = hash.split("?")[1] || "";
+      const params = new URLSearchParams(query);
+      const code = params.get("invite");
+      if (code) {
+        navigate(`/signup?invite=${code}`, { replace: true });
+      }
+    }
+  }, [navigate]);
+
   useEffect(() => {
     // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
