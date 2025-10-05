@@ -112,14 +112,21 @@ export default function CourseView() {
   };
 
   const toggleLessonComplete = async (lessonId: string, completed: boolean) => {
-    if (!userId) return;
+    // Always fetch the current session to ensure we have the latest user ID
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = session?.user?.id;
+    
+    if (!currentUserId) {
+      toast.error("Please log in to track your progress");
+      return;
+    }
 
     try {
       if (completed) {
         await supabase
           .from("lesson_progress")
           .upsert({
-            user_id: userId,
+            user_id: currentUserId,
             lesson_id: lessonId,
             completed: true,
             completed_at: new Date().toISOString(),
@@ -128,7 +135,7 @@ export default function CourseView() {
         await supabase
           .from("lesson_progress")
           .delete()
-          .eq("user_id", userId)
+          .eq("user_id", currentUserId)
           .eq("lesson_id", lessonId);
       }
 
