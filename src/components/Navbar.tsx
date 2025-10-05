@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -15,6 +15,17 @@ export const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActiveRoute = (path: string) => {
+    if (path === "/courses") {
+      return location.pathname === "/courses" || location.pathname.startsWith("/course/");
+    }
+    if (path === "/sales-vault") {
+      return location.pathname === "/sales-vault" || location.pathname.startsWith("/sales-call/");
+    }
+    return location.pathname === path;
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -65,15 +76,15 @@ export const Navbar = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <Link to="/courses">
-                <Button variant="ghost">Courses</Button>
+              <Link to="/courses" aria-current={isActiveRoute("/courses") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/courses") ? "default" : "ghost"}>Courses</Button>
               </Link>
-              <Link to="/sales-vault">
-                <Button variant="ghost">Sales Vault</Button>
+              <Link to="/sales-vault" aria-current={isActiveRoute("/sales-vault") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/sales-vault") ? "default" : "ghost"}>Sales Vault</Button>
               </Link>
               {isAdmin && (
-                <Link to="/admin">
-                  <Button variant="ghost">
+                <Link to="/admin" aria-current={isActiveRoute("/admin") ? "page" : undefined}>
+                  <Button variant={isActiveRoute("/admin") ? "default" : "ghost"}>
                     <LayoutDashboard className="w-4 h-4 mr-2" />
                     Admin
                   </Button>
