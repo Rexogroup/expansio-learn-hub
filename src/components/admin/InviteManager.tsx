@@ -117,7 +117,7 @@ export function InviteManager() {
   };
 
   const handleCopyLink = (inviteCode: string) => {
-    const inviteUrl = `${window.location.origin}/auth?invite=${inviteCode}`;
+    const inviteUrl = `${window.location.origin}/signup?invite=${inviteCode}`;
     navigator.clipboard.writeText(inviteUrl);
     toast.success("Invite link copied to clipboard!");
   };

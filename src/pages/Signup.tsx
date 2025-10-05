@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { BookOpen } from "lucide-react";
 
-export default function Auth() {
+export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [searchParams] = useSearchParams();
@@ -22,11 +22,6 @@ export default function Auth() {
     id: string;
   } | null>(null);
   const [inviteValidated, setInviteValidated] = useState(false);
-  const [showSignIn, setShowSignIn] = useState(false);
-
-  // Sign in form state
-  const [signInEmail, setSignInEmail] = useState("");
-  const [signInPassword, setSignInPassword] = useState("");
 
   useEffect(() => {
     // Check existing session
@@ -47,10 +42,10 @@ export default function Auth() {
 
   useEffect(() => {
     if (inviteCode) {
-      // Redirect to signup page with invite code
-      navigate(`/signup?invite=${inviteCode}`);
+      validateInvite();
     } else {
-      setInviteValidated(true);
+      // Redirect to auth if no invite code
+      navigate("/auth");
     }
   }, [inviteCode, navigate]);
 
@@ -66,21 +61,25 @@ export default function Auth() {
 
       if (!invite) {
         toast.error("Invalid invite code");
+        navigate("/auth");
         return;
       }
 
       if (!invite.is_active) {
         toast.error("This invite has been revoked");
+        navigate("/auth");
         return;
       }
 
       if (invite.used_at) {
         toast.error("This invite has already been used");
+        navigate("/auth");
         return;
       }
 
       if (new Date(invite.expires_at) < new Date()) {
         toast.error("This invite has expired");
+        navigate("/auth");
         return;
       }
 
@@ -94,6 +93,7 @@ export default function Auth() {
     } catch (error: any) {
       console.error("Error validating invite:", error);
       toast.error("Failed to validate invite code");
+      navigate("/auth");
     }
   };
 
@@ -131,29 +131,10 @@ export default function Auth() {
           console.error("Error marking invite as used:", updateError);
         }
 
-        toast.success("Account created! Please check your email to verify your account.");
+        toast.success("Account created! Redirecting to courses...");
       }
     } catch (error: any) {
       toast.error(error.message || "An error occurred during sign up");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: signInEmail,
-        password: signInPassword,
-      });
-
-      if (error) throw error;
-      toast.success("Welcome back!");
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred during sign in");
     } finally {
       setIsLoading(false);
     }
@@ -171,70 +152,6 @@ export default function Auth() {
     );
   }
 
-  // Show sign-in form if no invite code or user clicked to sign in
-  if (!inviteCode || showSignIn) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="space-y-1 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <BookOpen className="w-8 h-8 text-primary" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Expansio Learning
-              </span>
-            </div>
-            <CardTitle className="text-2xl">Sign In</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={signInEmail}
-                  onChange={(e) => setSignInEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={signInPassword}
-                  onChange={(e) => setSignInPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-            
-            {!inviteCode && (
-              <div className="mt-6 p-4 bg-muted rounded-lg text-center">
-                <p className="text-sm text-muted-foreground mb-2">
-                  This platform is invite-only.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Please check your email for your invite link or contact us to request access.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show sign-up form with pre-filled data from invite
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -302,7 +219,7 @@ export default function Auth() {
               type="button"
               variant="ghost"
               className="w-full"
-              onClick={() => setShowSignIn(true)}
+              onClick={() => navigate("/auth")}
             >
               Already have an account? Sign in
             </Button>

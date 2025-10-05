@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Auth from "./pages/Auth";
+import Signup from "./pages/Signup";
 import Courses from "./pages/Courses";
 import CourseView from "./pages/CourseView";
 import SalesVault from "./pages/SalesVault";
@@ -32,6 +33,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Auth />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/courses" element={<AuthenticatedLayout><Courses /></AuthenticatedLayout>} />
             <Route path="/course/:id" element={<AuthenticatedLayout><CourseView /></AuthenticatedLayout>} />
             <Route path="/sales-vault" element={<AuthenticatedLayout><SalesVault /></AuthenticatedLayout>} />
