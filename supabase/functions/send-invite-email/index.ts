@@ -48,16 +48,22 @@ const handler = async (req: Request): Promise<Response> => {
               body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 line-height: 1.6;
-                color: #333;
+                color: #ffffff;
                 max-width: 600px;
                 margin: 0 auto;
                 padding: 20px;
+                background: #0a1628;
               }
               .header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 30px;
+                background: linear-gradient(135deg, #0f2847 0%, #1a3a5c 100%);
+                padding: 40px 30px;
                 text-align: center;
                 border-radius: 8px 8px 0 0;
+              }
+              .header img {
+                max-width: 200px;
+                height: auto;
+                margin-bottom: 20px;
               }
               .header h1 {
                 color: white;
@@ -65,19 +71,21 @@ const handler = async (req: Request): Promise<Response> => {
                 font-size: 28px;
               }
               .content {
-                background: #ffffff;
+                background: #1a3a5c;
                 padding: 40px 30px;
-                border: 1px solid #e0e0e0;
+                border: 1px solid #1f4466;
                 border-top: none;
+                color: #ffffff;
               }
               .greeting {
                 font-size: 18px;
                 margin-bottom: 20px;
+                color: #ffffff;
               }
               .button {
                 display: inline-block;
                 padding: 14px 32px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #3b82f6;
                 color: white !important;
                 text-decoration: none;
                 border-radius: 6px;
@@ -86,29 +94,30 @@ const handler = async (req: Request): Promise<Response> => {
                 font-size: 16px;
               }
               .button:hover {
-                opacity: 0.9;
+                background: #2563eb;
               }
               .info-box {
-                background: #f8f9fa;
+                background: rgba(59, 130, 246, 0.1);
                 padding: 15px;
                 border-radius: 6px;
                 margin: 20px 0;
-                border-left: 4px solid #667eea;
+                border-left: 4px solid #3b82f6;
+                color: #ffffff;
               }
               .footer {
                 text-align: center;
                 padding: 20px;
-                color: #666;
+                color: #94a3b8;
                 font-size: 14px;
                 border-radius: 0 0 8px 8px;
-                background: #f8f9fa;
-                border: 1px solid #e0e0e0;
+                background: #0f2847;
+                border: 1px solid #1f4466;
                 border-top: none;
               }
               .company-badge {
                 display: inline-block;
-                background: #e8eaf6;
-                color: #667eea;
+                background: rgba(59, 130, 246, 0.2);
+                color: #60a5fa;
                 padding: 4px 12px;
                 border-radius: 12px;
                 font-size: 14px;
@@ -118,7 +127,8 @@ const handler = async (req: Request): Promise<Response> => {
           </head>
           <body>
             <div class="header">
-              <h1>📚 Welcome to Expansio Learning</h1>
+              <img src="https://learn.expansio.io/email-assets/Expansio_PNG_W_WP.png" alt="Expansio Learning" />
+              <h1>Welcome to Expansio Learning</h1>
             </div>
             
             <div class="content">
@@ -138,9 +148,9 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="margin: 0;"><strong>⏰ Important:</strong> This invite expires in 30 days.</p>
               </div>
               
-              <p style="font-size: 14px; color: #666; margin-top: 30px;">
+              <p style="font-size: 14px; color: #94a3b8; margin-top: 30px;">
                 Or copy and paste this link into your browser:<br>
-                <a href="${inviteUrl}" style="color: #667eea; word-break: break-all;">${inviteUrl}</a>
+                <a href="${inviteUrl}" style="color: #60a5fa; word-break: break-all;">${inviteUrl}</a>
               </p>
             </div>
             
