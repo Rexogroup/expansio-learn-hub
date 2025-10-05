@@ -23,18 +23,7 @@ export default function Signup() {
   } | null>(null);
   const [inviteValidated, setInviteValidated] = useState(false);
 
-  // Handle hash-based invite links like #/signup?invite=CODE
-  useEffect(() => {
-    const hash = window.location.hash || "";
-    if (hash.startsWith("#/signup")) {
-      const query = hash.split("?")[1] || "";
-      const params = new URLSearchParams(query);
-      const code = params.get("invite");
-      if (code) {
-        navigate(`/signup?invite=${code}`, { replace: true });
-      }
-    }
-  }, [navigate]);
+  console.log("Signup page loaded with invite code:", inviteCode);
 
   useEffect(() => {
     // Check existing session
@@ -64,15 +53,22 @@ export default function Signup() {
 
   const validateInvite = async () => {
     try {
+      console.log("Validating invite code:", inviteCode);
       const { data: invite, error } = await supabase
         .from("invites")
         .select("id, first_name, last_name, email, is_active, expires_at, used_at")
         .eq("invite_code", inviteCode)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error validating invite:", error);
+        throw error;
+      }
+
+      console.log("Invite data retrieved:", invite);
 
       if (!invite) {
+        console.error("No invite found with code:", inviteCode);
         toast.error("Invalid invite code");
         navigate("/auth");
         return;
