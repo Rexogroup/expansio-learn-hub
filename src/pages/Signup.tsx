@@ -54,43 +54,27 @@ export default function Signup() {
   const validateInvite = async () => {
     try {
       console.log("Validating invite code:", inviteCode);
-      const { data: invite, error } = await supabase
-        .from("invites")
-        .select("id, first_name, last_name, email, is_active, expires_at, used_at")
-        .eq("invite_code", inviteCode)
-        .maybeSingle();
+      
+      // Use the secure function instead of querying the table directly
+      // This prevents attackers from listing all active invites
+      const { data: invites, error } = await supabase
+        .rpc("validate_invite_code", { code: inviteCode });
 
       if (error) {
         console.error("Database error validating invite:", error);
         throw error;
       }
 
-      console.log("Invite data retrieved:", invite);
+      console.log("Invite data retrieved:", invites);
 
-      if (!invite) {
+      if (!invites || invites.length === 0) {
         console.error("No invite found with code:", inviteCode);
         toast.error("Invalid invite code");
         navigate("/auth");
         return;
       }
 
-      if (!invite.is_active) {
-        toast.error("This invite has been revoked");
-        navigate("/auth");
-        return;
-      }
-
-      if (invite.used_at) {
-        toast.error("This invite has already been used");
-        navigate("/auth");
-        return;
-      }
-
-      if (new Date(invite.expires_at) < new Date()) {
-        toast.error("This invite has expired");
-        navigate("/auth");
-        return;
-      }
+      const invite = invites[0];
 
       setInviteData({
         id: invite.id,

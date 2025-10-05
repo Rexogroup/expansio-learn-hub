@@ -436,6 +436,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_invite_code: {
+        Args: { code: string }
+        Returns: {
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          is_active: boolean
+          last_name: string
+          used_at: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
