@@ -224,7 +224,7 @@ export default function CourseView() {
             )}
           </div>
 
-          <div>
+          <div className="sticky top-8 self-start max-h-[calc(100vh-8rem)] overflow-y-auto">
             <Card className="shadow-lg border-border/50 bg-card/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>Course Content</CardTitle>
