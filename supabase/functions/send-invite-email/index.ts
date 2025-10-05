@@ -152,8 +152,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="margin: 0;"><strong>⏰ Important:</strong> This invite expires in 30 days.</p>
               </div>
               
-              <p style="font-size: 14px; color: #ffffff; margin-top: 30px;">
-                Or copy and paste this link into your browser:<br>
+              <p style="font-size: 14px; color: #ffffff !important; margin-top: 30px;">
+                <span style="color: #ffffff !important;">Or copy and paste this link into your browser:</span><br>
                 <a href="${inviteUrl}" style="color: #60a5fa !important; word-break: break-all; text-decoration: none !important;">${inviteUrl}</a>
               </p>
             </div>
