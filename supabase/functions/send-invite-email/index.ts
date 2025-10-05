@@ -26,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending invite email to ${email} with code ${inviteCode}`);
 
-    const inviteUrl = `https://learn.expansio.io/#/signup?invite=${inviteCode}`;
+    const inviteUrl = `https://learn.expansio.io/signup?invite=${inviteCode}`;
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
