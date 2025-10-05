@@ -26,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending invite email to ${email} with code ${inviteCode}`);
 
-    const inviteUrl = `${Deno.env.get("VITE_SUPABASE_URL")?.replace("supabase.co", "lovableproject.com")}/auth?invite=${inviteCode}`;
+    const inviteUrl = `https://learn.expansio.io/auth?invite=${inviteCode}`;
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
