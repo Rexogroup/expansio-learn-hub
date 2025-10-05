@@ -91,6 +91,51 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          company: string | null
+          created_at: string
+          created_by: string
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          invite_code: string
+          is_active: boolean
+          last_name: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          created_by: string
+          email: string
+          expires_at?: string
+          first_name: string
+          id?: string
+          invite_code: string
+          is_active?: boolean
+          last_name: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string
+          expires_at?: string
+          first_name?: string
+          id?: string
+          invite_code?: string
+          is_active?: boolean
+          last_name?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       lesson_progress: {
         Row: {
           completed: boolean | null
@@ -380,6 +425,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invite_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
