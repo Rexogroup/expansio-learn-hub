@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Eye, BookOpen } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { sanitizeHtml } from "@/lib/sanitize";
+import { optionalUrlSchema } from "@/lib/validation";
 
 interface Lesson {
   id: string;
@@ -90,6 +92,15 @@ export const LessonManager = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate video URL if provided
+    if (formData.video_url) {
+      const urlValidation = optionalUrlSchema.safeParse(formData.video_url);
+      if (!urlValidation.success) {
+        toast.error(urlValidation.error.errors[0].message);
+        return;
+      }
+    }
 
     try {
       if (editingLesson) {
@@ -456,7 +467,7 @@ export const LessonManager = () => {
                 <CardContent>
                   <div
                     className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none dark:prose-invert"
-                    dangerouslySetInnerHTML={{ __html: previewLesson.content }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewLesson.content) }}
                   />
                 </CardContent>
               </Card>

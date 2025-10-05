@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
@@ -30,6 +31,7 @@ import {
   Highlighter,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UrlInputDialog } from './url-input-dialog';
 
 interface RichTextEditorProps {
   content: string;
@@ -38,6 +40,9 @@ interface RichTextEditorProps {
 }
 
 export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEditorProps) => {
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -70,18 +75,12 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
     return null;
   }
 
-  const addImage = () => {
-    const url = window.prompt('Enter image URL:');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
+  const handleImageSubmit = (url: string) => {
+    editor?.chain().focus().setImage({ src: url }).run();
   };
 
-  const addLink = () => {
-    const url = window.prompt('Enter URL:');
-    if (url) {
-      editor.chain().focus().setLink({ href: url }).run();
-    }
+  const handleLinkSubmit = (url: string) => {
+    editor?.chain().focus().setLink({ href: url }).run();
   };
 
   return (
@@ -238,7 +237,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
           type="button"
           size="sm"
           variant="ghost"
-          onClick={addImage}
+          onClick={() => setImageDialogOpen(true)}
         >
           <ImageIcon className="w-4 h-4" />
         </Button>
@@ -246,7 +245,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
           type="button"
           size="sm"
           variant="ghost"
-          onClick={addLink}
+          onClick={() => setLinkDialogOpen(true)}
           className={cn(editor.isActive('link') && 'bg-accent')}
         >
           <LinkIcon className="w-4 h-4" />
@@ -272,6 +271,24 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
         </Button>
       </div>
       <EditorContent editor={editor} className="rich-text-content" />
+      
+      <UrlInputDialog
+        open={imageDialogOpen}
+        onOpenChange={setImageDialogOpen}
+        onSubmit={handleImageSubmit}
+        title="Insert Image"
+        description="Enter the URL of the image you want to insert. Only http and https URLs are allowed."
+        placeholder="https://example.com/image.jpg"
+      />
+      
+      <UrlInputDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        onSubmit={handleLinkSubmit}
+        title="Insert Link"
+        description="Enter the URL you want to link to. Only http and https URLs are allowed."
+        placeholder="https://example.com"
+      />
     </div>
   );
 };

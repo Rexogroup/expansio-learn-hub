@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { BookOpen } from "lucide-react";
+import { passwordSchema } from "@/lib/validation";
 
 export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
@@ -97,6 +98,14 @@ export default function Signup() {
     setIsLoading(true);
 
     try {
+      // Validate password
+      const passwordValidation = passwordSchema.safeParse(password);
+      if (!passwordValidation.success) {
+        toast.error(passwordValidation.error.errors[0].message);
+        setIsLoading(false);
+        return;
+      }
+
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: inviteData.email,
         password,

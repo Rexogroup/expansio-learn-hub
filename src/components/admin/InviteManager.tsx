@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Copy, Mail, Trash2, XCircle, Plus } from "lucide-react";
 import { format } from "date-fns";
+import { inviteSchema } from "@/lib/validation";
 
 interface Invite {
   id: string;
@@ -75,6 +76,14 @@ export function InviteManager() {
     setLoading(true);
 
     try {
+      // Validate input
+      const validation = inviteSchema.safeParse(formData);
+      if (!validation.success) {
+        toast.error(validation.error.errors[0].message);
+        setLoading(false);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
