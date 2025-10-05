@@ -54,6 +54,10 @@ const handler = async (req: Request): Promise<Response> => {
                 padding: 20px;
                 background: #0a1628;
               }
+              a, a:link, a:visited, a:hover, a:active {
+                color: #60a5fa !important;
+                text-decoration: none !important;
+              }
               .header {
                 background: linear-gradient(135deg, #0f2847 0%, #1a3a5c 100%);
                 padding: 40px 30px;
@@ -125,7 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
               }
             </style>
           </head>
-          <body>
+          <body link="#60a5fa" vlink="#60a5fa" alink="#60a5fa">
             <div class="header">
               <img src="https://learn.expansio.io/email-assets/Expansio_PNG_W_WP.png" alt="Expansio Learning" />
               <h1>Welcome to Expansio Learning</h1>
@@ -148,9 +152,9 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="margin: 0;"><strong>⏰ Important:</strong> This invite expires in 30 days.</p>
               </div>
               
-              <p style="font-size: 14px; color: #94a3b8; margin-top: 30px;">
+              <p style="font-size: 14px; color: #ffffff; margin-top: 30px;">
                 Or copy and paste this link into your browser:<br>
-                <a href="${inviteUrl}" style="color: #60a5fa; word-break: break-all;">${inviteUrl}</a>
+                <a href="${inviteUrl}" style="color: #60a5fa !important; word-break: break-all; text-decoration: none !important;">${inviteUrl}</a>
               </p>
             </div>
             
