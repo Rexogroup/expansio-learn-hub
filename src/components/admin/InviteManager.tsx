@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Copy, Mail, Trash2, XCircle, Plus } from "lucide-react";
+import { Copy, Mail, Trash2, XCircle, Plus, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { inviteSchema } from "@/lib/validation";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Invite {
   id: string;
@@ -23,6 +24,7 @@ interface Invite {
   expires_at: string;
   used_at: string | null;
   is_active: boolean;
+  account_verified: boolean;
 }
 
 export function InviteManager() {
@@ -174,9 +176,25 @@ export function InviteManager() {
     }
   };
 
+  const handleToggleAccountVerification = async (invite: Invite) => {
+    try {
+      const newValue = !invite.account_verified;
+      const { error } = await supabase
+        .from("invites")
+        .update({ account_verified: newValue })
+        .eq("id", invite.id);
+
+      if (error) throw error;
+      toast.success(newValue ? "Account marked as verified" : "Verification removed");
+      fetchInvites();
+    } catch (error) {
+      toast.error("Failed to update account verification");
+    }
+  };
+
   const getStatus = (invite: Invite) => {
     if (!invite.is_active) return { label: "Revoked", variant: "destructive" as const };
-    if (invite.used_at) return { label: "Used", variant: "default" as const };
+    if (invite.account_verified || invite.used_at) return { label: "Active Account", variant: "default" as const };
     if (new Date(invite.expires_at) < new Date()) return { label: "Expired", variant: "secondary" as const };
     return { label: "Pending", variant: "outline" as const };
   };
@@ -263,6 +281,7 @@ export function InviteManager() {
                 <TableHead>Email</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Account Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Used</TableHead>
                 <TableHead>Actions</TableHead>
@@ -280,6 +299,24 @@ export function InviteManager() {
                     <TableCell>{invite.company || "-"}</TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {invite.account_verified || invite.used_at ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span className="text-sm">Verified</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={false}
+                              onCheckedChange={() => handleToggleAccountVerification(invite)}
+                            />
+                            <span className="text-sm text-muted-foreground">Mark as created</span>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{format(new Date(invite.created_at), "MMM d, yyyy")}</TableCell>
                     <TableCell>

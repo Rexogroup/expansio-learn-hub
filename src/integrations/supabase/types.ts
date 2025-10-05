@@ -93,6 +93,7 @@ export type Database = {
       }
       invites: {
         Row: {
+          account_verified: boolean
           company: string | null
           created_at: string
           created_by: string
@@ -107,6 +108,7 @@ export type Database = {
           used_by: string | null
         }
         Insert: {
+          account_verified?: boolean
           company?: string | null
           created_at?: string
           created_by: string
@@ -121,6 +123,7 @@ export type Database = {
           used_by?: string | null
         }
         Update: {
+          account_verified?: boolean
           company?: string | null
           created_at?: string
           created_by?: string
