@@ -61,17 +61,27 @@ export default function OnboardingStep() {
 
       // Check if user can access this step
       if (currentStepNumber > 1) {
-        const { data: previousProgress } = await supabase
+        // Check if all steps are completed (allow free navigation)
+        const { data: allProgress } = await supabase
           .from("user_onboarding_progress")
           .select("completed")
-          .eq("user_id", user.id)
-          .eq("step_number", currentStepNumber - 1)
-          .single();
+          .eq("user_id", user.id);
+        
+        const allCompleted = allProgress?.length === 4 && allProgress.every(p => p.completed);
+        
+        if (!allCompleted) {
+          const { data: previousProgress } = await supabase
+            .from("user_onboarding_progress")
+            .select("completed")
+            .eq("user_id", user.id)
+            .eq("step_number", currentStepNumber - 1)
+            .single();
 
-        if (!previousProgress?.completed) {
-          toast.error("Please complete the previous step first");
-          navigate("/onboarding");
-          return;
+          if (!previousProgress?.completed) {
+            toast.error("Please complete the previous step first");
+            navigate("/onboarding");
+            return;
+          }
         }
       }
 
@@ -131,12 +141,12 @@ export default function OnboardingStep() {
       toast.success(`Step ${currentStepNumber} completed!`);
       setCompleted(true);
 
-      // Navigate to next step or completion
+      // Navigate to next step if not the last one
       setTimeout(() => {
         if (currentStepNumber < 4) {
           navigate(`/onboarding/step/${currentStepNumber + 1}`);
         } else {
-          navigate("/courses");
+          navigate("/onboarding");
         }
       }, 1000);
     } catch (error: any) {

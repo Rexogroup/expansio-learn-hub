@@ -67,12 +67,6 @@ export default function Onboarding() {
         (progressData?.length === 4 && progressData.every(p => p.completed) ? 5 : 1);
       
       setCurrentStep(currentStepNumber);
-
-      // If all steps completed, redirect to courses
-      if (progressData?.length === 4 && progressData.every(p => p.completed)) {
-        toast.success("Onboarding complete! Welcome to Expansio Learning.");
-        navigate("/courses");
-      }
     } catch (error: any) {
       console.error("Error fetching onboarding data:", error);
       toast.error("Failed to load onboarding data");
@@ -90,6 +84,10 @@ export default function Onboarding() {
   };
 
   const canAccessStep = (stepNumber: number) => {
+    // Allow access to all steps if onboarding is complete
+    const allCompleted = progress.length === 4 && progress.every(p => p.completed);
+    if (allCompleted) return true;
+    
     if (stepNumber === 1) return true;
     const previousProgress = progress.find(p => p.step_number === stepNumber - 1);
     return previousProgress?.completed || false;
