@@ -4,6 +4,7 @@ import { Copy, Check, Save } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import ReactMarkdown from "react-markdown";
 import {
   Dialog,
   DialogContent,
@@ -80,8 +81,8 @@ const ChatMessage = ({ message, conversationId }: ChatMessageProps) => {
         <div className="font-semibold text-sm">
           {isAssistant ? "AI Assistant" : "You"}
         </div>
-        <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap">
-          {message.content}
+        <div className="prose prose-sm max-w-none dark:prose-invert">
+          <ReactMarkdown>{message.content}</ReactMarkdown>
         </div>
         
         {isAssistant && message.content && (
