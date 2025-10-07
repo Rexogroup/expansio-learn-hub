@@ -28,6 +28,9 @@ export const Navbar = () => {
     if (path === "/onboarding") {
       return location.pathname === "/onboarding" || location.pathname.startsWith("/onboarding/");
     }
+    if (path === "/script-builder") {
+      return location.pathname === "/script-builder";
+    }
     return location.pathname === path;
   };
 
@@ -103,6 +106,9 @@ export const Navbar = () => {
               </Link>
               <Link to="/sales-vault" aria-current={isActiveRoute("/sales-vault") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/sales-vault") ? "default" : "ghost"}>Sales Vault</Button>
+              </Link>
+              <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
               </Link>
               {isAdmin && (
                 <Link to="/admin" aria-current={isActiveRoute("/admin") ? "page" : undefined}>

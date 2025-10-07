@@ -2,3 +2,6 @@ project_id = "teelukblrpynzcdabtuu"
 
 [functions.send-invite-email]
 verify_jwt = false
+
+[functions.generate-lead-magnet]
+verify_jwt = true
