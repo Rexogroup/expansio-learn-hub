@@ -9,6 +9,7 @@ import { LessonManager } from "@/components/admin/LessonManager";
 import { BrandManager } from "@/components/admin/BrandManager";
 import { SalesCallManager } from "@/components/admin/SalesCallManager";
 import { InviteManager } from "@/components/admin/InviteManager";
+import OnboardingManager from "@/components/admin/OnboardingManager";
 import { toast } from "sonner";
 
 export default function Admin() {
@@ -80,13 +81,14 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="courses" className="w-full">
-          <TabsList className="grid w-full max-w-4xl grid-cols-6">
+          <TabsList className="grid w-full max-w-5xl grid-cols-7">
             <TabsTrigger value="courses">Courses</TabsTrigger>
             <TabsTrigger value="sections">Sections</TabsTrigger>
             <TabsTrigger value="lessons">Lessons</TabsTrigger>
             <TabsTrigger value="brands">Brands</TabsTrigger>
             <TabsTrigger value="sales-calls">Sales Calls</TabsTrigger>
             <TabsTrigger value="invites">Invites</TabsTrigger>
+            <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           </TabsList>
           <TabsContent value="courses" className="mt-6">
             <CourseManager />
@@ -105,6 +107,9 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="invites" className="mt-6">
             <InviteManager />
+          </TabsContent>
+          <TabsContent value="onboarding" className="mt-6">
+            <OnboardingManager />
           </TabsContent>
         </Tabs>
       </div>

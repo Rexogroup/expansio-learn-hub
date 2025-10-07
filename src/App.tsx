@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
+import Onboarding from "./pages/Onboarding";
+import OnboardingStep from "./pages/OnboardingStep";
 import Courses from "./pages/Courses";
 import CourseView from "./pages/CourseView";
 import SalesVault from "./pages/SalesVault";
@@ -34,6 +36,8 @@ const App = () => (
             <Route path="/" element={<Auth />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/onboarding" element={<AuthenticatedLayout><Onboarding /></AuthenticatedLayout>} />
+            <Route path="/onboarding/step/:stepNumber" element={<AuthenticatedLayout><OnboardingStep /></AuthenticatedLayout>} />
             <Route path="/courses" element={<AuthenticatedLayout><Courses /></AuthenticatedLayout>} />
             <Route path="/course/:id" element={<AuthenticatedLayout><CourseView /></AuthenticatedLayout>} />
             <Route path="/sales-vault" element={<AuthenticatedLayout><SalesVault /></AuthenticatedLayout>} />

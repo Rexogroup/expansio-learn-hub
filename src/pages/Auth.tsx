@@ -24,18 +24,35 @@ export default function Auth() {
     // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/courses");
+        // Check onboarding status
+        checkOnboardingAndRedirect(session.user.id);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        navigate("/courses");
+        // Check onboarding status
+        checkOnboardingAndRedirect(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const checkOnboardingAndRedirect = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_onboarding_progress")
+      .select("completed")
+      .eq("user_id", userId);
+    
+    const allCompleted = data?.length === 4 && data.every(p => p.completed);
+    
+    if (allCompleted) {
+      navigate("/courses");
+    } else {
+      navigate("/onboarding");
+    }
+  };
 
   useEffect(() => {
     // Check for invite code in URL params

@@ -30,13 +30,13 @@ export default function Signup() {
     // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/courses");
+        navigate("/onboarding");
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        navigate("/courses");
+        navigate("/onboarding");
       }
     });
 
@@ -133,7 +133,7 @@ export default function Signup() {
           console.error("Error marking invite as used:", updateError);
         }
 
-        toast.success("Account created! Redirecting to courses...");
+        toast.success("Account created! Complete your onboarding to get started...");
       }
     } catch (error: any) {
       toast.error(error.message || "An error occurred during sign up");

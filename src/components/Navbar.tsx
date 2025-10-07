@@ -14,6 +14,7 @@ import {
 export const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,6 +25,9 @@ export const Navbar = () => {
     if (path === "/sales-vault") {
       return location.pathname === "/sales-vault" || location.pathname.startsWith("/sales-call/");
     }
+    if (path === "/onboarding") {
+      return location.pathname === "/onboarding" || location.pathname.startsWith("/onboarding/");
+    }
     return location.pathname === path;
   };
 
@@ -32,6 +36,7 @@ export const Navbar = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        checkOnboardingStatus(session.user.id);
       }
     });
 
@@ -39,8 +44,10 @@ export const Navbar = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        checkOnboardingStatus(session.user.id);
       } else {
         setIsAdmin(false);
+        setOnboardingComplete(true);
       }
     });
 
@@ -56,6 +63,16 @@ export const Navbar = () => {
       .maybeSingle();
     
     setIsAdmin(!!data);
+  };
+
+  const checkOnboardingStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_onboarding_progress")
+      .select("completed")
+      .eq("user_id", userId);
+    
+    const allCompleted = data?.length === 4 && data.every(p => p.completed);
+    setOnboardingComplete(allCompleted);
   };
 
   const handleSignOut = async () => {
@@ -76,6 +93,13 @@ export const Navbar = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
+              {!onboardingComplete && (
+                <Link to="/onboarding" aria-current={isActiveRoute("/onboarding") ? "page" : undefined}>
+                  <Button variant={isActiveRoute("/onboarding") ? "default" : "ghost"}>
+                    Onboarding
+                  </Button>
+                </Link>
+              )}
               <Link to="/courses" aria-current={isActiveRoute("/courses") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/courses") ? "default" : "ghost"}>Courses</Button>
               </Link>
