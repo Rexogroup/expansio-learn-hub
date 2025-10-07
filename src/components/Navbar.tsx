@@ -93,13 +93,11 @@ export const Navbar = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              {!onboardingComplete && (
-                <Link to="/onboarding" aria-current={isActiveRoute("/onboarding") ? "page" : undefined}>
-                  <Button variant={isActiveRoute("/onboarding") ? "default" : "ghost"}>
-                    Onboarding
-                  </Button>
-                </Link>
-              )}
+              <Link to="/onboarding" aria-current={isActiveRoute("/onboarding") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/onboarding") ? "default" : "ghost"}>
+                  Onboarding
+                </Button>
+              </Link>
               <Link to="/courses" aria-current={isActiveRoute("/courses") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/courses") ? "default" : "ghost"}>Courses</Button>
               </Link>
