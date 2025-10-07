@@ -3,8 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink } from "lucide-react";
@@ -20,12 +18,6 @@ interface OnboardingStep {
   template_url?: string;
 }
 
-interface FormData {
-  fullName: string;
-  company: string;
-  phone: string;
-  email: string;
-}
 
 export default function OnboardingStep() {
   const { stepNumber } = useParams<{ stepNumber: string }>();
@@ -34,12 +26,6 @@ export default function OnboardingStep() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [videoWatched, setVideoWatched] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
-    fullName: "",
-    company: "",
-    phone: "",
-    email: ""
-  });
   const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
 
@@ -112,14 +98,6 @@ export default function OnboardingStep() {
         if (currentStepNumber === 2) {
           setVideoWatched(true);
         }
-        if (progressData.notes && currentStepNumber === 3) {
-          try {
-            const savedData = JSON.parse(progressData.notes);
-            setFormData(savedData);
-          } catch (e) {
-            console.error("Failed to parse saved form data");
-          }
-        }
       }
     } catch (error: any) {
       console.error("Error fetching step data:", error);
@@ -136,17 +114,6 @@ export default function OnboardingStep() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      let notes = null;
-      if (currentStepNumber === 3) {
-        // Validate form data for step 3
-        if (!formData.fullName || !formData.email) {
-          toast.error("Please fill in all required fields");
-          setSaving(false);
-          return;
-        }
-        notes = JSON.stringify(formData);
-      }
-
       // Upsert progress
       const { error } = await supabase
         .from("user_onboarding_progress")
@@ -154,8 +121,7 @@ export default function OnboardingStep() {
           user_id: user.id,
           step_number: currentStepNumber,
           completed: true,
-          completed_at: new Date().toISOString(),
-          notes
+          completed_at: new Date().toISOString()
         }, {
           onConflict: "user_id,step_number"
         });
@@ -314,74 +280,48 @@ export default function OnboardingStep() {
               </div>
             )}
 
-            {/* Step 3: Form */}
+            {/* Step 3: Template */}
             {step.step_number === 3 && (
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg mb-4">
+                <div className="p-4 bg-muted rounded-lg">
                   <h3 className="font-semibold mb-2">Instructions:</h3>
-                  <p className="text-sm">
-                    Fill in your personal information below. This data will be used to customize
-                    the appointment setting templates for your campaigns.
-                  </p>
+                  <ol className="list-decimal list-inside space-y-2 text-sm">
+                    <li>Click the button below to open the appointment setting template</li>
+                    <li>Make a copy of the template to your Google Drive</li>
+                    <li>Fill in your personal information to customize the templates</li>
+                    <li>Return here and mark the step as complete</li>
+                  </ol>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="fullName">Full Name *</Label>
-                    <Input
-                      id="fullName"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      placeholder="John Doe"
-                      disabled={completed}
-                      required
-                    />
-                  </div>
+                {step.template_url && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(step.template_url, "_blank")}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Appointment Setting Template
+                  </Button>
+                )}
 
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="john@example.com"
-                      disabled={completed}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="company">Company</Label>
-                    <Input
-                      id="company"
-                      value={formData.company}
-                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      placeholder="Company Name"
-                      disabled={completed}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="+1 (555) 123-4567"
-                      disabled={completed}
-                    />
-                  </div>
+                <div className="flex items-start space-x-2 p-4 border rounded-lg">
+                  <Checkbox
+                    id="step3-complete"
+                    checked={completed}
+                    onCheckedChange={(checked) => {
+                      if (checked && !completed) {
+                        markStepComplete();
+                      }
+                    }}
+                    disabled={completed || saving}
+                  />
+                  <label
+                    htmlFor="step3-complete"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    I have customized the appointment setting templates
+                  </label>
                 </div>
-
-                <Button
-                  onClick={markStepComplete}
-                  disabled={completed || saving}
-                  className="w-full"
-                >
-                  {saving ? "Saving..." : completed ? "Completed" : "Submit & Continue"}
-                  {!completed && <ArrowRight className="w-4 h-4 ml-2" />}
-                </Button>
               </div>
             )}
 
