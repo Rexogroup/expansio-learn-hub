@@ -293,16 +293,6 @@ export default function OnboardingStep() {
             {/* Step 3: Template */}
             {step.step_number === 3 && (
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="font-semibold mb-2">Instructions:</h3>
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>Click the button below to open the appointment setting template</li>
-                    <li>Make a copy of the template to your Google Drive</li>
-                    <li>Fill in your personal information to customize the templates</li>
-                    <li>Return here and mark the step as complete</li>
-                  </ol>
-                </div>
-
                 {step.template_url && (
                   <Button
                     variant="outline"
@@ -329,7 +319,7 @@ export default function OnboardingStep() {
                     htmlFor="step3-complete"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                   >
-                    I have customized the appointment setting templates
+                    I have reviewed the appointment setting templates
                   </label>
                 </div>
               </div>
