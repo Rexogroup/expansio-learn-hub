@@ -22,6 +22,20 @@ const ScriptBuilder = () => {
     if (!session) {
       toast.error("Please log in to access Script Builder");
       navigate("/auth");
+      return;
+    }
+
+    // Check if user is admin
+    const { data: roles, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "admin")
+      .single();
+
+    if (error || !roles) {
+      toast.error("Access denied. Admin privileges required.");
+      navigate("/courses");
     }
   };
 
