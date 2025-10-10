@@ -122,9 +122,11 @@ export const Navbar = () => {
               <Link to="/sales-vault" aria-current={isActiveRoute("/sales-vault") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/sales-vault") ? "default" : "ghost"}>Sales Vault</Button>
               </Link>
-              <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
-              </Link>
+              {isAdmin && (
+                <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
+                  <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
+                </Link>
+              )}
               {(isAdmin || isEditor) && (
                 <Link to="/project-management" aria-current={isActiveRoute("/project-management") ? "page" : undefined}>
                   <Button variant={isActiveRoute("/project-management") ? "default" : "ghost"}>
