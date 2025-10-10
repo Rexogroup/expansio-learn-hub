@@ -42,7 +42,7 @@ export function ProjectDetailsModal({
     status: "onboarding",
     priority: "medium",
     assigned_to: "",
-    target_completion_date: "",
+    target_date: "",
     notes: "",
   });
 
@@ -84,8 +84,8 @@ export function ProjectDetailsModal({
         status: project.status,
         priority: project.priority,
         assigned_to: project.assigned_to || "",
-        target_completion_date: project.target_completion_date
-          ? new Date(project.target_completion_date).toISOString().split("T")[0]
+        target_date: project.target_date
+          ? new Date(project.target_date).toISOString().split("T")[0]
           : "",
         notes: project.notes || "",
       });
@@ -260,13 +260,13 @@ export function ProjectDetailsModal({
                     <Input
                       id="target_date"
                       type="date"
-                      value={formData.target_completion_date}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          target_completion_date: e.target.value,
-                        })
-                      }
+                  value={formData.target_date}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      target_date: e.target.value,
+                    })
+                  }
                     />
                   </div>
                 </div>
@@ -408,11 +408,11 @@ export function ProjectDetailsModal({
                 <Input
                   id="target_date"
                   type="date"
-                  value={formData.target_completion_date}
+                  value={formData.target_date}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      target_completion_date: e.target.value,
+                      target_date: e.target.value,
                     })
                   }
                 />
