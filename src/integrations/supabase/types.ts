@@ -47,6 +47,54 @@ export type Database = {
         }
         Relationships: []
       }
+      client_projects: {
+        Row: {
+          assigned_to: string | null
+          client_name: string
+          company: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          id: string
+          notes: string | null
+          phone: string | null
+          priority: Database["public"]["Enums"]["project_priority"]
+          status: Database["public"]["Enums"]["project_status"]
+          target_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_name: string
+          company?: string | null
+          created_at?: string
+          created_by: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          priority?: Database["public"]["Enums"]["project_priority"]
+          status?: Database["public"]["Enums"]["project_status"]
+          target_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_name?: string
+          company?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          priority?: Database["public"]["Enums"]["project_priority"]
+          status?: Database["public"]["Enums"]["project_status"]
+          target_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           created_at: string | null
@@ -338,6 +386,135 @@ export type Database = {
         }
         Relationships: []
       }
+      project_activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_activity_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_email_log: {
+        Row: {
+          body: string
+          id: string
+          project_id: string
+          recipient: string
+          sent_at: string
+          sent_by: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          id?: string
+          project_id: string
+          recipient: string
+          sent_at?: string
+          sent_by: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          id?: string
+          project_id?: string
+          recipient?: string
+          sent_at?: string
+          sent_by?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_email_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          project_id: string
+          status: Database["public"]["Enums"]["task_status"]
+          task_type: Database["public"]["Enums"]["task_type"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          project_id: string
+          status?: Database["public"]["Enums"]["task_status"]
+          task_type?: Database["public"]["Enums"]["task_type"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          project_id?: string
+          status?: Database["public"]["Enums"]["task_status"]
+          task_type?: Database["public"]["Enums"]["task_type"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_call_progress: {
         Row: {
           call_id: string
@@ -628,7 +805,25 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "editor"
+      project_priority: "low" | "medium" | "high" | "urgent"
+      project_status:
+        | "onboarding"
+        | "tech_setup"
+        | "scriptwriting"
+        | "list_building"
+        | "waiting_warmup"
+        | "campaign_live"
+        | "scaling"
+        | "needs_iterations"
+      task_status: "pending" | "in_progress" | "completed" | "blocked"
+      task_type:
+        | "setup"
+        | "review"
+        | "content"
+        | "technical"
+        | "communication"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -756,7 +951,27 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "editor"],
+      project_priority: ["low", "medium", "high", "urgent"],
+      project_status: [
+        "onboarding",
+        "tech_setup",
+        "scriptwriting",
+        "list_building",
+        "waiting_warmup",
+        "campaign_live",
+        "scaling",
+        "needs_iterations",
+      ],
+      task_status: ["pending", "in_progress", "completed", "blocked"],
+      task_type: [
+        "setup",
+        "review",
+        "content",
+        "technical",
+        "communication",
+        "other",
+      ],
     },
   },
 } as const
