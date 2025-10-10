@@ -115,7 +115,7 @@ export function ProjectDetailsModal({
       } else {
         const { error } = await supabase.from("client_projects" as any).insert({
           ...data,
-          start_date: new Date().toISOString(),
+          created_by: session.session.user.id,
         });
 
         if (error) throw error;
