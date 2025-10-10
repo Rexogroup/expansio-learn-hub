@@ -211,10 +211,13 @@ export function ProjectDetailsModal({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="onboarding">Onboarding</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="on_hold">On Hold</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="tech_setup">Tech Setup</SelectItem>
+                        <SelectItem value="scriptwriting">Scriptwriting</SelectItem>
+                        <SelectItem value="list_building">List Building</SelectItem>
+                        <SelectItem value="waiting_warmup">Waiting Warm up</SelectItem>
+                        <SelectItem value="campaign_live">Campaign Live</SelectItem>
+                        <SelectItem value="scaling">Scaling</SelectItem>
+                        <SelectItem value="needs_iterations">Needs Iterations</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -359,10 +362,13 @@ export function ProjectDetailsModal({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="onboarding">Onboarding</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="on_hold">On Hold</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="tech_setup">Tech Setup</SelectItem>
+                    <SelectItem value="scriptwriting">Scriptwriting</SelectItem>
+                    <SelectItem value="list_building">List Building</SelectItem>
+                    <SelectItem value="waiting_warmup">Waiting Warm up</SelectItem>
+                    <SelectItem value="campaign_live">Campaign Live</SelectItem>
+                    <SelectItem value="scaling">Scaling</SelectItem>
+                    <SelectItem value="needs_iterations">Needs Iterations</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

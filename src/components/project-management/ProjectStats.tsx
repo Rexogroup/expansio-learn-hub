@@ -9,7 +9,7 @@ export function ProjectStats() {
     queryFn: async () => {
       const { data: projects } = await supabase
         .from("client_projects" as any)
-        .select("status");
+        .select("status, updated_at");
 
       const { data: tasks } = await supabase
         .from("project_tasks" as any)
@@ -17,7 +17,7 @@ export function ProjectStats() {
 
       const total = projects?.length || 0;
       const active = projects?.filter((p: any) => 
-        p.status === 'onboarding' || p.status === 'in_progress'
+        ['onboarding', 'tech_setup', 'scriptwriting', 'list_building', 'waiting_warmup', 'campaign_live'].includes(p.status)
       ).length || 0;
 
       const now = new Date();
@@ -28,8 +28,12 @@ export function ProjectStats() {
       ).length || 0;
 
       const completedThisMonth = projects?.filter((p: any) => {
-        if (p.status !== 'completed') return false;
-        return true;
+        if (p.status !== 'scaling') return false;
+        const updatedDate = p.updated_at ? new Date(p.updated_at) : null;
+        if (!updatedDate) return false;
+        const now = new Date();
+        return updatedDate.getMonth() === now.getMonth() && 
+               updatedDate.getFullYear() === now.getFullYear();
       }).length || 0;
 
       return { total, active, overdue, completedThisMonth };
@@ -56,7 +60,7 @@ export function ProjectStats() {
       color: "text-red-500",
     },
     {
-      title: "Completed This Month",
+      title: "Scaled This Month",
       value: stats?.completedThisMonth || 0,
       icon: CheckCircle2,
       color: "text-green-500",

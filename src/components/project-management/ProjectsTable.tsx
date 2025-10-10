@@ -18,10 +18,13 @@ interface ProjectsTableProps {
 
 const statusColors = {
   onboarding: "bg-blue-500",
-  in_progress: "bg-yellow-500",
-  on_hold: "bg-gray-500",
-  completed: "bg-green-500",
-  cancelled: "bg-red-500",
+  tech_setup: "bg-indigo-500",
+  scriptwriting: "bg-purple-500",
+  list_building: "bg-pink-500",
+  waiting_warmup: "bg-orange-500",
+  campaign_live: "bg-green-500",
+  scaling: "bg-emerald-500",
+  needs_iterations: "bg-yellow-500",
 };
 
 const priorityColors = {
@@ -104,7 +107,7 @@ export function ProjectsTable({ onProjectClick }: ProjectsTableProps) {
               <TableCell>{project.company || "-"}</TableCell>
               <TableCell>
                 <Badge className={statusColors[project.status as keyof typeof statusColors]}>
-                  {project.status.replace("_", " ")}
+                  {project.status.replace(/_/g, " ")}
                 </Badge>
               </TableCell>
               <TableCell>
