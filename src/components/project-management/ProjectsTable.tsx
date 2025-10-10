@@ -115,8 +115,8 @@ export function ProjectsTable({ onProjectClick }: ProjectsTableProps) {
                 </div>
               </TableCell>
               <TableCell>
-                {project.target_completion_date
-                  ? format(new Date(project.target_completion_date), "MMM d, yyyy")
+                {project.target_date
+                  ? format(new Date(project.target_date), "MMM d, yyyy")
                   : "-"}
               </TableCell>
             </TableRow>
