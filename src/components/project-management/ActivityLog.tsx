@@ -12,13 +12,13 @@ export function ActivityLog({ projectId }: ActivityLogProps) {
     queryKey: ["project-activity", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("project_activity_log")
+        .from("project_activity_log" as any)
         .select("*, user:profiles!project_activity_log_user_id_fkey(full_name)")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -27,7 +27,7 @@ export function ActivityLog({ projectId }: ActivityLogProps) {
       <h3 className="font-semibold">Activity Log</h3>
       <ScrollArea className="h-[400px] pr-4">
         <div className="space-y-4">
-          {activities?.map((activity) => (
+          {activities?.map((activity: any) => (
             <div key={activity.id} className="flex gap-3">
               <div className="flex-shrink-0 w-2 h-2 mt-2 rounded-full bg-primary" />
               <div className="flex-1">

@@ -77,7 +77,7 @@ export const Navbar = () => {
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
-      .eq("role", "editor")
+      .eq("role", "editor" as any)
       .maybeSingle();
     
     setIsEditor(!!data);

@@ -8,26 +8,26 @@ export function ProjectStats() {
     queryKey: ["project-stats"],
     queryFn: async () => {
       const { data: projects } = await supabase
-        .from("client_projects")
+        .from("client_projects" as any)
         .select("status");
 
       const { data: tasks } = await supabase
-        .from("project_tasks")
+        .from("project_tasks" as any)
         .select("status, due_date");
 
       const total = projects?.length || 0;
-      const active = projects?.filter(p => 
+      const active = projects?.filter((p: any) => 
         p.status === 'onboarding' || p.status === 'in_progress'
       ).length || 0;
 
       const now = new Date();
-      const overdue = tasks?.filter(t => 
+      const overdue = tasks?.filter((t: any) => 
         t.status !== 'completed' && 
         t.due_date && 
         new Date(t.due_date) < now
       ).length || 0;
 
-      const completedThisMonth = projects?.filter(p => {
+      const completedThisMonth = projects?.filter((p: any) => {
         if (p.status !== 'completed') return false;
         return true;
       }).length || 0;

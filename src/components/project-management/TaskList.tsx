@@ -25,20 +25,20 @@ export function TaskList({ projectId }: TaskListProps) {
     queryKey: ["project-tasks", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("project_tasks")
+        .from("project_tasks" as any)
         .select("*, assigned_to_profile:profiles!project_tasks_assigned_to_fkey(full_name)")
         .eq("project_id", projectId)
         .order("order_index");
 
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ taskId, completed }: { taskId: string; completed: boolean }) => {
       const { error } = await supabase
-        .from("project_tasks")
+        .from("project_tasks" as any)
         .update({
           status: completed ? "completed" : "pending",
           completed_at: completed ? new Date().toISOString() : null,

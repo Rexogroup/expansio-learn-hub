@@ -51,13 +51,13 @@ export function ProjectDetailsModal({
     queryFn: async () => {
       if (!projectId) return null;
       const { data, error } = await supabase
-        .from("client_projects")
+        .from("client_projects" as any)
         .select("*")
         .eq("id", projectId)
         .single();
 
       if (error) throw error;
-      return data;
+      return data as any;
     },
     enabled: !!projectId,
   });
@@ -66,12 +66,12 @@ export function ProjectDetailsModal({
     queryKey: ["team-members"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_roles")
+        .from("user_roles" as any)
         .select("user_id, profiles(id, full_name)")
-        .in("role", ["admin", "editor"]);
+        .in("role", ["admin", "editor"] as any);
 
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -99,21 +99,21 @@ export function ProjectDetailsModal({
 
       if (projectId) {
         const { error } = await supabase
-          .from("client_projects")
+          .from("client_projects" as any)
           .update(data)
           .eq("id", projectId);
 
         if (error) throw error;
 
         // Log activity
-        await supabase.from("project_activity_log").insert({
+        await supabase.from("project_activity_log" as any).insert({
           project_id: projectId,
           user_id: session.session.user.id,
           action_type: "project_updated",
           description: "Project details updated",
         });
       } else {
-        const { error } = await supabase.from("client_projects").insert({
+        const { error } = await supabase.from("client_projects" as any).insert({
           ...data,
           start_date: new Date().toISOString(),
         });

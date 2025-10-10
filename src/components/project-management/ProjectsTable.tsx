@@ -36,7 +36,7 @@ export function ProjectsTable({ onProjectClick }: ProjectsTableProps) {
     queryKey: ["client-projects"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("client_projects")
+        .from("client_projects" as any)
         .select(`
           *,
           assigned_to_profile:profiles!client_projects_assigned_to_fkey(full_name),
@@ -45,7 +45,7 @@ export function ProjectsTable({ onProjectClick }: ProjectsTableProps) {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
