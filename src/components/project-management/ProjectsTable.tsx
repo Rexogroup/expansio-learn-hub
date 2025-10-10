@@ -39,7 +39,7 @@ export function ProjectsTable({ onProjectClick }: ProjectsTableProps) {
         .from("client_projects" as any)
         .select(`
           *,
-          assigned_to_profile:profiles!client_projects_assigned_to_fkey(full_name),
+          assigned_to_profile:profiles(full_name),
           tasks:project_tasks(status)
         `)
         .order("created_at", { ascending: false });
