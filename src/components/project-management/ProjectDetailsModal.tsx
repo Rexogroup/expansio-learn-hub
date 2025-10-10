@@ -67,7 +67,7 @@ export function ProjectDetailsModal({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_roles" as any)
-        .select("user_id, profiles(id, full_name)")
+        .select("user_id, profiles!user_roles_user_id_fkey(id, full_name)")
         .in("role", ["admin", "editor"] as any);
 
       if (error) throw error;
@@ -97,10 +97,15 @@ export function ProjectDetailsModal({
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user) throw new Error("Not authenticated");
 
+      const payload = {
+        ...data,
+        assigned_to: data.assigned_to === "" ? null : data.assigned_to,
+      };
+
       if (projectId) {
         const { error } = await supabase
           .from("client_projects" as any)
-          .update(data)
+          .update(payload)
           .eq("id", projectId);
 
         if (error) throw error;
@@ -114,7 +119,7 @@ export function ProjectDetailsModal({
         });
       } else {
         const { error } = await supabase.from("client_projects" as any).insert({
-          ...data,
+          ...payload,
           created_by: session.session.user.id,
         });
 
