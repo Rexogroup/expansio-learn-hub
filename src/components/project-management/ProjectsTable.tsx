@@ -35,7 +35,8 @@ export function ProjectsTable({ onProjectClick }: ProjectsTableProps) {
   const { data: projects, isLoading } = useQuery({
     queryKey: ["client-projects"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Try with profile join first
+      let { data, error } = await supabase
         .from("client_projects" as any)
         .select(`
           *,
@@ -44,7 +45,20 @@ export function ProjectsTable({ onProjectClick }: ProjectsTableProps) {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      // Fallback: if profile join fails, query without it
+      if (error) {
+        const fallback = await supabase
+          .from("client_projects" as any)
+          .select(`
+            *,
+            tasks:project_tasks(status)
+          `)
+          .order("created_at", { ascending: false });
+        
+        if (fallback.error) throw fallback.error;
+        return fallback.data as any[];
+      }
+
       return data as any[];
     },
   });
