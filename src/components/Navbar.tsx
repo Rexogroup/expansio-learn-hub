@@ -14,6 +14,7 @@ import {
 export const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isEditor, setIsEditor] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,6 +40,7 @@ export const Navbar = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        checkEditorStatus(session.user.id);
         checkOnboardingStatus(session.user.id);
       }
     });
@@ -47,9 +49,11 @@ export const Navbar = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        checkEditorStatus(session.user.id);
         checkOnboardingStatus(session.user.id);
       } else {
         setIsAdmin(false);
+        setIsEditor(false);
         setOnboardingComplete(true);
       }
     });
@@ -66,6 +70,17 @@ export const Navbar = () => {
       .maybeSingle();
     
     setIsAdmin(!!data);
+  };
+
+  const checkEditorStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "editor")
+      .maybeSingle();
+    
+    setIsEditor(!!data);
   };
 
   const checkOnboardingStatus = async (userId: string) => {
@@ -110,6 +125,13 @@ export const Navbar = () => {
               <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
               </Link>
+              {(isAdmin || isEditor) && (
+                <Link to="/project-management" aria-current={isActiveRoute("/project-management") ? "page" : undefined}>
+                  <Button variant={isActiveRoute("/project-management") ? "default" : "ghost"}>
+                    Projects
+                  </Button>
+                </Link>
+              )}
               {isAdmin && (
                 <Link to="/admin" aria-current={isActiveRoute("/admin") ? "page" : undefined}>
                   <Button variant={isActiveRoute("/admin") ? "default" : "ghost"}>
