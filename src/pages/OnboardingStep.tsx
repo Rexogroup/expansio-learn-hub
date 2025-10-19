@@ -36,6 +36,15 @@ export default function OnboardingStep() {
   }, [stepNumber]);
 
   useEffect(() => {
+    // For Loom videos (iframe), enable checkbox after 5 seconds of viewing
+    if (step?.video_url && step.video_url.includes('loom.com')) {
+      const timer = setTimeout(() => {
+        setVideoWatched(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+    
+    // For direct video files, track 90% watch progress
     if (videoRef.current && step?.video_url) {
       const video = videoRef.current;
       
@@ -252,16 +261,25 @@ export default function OnboardingStep() {
             {/* Step 2: Video */}
             {step.step_number === 2 && (
               <div className="space-y-4">
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                   {step.video_url ? (
-                    <video
-                      ref={videoRef}
-                      controls
-                      className="w-full h-full rounded-lg"
-                      src={step.video_url}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
+                    step.video_url.includes('loom.com') ? (
+                      <iframe
+                        src={step.video_url.replace('/share/', '/embed/')}
+                        className="w-full h-full rounded-lg"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        ref={videoRef}
+                        controls
+                        className="w-full h-full rounded-lg"
+                        src={step.video_url}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    )
                   ) : (
                     <p className="text-muted-foreground">Video will be available soon</p>
                   )}
@@ -284,6 +302,8 @@ export default function OnboardingStep() {
                   >
                     {videoWatched || !step.video_url
                       ? "I have watched the video"
+                      : step.video_url?.includes('loom.com')
+                      ? "Watch the video for a few seconds to continue"
                       : "Watch at least 90% of the video to continue"}
                   </label>
                 </div>
