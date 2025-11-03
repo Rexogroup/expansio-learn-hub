@@ -16,6 +16,7 @@ import SalesCallView from "./pages/SalesCallView";
 import Admin from "./pages/Admin";
 import ScriptBuilder from "./pages/ScriptBuilder";
 import ProjectManagement from "./pages/ProjectManagement";
+import Tools from "./pages/Tools";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/sales-call/:id" element={<AuthenticatedLayout><SalesCallView /></AuthenticatedLayout>} />
             <Route path="/script-builder" element={<AuthenticatedLayout><ScriptBuilder /></AuthenticatedLayout>} />
             <Route path="/project-management" element={<AuthenticatedLayout><ProjectManagement /></AuthenticatedLayout>} />
+            <Route path="/tools" element={<AuthenticatedLayout><Tools /></AuthenticatedLayout>} />
             <Route path="/admin" element={<AuthenticatedLayout><Admin /></AuthenticatedLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

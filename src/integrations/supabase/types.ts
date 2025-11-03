@@ -764,6 +764,92 @@ export type Database = {
           },
         ]
       }
+      tool_categories: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tools: {
+        Row: {
+          affiliate_link: string
+          category_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          features: Json | null
+          id: string
+          is_published: boolean | null
+          name: string
+          order_index: number
+          price: string | null
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          affiliate_link: string
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_published?: boolean | null
+          name: string
+          order_index?: number
+          price?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affiliate_link?: string
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_published?: boolean | null
+          name?: string
+          order_index?: number
+          price?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tools_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tool_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_onboarding_progress: {
         Row: {
           completed: boolean
@@ -831,10 +917,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_invite_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_invite_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
