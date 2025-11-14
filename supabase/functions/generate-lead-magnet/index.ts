@@ -1,10 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const requestSchema = z.object({
+  conversationId: z.string().uuid({ message: "Invalid conversation ID format" }),
+  message: z.string()
+    .trim()
+    .min(1, { message: "Message cannot be empty" })
+    .max(5000, { message: "Message must be less than 5000 characters" })
+    .refine(
+      (msg) => !msg.includes('<script>') && !msg.includes('javascript:'),
+      { message: "Message contains potentially malicious content" }
+    )
+});
 
 const SYSTEM_PROMPT = `You are an elite consultant and direct response copywriter specializing in creating irresistible lead magnets for B2B agencies. You have mastered the art of transforming agency services into compelling "free work" offers that prospects cannot refuse.
 
@@ -157,7 +171,25 @@ serve(async (req) => {
       });
     }
 
-    const { conversationId, message } = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate input
+    const validationResult = requestSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      console.error('Input validation failed:', validationResult.error.issues);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input', 
+          details: validationResult.error.issues[0].message 
+        }), 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { conversationId, message } = validationResult.data;
 
     // Get conversation history
     const { data: messages } = await supabase
