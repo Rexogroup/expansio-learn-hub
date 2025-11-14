@@ -8,6 +8,10 @@ import { Link } from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableCell } from '@tiptap/extension-table-cell';
 import { Button } from './button';
 import {
   Bold,
@@ -29,6 +33,10 @@ import {
   ImageIcon,
   Link as LinkIcon,
   Highlighter,
+  Table as TableIcon,
+  Plus,
+  Minus,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UrlInputDialog } from './url-input-dialog';
@@ -59,6 +67,12 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
       Highlight.configure({
         multicolor: true,
       }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -250,6 +264,85 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
         >
           <LinkIcon className="w-4 h-4" />
         </Button>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          title="Insert Table"
+        >
+          <TableIcon className="w-4 h-4" />
+        </Button>
+        {editor.isActive('table') && (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => editor.chain().focus().addRowBefore().run()}
+              title="Add Row Before"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+              title="Add Row After"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => editor.chain().focus().deleteRow().run()}
+              title="Delete Row"
+            >
+              <Minus className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => editor.chain().focus().addColumnBefore().run()}
+              title="Add Column Before"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              title="Add Column After"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => editor.chain().focus().deleteColumn().run()}
+              title="Delete Column"
+            >
+              <Minus className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => editor.chain().focus().deleteTable().run()}
+              title="Delete Table"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </>
+        )}
 
         <div className="w-px h-6 bg-border mx-1" />
 
