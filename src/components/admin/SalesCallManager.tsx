@@ -199,7 +199,7 @@ export function SalesCallManager() {
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0);
 
-      const callData = {
+      const baseCallData = {
         title: formData.title,
         description: formData.description || null,
         video_url: formData.video_url,
@@ -214,19 +214,21 @@ export function SalesCallManager() {
         brand_id: formData.brand_id || null,
         call_sequence: formData.call_sequence ? parseInt(formData.call_sequence) : null,
         call_label: formData.call_label || null,
-        created_by: session.session.user.id,
       };
 
       if (editingId) {
         const { error } = await supabase
           .from("sales_calls")
-          .update(callData)
+          .update(baseCallData)
           .eq("id", editingId);
 
         if (error) throw error;
         toast.success("Sales call updated successfully");
       } else {
-        const { error } = await supabase.from("sales_calls").insert([callData]);
+        const { error } = await supabase.from("sales_calls").insert([{
+          ...baseCallData,
+          created_by: session.session.user.id,
+        }]);
 
         if (error) throw error;
         toast.success("Sales call created successfully");
