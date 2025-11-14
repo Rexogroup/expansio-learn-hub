@@ -181,4 +181,28 @@ p, span, div {
 .rich-text-content .ProseMirror mark {
   @apply bg-yellow-200 dark:bg-yellow-800;
 }
+
+/* Table Styles */
+.rich-text-content .ProseMirror table {
+  @apply border-collapse w-full my-4;
+  border: 1px solid hsl(var(--border));
+}
+
+.rich-text-content .ProseMirror th,
+.rich-text-content .ProseMirror td {
+  @apply border px-3 py-2 min-w-[100px];
+  border-color: hsl(var(--border));
+}
+
+.rich-text-content .ProseMirror th {
+  @apply bg-muted font-bold text-left;
+}
+
+.rich-text-content .ProseMirror td {
+  @apply bg-background;
+}
+
+.rich-text-content .ProseMirror .selectedCell {
+  @apply bg-accent/20;
+}
 }
