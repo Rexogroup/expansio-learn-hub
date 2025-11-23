@@ -46,6 +46,23 @@ export const StepIndicator = Node.create<StepIndicatorOptions>({
           'data-labels': JSON.stringify(attributes.labels || []),
         }),
       },
+      backgroundColor: {
+        default: 'muted',
+        parseHTML: element => element.getAttribute('data-bg-color'),
+        renderHTML: attributes => ({
+          'data-bg-color': attributes.backgroundColor,
+        }),
+      },
+      textColor: {
+        default: 'auto',
+        parseHTML: element => element.getAttribute('data-text-color'),
+        renderHTML: attributes => {
+          if (attributes.textColor && attributes.textColor !== 'auto') {
+            return { 'data-text-color': attributes.textColor };
+          }
+          return {};
+        },
+      },
     };
   },
 

@@ -21,7 +21,7 @@ export const HeroBlock = Node.create<HeroBlockOptions>({
   addAttributes() {
     return {
       backgroundColor: {
-        default: 'primary',
+        default: 'blue',
         parseHTML: element => element.getAttribute('data-bg-color'),
         renderHTML: attributes => ({
           'data-bg-color': attributes.backgroundColor,
@@ -30,9 +30,12 @@ export const HeroBlock = Node.create<HeroBlockOptions>({
       backgroundImage: {
         default: null,
         parseHTML: element => element.getAttribute('data-bg-image'),
-        renderHTML: attributes => ({
-          'data-bg-image': attributes.backgroundImage,
-        }),
+        renderHTML: attributes => {
+          if (attributes.backgroundImage) {
+            return { 'data-bg-image': attributes.backgroundImage };
+          }
+          return {};
+        },
       },
       gradient: {
         default: false,
@@ -40,6 +43,26 @@ export const HeroBlock = Node.create<HeroBlockOptions>({
         renderHTML: attributes => ({
           'data-gradient': attributes.gradient.toString(),
         }),
+      },
+      textColor: {
+        default: 'auto',
+        parseHTML: element => element.getAttribute('data-text-color'),
+        renderHTML: attributes => {
+          if (attributes.textColor && attributes.textColor !== 'auto') {
+            return { 'data-text-color': attributes.textColor };
+          }
+          return {};
+        },
+      },
+      opacity: {
+        default: 100,
+        parseHTML: element => parseInt(element.getAttribute('data-opacity') || '100'),
+        renderHTML: attributes => {
+          if (attributes.opacity !== 100) {
+            return { 'data-opacity': attributes.opacity.toString() };
+          }
+          return {};
+        },
       },
     };
   },

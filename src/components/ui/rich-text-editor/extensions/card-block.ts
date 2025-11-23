@@ -21,7 +21,7 @@ export const CardBlock = Node.create<CardBlockOptions>({
   addAttributes() {
     return {
       backgroundColor: {
-        default: 'accent',
+        default: 'blue',
         parseHTML: element => element.getAttribute('data-bg-color'),
         renderHTML: attributes => ({
           'data-bg-color': attributes.backgroundColor,
@@ -42,6 +42,36 @@ export const CardBlock = Node.create<CardBlockOptions>({
             return {
               'data-badge-number': attributes.badgeNumber,
             };
+          }
+          return {};
+        },
+      },
+      textColor: {
+        default: 'auto',
+        parseHTML: element => element.getAttribute('data-text-color'),
+        renderHTML: attributes => {
+          if (attributes.textColor && attributes.textColor !== 'auto') {
+            return { 'data-text-color': attributes.textColor };
+          }
+          return {};
+        },
+      },
+      borderColor: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-border-color'),
+        renderHTML: attributes => {
+          if (attributes.borderColor) {
+            return { 'data-border-color': attributes.borderColor };
+          }
+          return {};
+        },
+      },
+      opacity: {
+        default: 100,
+        parseHTML: element => parseInt(element.getAttribute('data-opacity') || '100'),
+        renderHTML: attributes => {
+          if (attributes.opacity !== 100) {
+            return { 'data-opacity': attributes.opacity.toString() };
           }
           return {};
         },

@@ -38,12 +38,39 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
     
-    /* Gamma-style Presentation Colors */
-    --gamma-navy: 215 85% 16%;
-    --gamma-navy-light: 215 75% 20%;
+    /* Extended Gamma Color Palette */
     --gamma-blue: 217 91% 60%;
+    --gamma-navy: 222 47% 20%;
+    --gamma-purple: 270 91% 65%;
+    --gamma-pink: 330 81% 60%;
+    --gamma-green: 142 76% 36%;
+    --gamma-orange: 38 92% 50%;
+    --gamma-red: 0 84% 60%;
+    --gamma-teal: 180 77% 47%;
+    --gamma-yellow: 48 96% 53%;
+    --gamma-indigo: 243 75% 59%;
+
+    /* Lighter variants for backgrounds */
+    --gamma-blue-light: 217 91% 70%;
+    --gamma-navy-light: 215 75% 20%;
+    --gamma-purple-light: 270 91% 75%;
+    --gamma-pink-light: 330 81% 70%;
+    --gamma-green-light: 142 76% 46%;
+    --gamma-orange-light: 38 92% 60%;
+    --gamma-red-light: 0 84% 70%;
+    --gamma-teal-light: 180 77% 57%;
+    --gamma-yellow-light: 48 96% 63%;
+    --gamma-indigo-light: 243 75% 69%;
+
+    /* Neutral options */
+    --gamma-white: 0 0% 100%;
+    --gamma-gray-light: 220 14% 96%;
+    --gamma-gray: 220 9% 46%;
+    --gamma-gray-dark: 220 14% 20%;
+    
     --gamma-blue-dark: 217 91% 50%;
     --gamma-badge-blue: 217 91% 55%;
+    --gamma-presentation-gradient: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(222 47% 20%) 100%);
     
     --gradient-primary: linear-gradient(135deg, hsl(215 85% 30%), hsl(215 85% 25%));
     --gradient-hero: linear-gradient(180deg, hsl(215 85% 16%), hsl(215 85% 25%));
@@ -221,7 +248,8 @@ p, span, div {
 .rich-text-content .hero-block {
   @apply my-8 rounded-xl relative overflow-hidden;
   padding: 4rem 3rem;
-  background: hsl(var(--gamma-navy));
+  background: hsl(var(--gamma-blue));
+  color: white;
   min-height: 320px;
   display: flex;
   flex-direction: column;
@@ -230,26 +258,69 @@ p, span, div {
   box-shadow: 0 8px 32px hsl(0 0% 0% / 0.2);
 }
 
-.rich-text-content .ProseMirror .hero-block[data-bg-color="accent"],
-.rich-text-content .hero-block[data-bg-color="accent"] {
-  background: linear-gradient(135deg, hsl(var(--gamma-navy)) 0%, hsl(var(--gamma-navy-light)) 100%);
+/* Hero Block Colors */
+.rich-text-content .ProseMirror .hero-block[data-bg-color="blue"],
+.rich-text-content .hero-block[data-bg-color="blue"] { background: hsl(var(--gamma-blue)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="navy"],
+.rich-text-content .hero-block[data-bg-color="navy"] { background: hsl(var(--gamma-navy)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="purple"],
+.rich-text-content .hero-block[data-bg-color="purple"] { background: hsl(var(--gamma-purple)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="pink"],
+.rich-text-content .hero-block[data-bg-color="pink"] { background: hsl(var(--gamma-pink)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="green"],
+.rich-text-content .hero-block[data-bg-color="green"] { background: hsl(var(--gamma-green)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="orange"],
+.rich-text-content .hero-block[data-bg-color="orange"] { background: hsl(var(--gamma-orange)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="red"],
+.rich-text-content .hero-block[data-bg-color="red"] { background: hsl(var(--gamma-red)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="teal"],
+.rich-text-content .hero-block[data-bg-color="teal"] { background: hsl(var(--gamma-teal)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="yellow"],
+.rich-text-content .hero-block[data-bg-color="yellow"] { background: hsl(var(--gamma-yellow)); color: hsl(var(--foreground)); }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="indigo"],
+.rich-text-content .hero-block[data-bg-color="indigo"] { background: hsl(var(--gamma-indigo)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="gray"],
+.rich-text-content .hero-block[data-bg-color="gray"] { background: hsl(var(--gamma-gray)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="gray-light"],
+.rich-text-content .hero-block[data-bg-color="gray-light"] { background: hsl(var(--gamma-gray-light)); color: hsl(var(--foreground)); }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="white"],
+.rich-text-content .hero-block[data-bg-color="white"] { background: hsl(var(--gamma-white)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); }
+
+/* Hero Block Gradients */
+.rich-text-content .ProseMirror .hero-block[data-gradient="true"][data-bg-color="blue"],
+.rich-text-content .hero-block[data-gradient="true"][data-bg-color="blue"] {
+  background: linear-gradient(135deg, hsl(var(--gamma-blue)) 0%, hsl(var(--gamma-navy)) 100%);
+}
+.rich-text-content .ProseMirror .hero-block[data-gradient="true"][data-bg-color="purple"],
+.rich-text-content .hero-block[data-gradient="true"][data-bg-color="purple"] {
+  background: linear-gradient(135deg, hsl(var(--gamma-purple)) 0%, hsl(var(--gamma-indigo)) 100%);
+}
+.rich-text-content .ProseMirror .hero-block[data-gradient="true"][data-bg-color="green"],
+.rich-text-content .hero-block[data-gradient="true"][data-bg-color="green"] {
+  background: linear-gradient(135deg, hsl(var(--gamma-green)) 0%, hsl(var(--gamma-teal)) 100%);
+}
+.rich-text-content .ProseMirror .hero-block[data-gradient="true"][data-bg-color="pink"],
+.rich-text-content .hero-block[data-gradient="true"][data-bg-color="pink"] {
+  background: linear-gradient(135deg, hsl(var(--gamma-pink)) 0%, hsl(var(--gamma-purple)) 100%);
 }
 
-.rich-text-content .ProseMirror .hero-block[data-bg-color="primary"],
-.rich-text-content .hero-block[data-bg-color="primary"] {
-  background: hsl(var(--gamma-navy));
-}
+/* Hero Block Text Color Overrides */
+.rich-text-content .ProseMirror .hero-block[data-text-color="white"],
+.rich-text-content .hero-block[data-text-color="white"] { color: white !important; }
+.rich-text-content .ProseMirror .hero-block[data-text-color="black"],
+.rich-text-content .hero-block[data-text-color="black"] { color: hsl(var(--foreground)) !important; }
+.rich-text-content .ProseMirror .hero-block[data-text-color="gray"],
+.rich-text-content .hero-block[data-text-color="gray"] { color: hsl(var(--gamma-gray)) !important; }
 
-.rich-text-content .ProseMirror .hero-block[data-bg-color="secondary"],
-.rich-text-content .hero-block[data-bg-color="secondary"] {
-  background: hsl(var(--gamma-navy-light));
-}
+.rich-text-content .ProseMirror .hero-block[data-text-color="white"] h1,
+.rich-text-content .hero-block[data-text-color="white"] h1,
+.rich-text-content .ProseMirror .hero-block[data-text-color="white"] p,
+.rich-text-content .hero-block[data-text-color="white"] p { color: white !important; }
 
-.rich-text-content .ProseMirror .hero-block[data-bg-color="muted"],
-.rich-text-content .hero-block[data-bg-color="muted"] {
-  background: hsl(var(--muted));
-  color: hsl(var(--foreground));
-}
+.rich-text-content .ProseMirror .hero-block[data-text-color="black"] h1,
+.rich-text-content .hero-block[data-text-color="black"] h1,
+.rich-text-content .ProseMirror .hero-block[data-text-color="black"] p,
+.rich-text-content .hero-block[data-text-color="black"] p { color: hsl(var(--foreground)) !important; }
 
 .rich-text-content .ProseMirror .hero-block h1,
 .rich-text-content .hero-block h1 {
@@ -272,8 +343,8 @@ p, span, div {
 .rich-text-content .card-block {
   @apply my-4 rounded-xl transition-all duration-300 relative;
   padding: 2rem;
-  background: hsl(var(--gamma-blue) / 0.95);
-  color: hsl(0 0% 100%);
+  background: hsl(var(--gamma-blue));
+  color: white;
   border: none;
   box-shadow: 0 4px 16px hsl(0 0% 0% / 0.15);
 }
@@ -290,7 +361,7 @@ p, span, div {
 .rich-text-content .card-block h2,
 .rich-text-content .ProseMirror .card-block h3,
 .rich-text-content .card-block h3 {
-  color: hsl(0 0% 100%);
+  color: white;
   font-weight: 800;
 }
 
@@ -298,6 +369,70 @@ p, span, div {
 .rich-text-content .card-block p {
   color: hsl(0 0% 100% / 0.95);
 }
+
+/* Card Block Colors */
+.rich-text-content .ProseMirror .card-block[data-bg-color="blue"],
+.rich-text-content .card-block[data-bg-color="blue"] { background: hsl(var(--gamma-blue)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="navy"],
+.rich-text-content .card-block[data-bg-color="navy"] { background: hsl(var(--gamma-navy)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="purple"],
+.rich-text-content .card-block[data-bg-color="purple"] { background: hsl(var(--gamma-purple)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="pink"],
+.rich-text-content .card-block[data-bg-color="pink"] { background: hsl(var(--gamma-pink)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="green"],
+.rich-text-content .card-block[data-bg-color="green"] { background: hsl(var(--gamma-green)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="orange"],
+.rich-text-content .card-block[data-bg-color="orange"] { background: hsl(var(--gamma-orange)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="red"],
+.rich-text-content .card-block[data-bg-color="red"] { background: hsl(var(--gamma-red)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="teal"],
+.rich-text-content .card-block[data-bg-color="teal"] { background: hsl(var(--gamma-teal)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="yellow"],
+.rich-text-content .card-block[data-bg-color="yellow"] { background: hsl(var(--gamma-yellow)); color: hsl(var(--foreground)); }
+.rich-text-content .ProseMirror .card-block[data-bg-color="indigo"],
+.rich-text-content .card-block[data-bg-color="indigo"] { background: hsl(var(--gamma-indigo)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="gray"],
+.rich-text-content .card-block[data-bg-color="gray"] { background: hsl(var(--gamma-gray)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="gray-light"],
+.rich-text-content .card-block[data-bg-color="gray-light"] { background: hsl(var(--gamma-gray-light)); color: hsl(var(--foreground)); }
+.rich-text-content .ProseMirror .card-block[data-bg-color="white"],
+.rich-text-content .card-block[data-bg-color="white"] { background: hsl(var(--gamma-white)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); }
+
+/* Card Block Text Color Overrides */
+.rich-text-content .ProseMirror .card-block[data-text-color="white"],
+.rich-text-content .card-block[data-text-color="white"] { color: white !important; }
+.rich-text-content .ProseMirror .card-block[data-text-color="black"],
+.rich-text-content .card-block[data-text-color="black"] { color: hsl(var(--foreground)) !important; }
+.rich-text-content .ProseMirror .card-block[data-text-color="gray"],
+.rich-text-content .card-block[data-text-color="gray"] { color: hsl(var(--gamma-gray)) !important; }
+
+.rich-text-content .ProseMirror .card-block[data-text-color="white"] h1,
+.rich-text-content .card-block[data-text-color="white"] h1,
+.rich-text-content .ProseMirror .card-block[data-text-color="white"] h2,
+.rich-text-content .card-block[data-text-color="white"] h2,
+.rich-text-content .ProseMirror .card-block[data-text-color="white"] h3,
+.rich-text-content .card-block[data-text-color="white"] h3,
+.rich-text-content .ProseMirror .card-block[data-text-color="white"] p,
+.rich-text-content .card-block[data-text-color="white"] p { color: white !important; }
+
+.rich-text-content .ProseMirror .card-block[data-text-color="black"] h1,
+.rich-text-content .card-block[data-text-color="black"] h1,
+.rich-text-content .ProseMirror .card-block[data-text-color="black"] h2,
+.rich-text-content .card-block[data-text-color="black"] h2,
+.rich-text-content .ProseMirror .card-block[data-text-color="black"] h3,
+.rich-text-content .card-block[data-text-color="black"] h3,
+.rich-text-content .ProseMirror .card-block[data-text-color="black"] p,
+.rich-text-content .card-block[data-text-color="black"] p { color: hsl(var(--foreground)) !important; }
+
+/* Card Block Border Colors */
+.rich-text-content .ProseMirror .card-block[data-border-color="blue"],
+.rich-text-content .card-block[data-border-color="blue"] { border-left: 4px solid hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .card-block[data-border-color="purple"],
+.rich-text-content .card-block[data-border-color="purple"] { border-left: 4px solid hsl(var(--gamma-purple)); }
+.rich-text-content .ProseMirror .card-block[data-border-color="green"],
+.rich-text-content .card-block[data-border-color="green"] { border-left: 4px solid hsl(var(--gamma-green)); }
+.rich-text-content .ProseMirror .card-block[data-border-color="white"],
+.rich-text-content .card-block[data-border-color="white"] { border-left: 4px solid white; }
 
 /* Numbered Badge Support */
 .rich-text-content .ProseMirror .card-block[data-badge-number],
@@ -325,38 +460,6 @@ p, span, div {
   box-shadow: 0 2px 8px hsl(0 0% 0% / 0.2);
 }
 
-.rich-text-content .ProseMirror .card-block[data-bg-color="primary"],
-.rich-text-content .card-block[data-bg-color="primary"] {
-  background: hsl(var(--gamma-blue-dark));
-}
-
-.rich-text-content .ProseMirror .card-block[data-bg-color="accent"],
-.rich-text-content .card-block[data-bg-color="accent"] {
-  background: hsl(var(--gamma-blue));
-}
-
-.rich-text-content .ProseMirror .card-block[data-bg-color="secondary"],
-.rich-text-content .card-block[data-bg-color="secondary"] {
-  background: hsl(var(--gamma-navy-light));
-}
-
-.rich-text-content .ProseMirror .card-block[data-bg-color="muted"],
-.rich-text-content .card-block[data-bg-color="muted"] {
-  background: hsl(var(--muted));
-  color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border));
-}
-
-.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] h1,
-.rich-text-content .card-block[data-bg-color="muted"] h1,
-.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] h2,
-.rich-text-content .card-block[data-bg-color="muted"] h2,
-.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] h3,
-.rich-text-content .card-block[data-bg-color="muted"] h3,
-.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] p,
-.rich-text-content .card-block[data-bg-color="muted"] p {
-  color: hsl(var(--foreground));
-}
 
 .rich-text-content .ProseMirror .card-block[data-padding="small"],
 .rich-text-content .card-block[data-padding="small"] {
@@ -372,8 +475,9 @@ p, span, div {
 .rich-text-content .ProseMirror .callout-block,
 .rich-text-content .callout-block {
   @apply my-4 p-4 rounded-lg border-l-4 transition-all duration-300;
-  background: hsl(var(--accent) / 0.1);
-  border-left-color: hsl(var(--accent));
+  background: hsl(var(--muted));
+  border-left-color: hsl(var(--gamma-blue));
+  color: hsl(var(--foreground));
 }
 
 .rich-text-content .ProseMirror .callout-block:hover,
@@ -384,30 +488,52 @@ p, span, div {
 
 .rich-text-content .ProseMirror .callout-block[data-variant="info"],
 .rich-text-content .callout-block[data-variant="info"] {
-  background: hsl(var(--primary) / 0.1);
-  border-left-color: hsl(var(--primary));
+  background: hsl(var(--gamma-blue) / 0.1);
+  border-left-color: hsl(var(--gamma-blue));
 }
 
 .rich-text-content .ProseMirror .callout-block[data-variant="success"],
 .rich-text-content .callout-block[data-variant="success"] {
-  background: hsl(142 76% 36% / 0.1);
-  border-left-color: hsl(142 76% 36%);
+  background: hsl(var(--gamma-green) / 0.1);
+  border-left-color: hsl(var(--gamma-green));
 }
 
 .rich-text-content .ProseMirror .callout-block[data-variant="warning"],
 .rich-text-content .callout-block[data-variant="warning"] {
-  background: hsl(38 92% 50% / 0.1);
-  border-left-color: hsl(38 92% 50%);
+  background: hsl(var(--gamma-orange) / 0.1);
+  border-left-color: hsl(var(--gamma-orange));
 }
 
 .rich-text-content .ProseMirror .callout-block[data-variant="quote"],
 .rich-text-content .callout-block[data-variant="quote"] {
-  background: hsl(var(--muted) / 0.5);
-  border-left-color: hsl(var(--foreground) / 0.3);
+  background: hsl(var(--muted));
+  border-left-color: hsl(var(--gamma-purple));
   font-style: italic;
   padding: 1.5rem;
   font-size: 1.1rem;
 }
+
+/* Callout Block Colors */
+.rich-text-content .ProseMirror .callout-block[data-bg-color="blue"],
+.rich-text-content .callout-block[data-bg-color="blue"] { background: hsl(var(--gamma-blue) / 0.1); border-left-color: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .callout-block[data-bg-color="purple"],
+.rich-text-content .callout-block[data-bg-color="purple"] { background: hsl(var(--gamma-purple) / 0.1); border-left-color: hsl(var(--gamma-purple)); }
+.rich-text-content .ProseMirror .callout-block[data-bg-color="green"],
+.rich-text-content .callout-block[data-bg-color="green"] { background: hsl(var(--gamma-green) / 0.1); border-left-color: hsl(var(--gamma-green)); }
+.rich-text-content .ProseMirror .callout-block[data-bg-color="orange"],
+.rich-text-content .callout-block[data-bg-color="orange"] { background: hsl(var(--gamma-orange) / 0.1); border-left-color: hsl(var(--gamma-orange)); }
+.rich-text-content .ProseMirror .callout-block[data-bg-color="red"],
+.rich-text-content .callout-block[data-bg-color="red"] { background: hsl(var(--gamma-red) / 0.1); border-left-color: hsl(var(--gamma-red)); }
+.rich-text-content .ProseMirror .callout-block[data-bg-color="teal"],
+.rich-text-content .callout-block[data-bg-color="teal"] { background: hsl(var(--gamma-teal) / 0.1); border-left-color: hsl(var(--gamma-teal)); }
+
+/* Callout Block Text Color Overrides */
+.rich-text-content .ProseMirror .callout-block[data-text-color="white"],
+.rich-text-content .callout-block[data-text-color="white"] { color: white !important; }
+.rich-text-content .ProseMirror .callout-block[data-text-color="black"],
+.rich-text-content .callout-block[data-text-color="black"] { color: hsl(var(--foreground)) !important; }
+.rich-text-content .ProseMirror .callout-block[data-text-color="gray"],
+.rich-text-content .callout-block[data-text-color="gray"] { color: hsl(var(--gamma-gray)) !important; }
 
 /* Horizontal Separator Styles */
 .rich-text-content .ProseMirror hr,
@@ -429,6 +555,7 @@ p, span, div {
   @apply my-4 p-6 rounded-lg border relative transition-all duration-300;
   background: hsl(var(--card));
   border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
 }
 
 .rich-text-content .ProseMirror .step-card:hover,
@@ -450,13 +577,53 @@ p, span, div {
   color: hsl(var(--primary));
 }
 
+/* Step Card Colors */
+.rich-text-content .ProseMirror .step-card[data-bg-color="blue"],
+.rich-text-content .step-card[data-bg-color="blue"] { background: hsl(var(--gamma-blue)); color: white; border-color: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .step-card[data-bg-color="navy"],
+.rich-text-content .step-card[data-bg-color="navy"] { background: hsl(var(--gamma-navy)); color: white; border-color: hsl(var(--gamma-navy)); }
+.rich-text-content .ProseMirror .step-card[data-bg-color="purple"],
+.rich-text-content .step-card[data-bg-color="purple"] { background: hsl(var(--gamma-purple)); color: white; border-color: hsl(var(--gamma-purple)); }
+.rich-text-content .ProseMirror .step-card[data-bg-color="green"],
+.rich-text-content .step-card[data-bg-color="green"] { background: hsl(var(--gamma-green)); color: white; border-color: hsl(var(--gamma-green)); }
+.rich-text-content .ProseMirror .step-card[data-bg-color="white"],
+.rich-text-content .step-card[data-bg-color="white"] { background: white; color: hsl(var(--foreground)); border-color: hsl(var(--border)); }
+
+/* Step Card Text Color Overrides */
+.rich-text-content .ProseMirror .step-card[data-text-color="white"],
+.rich-text-content .step-card[data-text-color="white"] { color: white !important; }
+.rich-text-content .ProseMirror .step-card[data-text-color="black"],
+.rich-text-content .step-card[data-text-color="black"] { color: hsl(var(--foreground)) !important; }
+
+.rich-text-content .ProseMirror .step-card[data-text-color="white"] h3,
+.rich-text-content .step-card[data-text-color="white"] h3 { color: white !important; }
+
 /* Step Indicator - Chevron Progress Bar */
 .rich-text-content .ProseMirror .step-indicator-container,
 .rich-text-content .step-indicator-container {
   @apply flex items-center justify-center my-8 gap-0;
   position: relative;
   padding: 2rem 0;
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 12px;
 }
+
+/* Step Indicator Colors */
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="blue"],
+.rich-text-content .step-indicator-container[data-bg-color="blue"] { background: hsl(var(--gamma-blue) / 0.1); }
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="purple"],
+.rich-text-content .step-indicator-container[data-bg-color="purple"] { background: hsl(var(--gamma-purple) / 0.1); }
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="green"],
+.rich-text-content .step-indicator-container[data-bg-color="green"] { background: hsl(var(--gamma-green) / 0.1); }
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="white"],
+.rich-text-content .step-indicator-container[data-bg-color="white"] { background: white; border: 1px solid hsl(var(--border)); }
+
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="blue"] .step-indicator-item.active,
+.rich-text-content .step-indicator-container[data-bg-color="blue"] .step-indicator-item.active { background: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="purple"] .step-indicator-item.active,
+.rich-text-content .step-indicator-container[data-bg-color="purple"] .step-indicator-item.active { background: hsl(var(--gamma-purple)); }
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="green"] .step-indicator-item.active,
+.rich-text-content .step-indicator-container[data-bg-color="green"] .step-indicator-item.active { background: hsl(var(--gamma-green)); }
 
 .rich-text-content .ProseMirror .step-indicator-item,
 .rich-text-content .step-indicator-item {
