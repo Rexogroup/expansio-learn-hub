@@ -582,6 +582,76 @@ p, span, div {
   box-shadow: 0 4px 16px hsl(0 0% 0% / 0.12);
 }
 
+/* Embed Block - Responsive iframe container */
+.rich-text-content .ProseMirror .embed-block,
+.rich-text-content .embed-block {
+  @apply my-8 w-full;
+  position: relative;
+}
+
+.rich-text-content .ProseMirror .embed-container,
+.rich-text-content .embed-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px hsl(0 0% 0% / 0.15);
+  background: hsl(var(--muted));
+}
+
+/* Aspect ratio utilities */
+.rich-text-content .embed-container.aspect-16\:9 {
+  padding-bottom: 56.25%; /* 16:9 */
+}
+
+.rich-text-content .embed-container.aspect-4\:3 {
+  padding-bottom: 75%; /* 4:3 */
+}
+
+.rich-text-content .embed-container.aspect-1\:1 {
+  padding-bottom: 100%; /* 1:1 */
+}
+
+.rich-text-content .embed-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.rich-text-content .embed-caption {
+  @apply text-sm text-muted-foreground mt-2 text-center;
+  font-style: italic;
+}
+
+/* Loading state */
+.rich-text-content .embed-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid hsl(var(--gamma-blue) / 0.3);
+  border-top-color: hsl(var(--gamma-blue));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Hover effect */
+.rich-text-content .embed-block:hover .embed-container {
+  box-shadow: 0 6px 20px hsl(0 0% 0% / 0.2);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
 /* Dark Mode Enhancements */
 .dark .rich-text-content .hero-block {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);

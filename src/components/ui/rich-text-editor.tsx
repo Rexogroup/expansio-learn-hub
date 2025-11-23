@@ -18,6 +18,7 @@ import { CalloutBlock } from './rich-text-editor/extensions/callout-block';
 import { StepCard } from './rich-text-editor/extensions/step-card';
 import { StepIndicator } from './rich-text-editor/extensions/step-indicator';
 import { ColumnLayout, ColumnItem } from './rich-text-editor/extensions/column-layout';
+import { EmbedBlock } from './rich-text-editor/extensions/embed-block';
 import { BlocksMenu } from './rich-text-editor/toolbar/BlocksMenu';
 import { StylePanel } from './rich-text-editor/toolbar/StylePanel';
 import { TemplateLibrary } from './rich-text-editor/toolbar/TemplateLibrary';
@@ -89,6 +90,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
       StepIndicator,
       ColumnLayout,
       ColumnItem,
+      EmbedBlock,
     ],
     content,
     onUpdate: ({ editor }) => {

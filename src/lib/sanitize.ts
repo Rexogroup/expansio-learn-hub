@@ -14,14 +14,17 @@ export function sanitizeHtml(html: string): string {
       'a', 'img',
       'br', 'hr',
       'span', 'div',
-      'table', 'thead', 'tbody', 'tr', 'th', 'td'
+      'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      'iframe'
     ],
     ALLOWED_ATTR: [
       'href', 'src', 'alt', 'title',
       'class', 'style',
       'target', 'rel',
       'data-type', 'data-bg-color', 'data-bg-image', 'data-gradient',
-      'data-padding', 'data-variant', 'data-step-number', 'data-columns'
+      'data-padding', 'data-variant', 'data-step-number', 'data-columns',
+      'data-url', 'data-embed-type', 'data-aspect-ratio', 'data-title', 'data-fullscreen',
+      'frameborder', 'allowfullscreen', 'sandbox', 'loading'
     ],
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
     ADD_ATTR: ['target'],

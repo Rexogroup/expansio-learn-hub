@@ -87,6 +87,11 @@ Variants: info, warning, success, quote
   </div>
 </div>
 
+7. EMBED BLOCK (for embedded videos/content):
+<div data-type="embed" data-url="https://www.youtube.com/embed/VIDEO_ID" data-embed-type="youtube" data-aspect-ratio="16:9" data-title="Optional caption" class="embed-block">
+  <!-- iframe will be auto-generated -->
+</div>
+
 PATTERN DETECTION RULES:
 - First page heading (document title) → hero-block with data-gradient="true"
 - 2-4 consecutive sections with SIMILAR structure (short heading + description) → column-layout with card-block inside each column-item
