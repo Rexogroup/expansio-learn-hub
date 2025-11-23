@@ -38,27 +38,28 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
     
+    /* Gamma-style Presentation Colors */
+    --gamma-navy: 215 85% 16%;
+    --gamma-navy-light: 215 75% 20%;
+    --gamma-blue: 217 91% 60%;
+    --gamma-blue-dark: 217 91% 50%;
+    --gamma-badge-blue: 217 91% 55%;
+    
     --gradient-primary: linear-gradient(135deg, hsl(215 85% 30%), hsl(215 85% 25%));
     --gradient-hero: linear-gradient(180deg, hsl(215 85% 16%), hsl(215 85% 25%));
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 98%));
     --shadow-sm: 0 2px 8px hsl(0 0% 0% / 0.05);
     --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.08);
     --shadow-lg: 0 8px 24px hsl(0 0% 0% / 0.12);
+    --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.4);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -120,7 +121,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', sans-serif;
-  font-weight: 700;
+  font-weight: 800;
   @apply text-foreground;
 }
 
@@ -206,88 +207,159 @@ p, span, div {
   @apply bg-accent/20;
 }
 
-/* Hero Block Styles */
+/* Hero Block Styles - Gamma Dark Navy Sections */
 .rich-text-content .ProseMirror .hero-block,
 .rich-text-content .hero-block {
-  @apply my-8 p-12 rounded-lg relative overflow-hidden;
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
-  min-height: 300px;
+  @apply my-8 rounded-xl relative overflow-hidden;
+  padding: 4rem 3rem;
+  background: hsl(var(--gamma-navy));
+  min-height: 320px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   animation: fade-in 0.5s ease-out;
+  box-shadow: 0 8px 32px hsl(0 0% 0% / 0.2);
 }
 
 .rich-text-content .ProseMirror .hero-block[data-bg-color="accent"],
 .rich-text-content .hero-block[data-bg-color="accent"] {
-  background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent) / 0.8) 100%);
+  background: linear-gradient(135deg, hsl(var(--gamma-navy)) 0%, hsl(var(--gamma-navy-light)) 100%);
+}
+
+.rich-text-content .ProseMirror .hero-block[data-bg-color="primary"],
+.rich-text-content .hero-block[data-bg-color="primary"] {
+  background: hsl(var(--gamma-navy));
 }
 
 .rich-text-content .ProseMirror .hero-block[data-bg-color="secondary"],
 .rich-text-content .hero-block[data-bg-color="secondary"] {
-  background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--secondary) / 0.8) 100%);
+  background: hsl(var(--gamma-navy-light));
 }
 
 .rich-text-content .ProseMirror .hero-block[data-bg-color="muted"],
 .rich-text-content .hero-block[data-bg-color="muted"] {
   background: hsl(var(--muted));
+  color: hsl(var(--foreground));
 }
 
 .rich-text-content .ProseMirror .hero-block h1,
 .rich-text-content .hero-block h1 {
-  @apply text-4xl md:text-5xl font-bold mb-4;
-  color: hsl(var(--primary-foreground));
+  @apply text-5xl md:text-6xl mb-4;
+  font-weight: 800;
+  color: hsl(0 0% 100%);
+  line-height: 1.2;
 }
 
 .rich-text-content .ProseMirror .hero-block p,
 .rich-text-content .hero-block p {
-  @apply text-lg md:text-xl;
-  color: hsl(var(--primary-foreground) / 0.9);
+  @apply text-xl md:text-2xl;
+  color: hsl(0 0% 100% / 0.9);
+  font-weight: 400;
+  line-height: 1.5;
 }
 
-/* Card Block Styles */
+/* Card Block Styles - Gamma Vibrant Blue Cards */
 .rich-text-content .ProseMirror .card-block,
 .rich-text-content .card-block {
-  @apply my-4 p-6 rounded-lg border-2 transition-all duration-300;
-  background: hsl(var(--accent) / 0.1);
-  border-color: hsl(var(--accent) / 0.3);
+  @apply my-4 rounded-xl transition-all duration-300 relative;
+  padding: 2rem;
+  background: hsl(var(--gamma-blue) / 0.95);
+  color: hsl(0 0% 100%);
+  border: none;
+  box-shadow: 0 4px 16px hsl(0 0% 0% / 0.15);
 }
 
 .rich-text-content .ProseMirror .card-block:hover,
 .rich-text-content .card-block:hover {
-  @apply shadow-lg;
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px hsl(0 0% 0% / 0.2), 0 0 40px hsl(var(--gamma-blue) / 0.3);
+}
+
+.rich-text-content .ProseMirror .card-block h1,
+.rich-text-content .card-block h1,
+.rich-text-content .ProseMirror .card-block h2,
+.rich-text-content .card-block h2,
+.rich-text-content .ProseMirror .card-block h3,
+.rich-text-content .card-block h3 {
+  color: hsl(0 0% 100%);
+  font-weight: 800;
+}
+
+.rich-text-content .ProseMirror .card-block p,
+.rich-text-content .card-block p {
+  color: hsl(0 0% 100% / 0.95);
+}
+
+/* Numbered Badge Support */
+.rich-text-content .ProseMirror .card-block[data-badge-number],
+.rich-text-content .card-block[data-badge-number] {
+  padding-top: 2.5rem;
+}
+
+.rich-text-content .ProseMirror .card-block[data-badge-number]::before,
+.rich-text-content .card-block[data-badge-number]::before {
+  content: attr(data-badge-number);
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: hsl(0 0% 100% / 0.2);
+  backdrop-filter: blur(8px);
+  color: hsl(0 0% 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.2);
 }
 
 .rich-text-content .ProseMirror .card-block[data-bg-color="primary"],
 .rich-text-content .card-block[data-bg-color="primary"] {
-  background: hsl(var(--primary) / 0.1);
-  border-color: hsl(var(--primary) / 0.3);
+  background: hsl(var(--gamma-blue-dark));
+}
+
+.rich-text-content .ProseMirror .card-block[data-bg-color="accent"],
+.rich-text-content .card-block[data-bg-color="accent"] {
+  background: hsl(var(--gamma-blue));
 }
 
 .rich-text-content .ProseMirror .card-block[data-bg-color="secondary"],
 .rich-text-content .card-block[data-bg-color="secondary"] {
-  background: hsl(var(--secondary) / 0.1);
-  border-color: hsl(var(--secondary) / 0.3);
+  background: hsl(var(--gamma-navy-light));
 }
 
 .rich-text-content .ProseMirror .card-block[data-bg-color="muted"],
 .rich-text-content .card-block[data-bg-color="muted"] {
   background: hsl(var(--muted));
-  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] h1,
+.rich-text-content .card-block[data-bg-color="muted"] h1,
+.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] h2,
+.rich-text-content .card-block[data-bg-color="muted"] h2,
+.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] h3,
+.rich-text-content .card-block[data-bg-color="muted"] h3,
+.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] p,
+.rich-text-content .card-block[data-bg-color="muted"] p {
+  color: hsl(var(--foreground));
 }
 
 .rich-text-content .ProseMirror .card-block[data-padding="small"],
 .rich-text-content .card-block[data-padding="small"] {
-  @apply p-4;
+  padding: 1.5rem;
 }
 
 .rich-text-content .ProseMirror .card-block[data-padding="large"],
 .rich-text-content .card-block[data-padding="large"] {
-  @apply p-8;
+  padding: 3rem;
 }
 
-/* Callout Block Styles */
+/* Callout Block Styles - Enhanced Quote Styling */
 .rich-text-content .ProseMirror .callout-block,
 .rich-text-content .callout-block {
   @apply my-4 p-4 rounded-lg border-l-4 transition-all duration-300;
@@ -321,9 +393,25 @@ p, span, div {
 
 .rich-text-content .ProseMirror .callout-block[data-variant="quote"],
 .rich-text-content .callout-block[data-variant="quote"] {
-  background: hsl(var(--muted));
+  background: hsl(var(--muted) / 0.5);
   border-left-color: hsl(var(--foreground) / 0.3);
   font-style: italic;
+  padding: 1.5rem;
+  font-size: 1.1rem;
+}
+
+/* Horizontal Separator Styles */
+.rich-text-content .ProseMirror hr,
+.rich-text-content hr {
+  border: none;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    hsl(var(--border)) 20%, 
+    hsl(var(--border)) 80%, 
+    transparent 100%
+  );
+  margin: 3rem 0;
 }
 
 /* Step Card Styles */
@@ -353,10 +441,10 @@ p, span, div {
   color: hsl(var(--primary));
 }
 
-/* Column Layout Styles */
+/* Column Layout Styles - Cards with Solid Backgrounds */
 .rich-text-content .ProseMirror .column-layout,
 .rich-text-content .column-layout {
-  @apply my-6 grid gap-4 md:gap-6;
+  @apply my-6 grid gap-6;
 }
 
 .rich-text-content .ProseMirror .column-layout[data-columns="2"],
@@ -371,15 +459,25 @@ p, span, div {
 
 .rich-text-content .ProseMirror .column-item,
 .rich-text-content .column-item {
-  @apply p-4 rounded-lg border transition-all duration-300;
+  @apply rounded-xl transition-all duration-300;
+  padding: 2rem;
   background: hsl(var(--card));
-  border-color: hsl(var(--border));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.08);
 }
 
 .rich-text-content .ProseMirror .column-item:hover,
 .rich-text-content .column-item:hover {
-  @apply shadow-md;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px hsl(0 0% 0% / 0.12);
   border-color: hsl(var(--primary) / 0.3);
+}
+
+/* Column layout cards with card-block inside */
+.rich-text-content .ProseMirror .column-layout .card-block,
+.rich-text-content .column-layout .card-block {
+  margin: 0;
+  box-shadow: 0 4px 16px hsl(0 0% 0% / 0.12);
 }
 
 /* Dark Mode Enhancements */

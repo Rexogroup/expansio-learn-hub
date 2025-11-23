@@ -34,6 +34,18 @@ export const CardBlock = Node.create<CardBlockOptions>({
           'data-padding': attributes.padding,
         }),
       },
+      badgeNumber: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-badge-number'),
+        renderHTML: attributes => {
+          if (attributes.badgeNumber) {
+            return {
+              'data-badge-number': attributes.badgeNumber,
+            };
+          }
+          return {};
+        },
+      },
     };
   },
 

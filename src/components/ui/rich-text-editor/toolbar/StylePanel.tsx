@@ -14,10 +14,10 @@ interface StylePanelProps {
 
 export const StylePanel = ({ editor }: StylePanelProps) => {
   const colorOptions = [
-    { name: 'Primary', value: 'primary' },
-    { name: 'Accent', value: 'accent' },
-    { name: 'Muted', value: 'muted' },
-    { name: 'Secondary', value: 'secondary' },
+    { name: 'Gamma Blue', value: 'accent' },
+    { name: 'Dark Blue', value: 'primary' },
+    { name: 'Navy', value: 'secondary' },
+    { name: 'Light', value: 'muted' },
   ];
 
   const calloutVariants = [
