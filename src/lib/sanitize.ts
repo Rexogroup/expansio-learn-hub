@@ -19,7 +19,9 @@ export function sanitizeHtml(html: string): string {
     ALLOWED_ATTR: [
       'href', 'src', 'alt', 'title',
       'class', 'style',
-      'target', 'rel'
+      'target', 'rel',
+      'data-type', 'data-bg-color', 'data-bg-image', 'data-gradient',
+      'data-padding', 'data-variant', 'data-step-number', 'data-columns'
     ],
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
     ADD_ATTR: ['target'],
