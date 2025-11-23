@@ -8,6 +8,7 @@ import {
 import { Blocks, Presentation, Square, MessageSquare, ListOrdered, Columns2 } from 'lucide-react';
 import { Editor } from '@tiptap/react';
 import { StepIndicatorDialog } from './StepIndicatorDialog';
+import { EmbedDialog } from './EmbedDialog';
 
 interface BlocksMenuProps {
   editor: Editor;
@@ -61,6 +62,9 @@ export const BlocksMenu = ({ editor }: BlocksMenuProps) => {
         >
           <Columns2 className="w-4 h-4 mr-2" />
           3 Columns
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <EmbedDialog editor={editor} />
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
