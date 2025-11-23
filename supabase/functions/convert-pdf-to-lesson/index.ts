@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import pdf from "https://esm.sh/pdf-parse@1.1.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -81,13 +82,23 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { pdfContent, fileName } = await req.json();
+    const { pdfFile, fileName } = await req.json();
 
-    if (!pdfContent) {
-      throw new Error('No PDF content provided');
+    if (!pdfFile) {
+      throw new Error('No PDF file provided');
     }
 
     console.log(`Processing PDF: ${fileName}`);
+
+    // Decode base64 PDF to binary
+    const pdfData = Uint8Array.from(atob(pdfFile), c => c.charCodeAt(0));
+
+    // Parse PDF using pdf-parse library to extract clean text
+    console.log('Parsing PDF with pdf-parse library...');
+    const pdfParsed = await pdf(pdfData);
+    const cleanText = pdfParsed.text;
+
+    console.log(`Extracted ${cleanText.length} characters from PDF`);
 
     // Call Lovable AI to convert the PDF content to custom HTML blocks
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -102,10 +113,10 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: CONVERSION_SYSTEM_PROMPT },
-          { role: 'user', content: `Convert this PDF content to custom HTML blocks:\n\n${pdfContent}` }
+          { role: 'user', content: `Convert this PDF content to custom HTML blocks:\n\nFile: ${fileName}\n\n${cleanText}` }
         ],
         temperature: 0.3,
       }),
