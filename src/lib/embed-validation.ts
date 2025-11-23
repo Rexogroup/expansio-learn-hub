@@ -12,6 +12,7 @@ const TRUSTED_DOMAINS = [
   'figma.com',
   'miro.com',
   'airtable.com',
+  'gamma.app',
   'codepen.io',
   'jsfiddle.net',
   'codesandbox.io',
@@ -63,6 +64,8 @@ export function validateEmbedUrl(url: string): EmbedValidationResult {
       type = 'miro';
     } else if (hostname.includes('airtable.com')) {
       type = 'airtable';
+    } else if (hostname.includes('gamma.app')) {
+      type = 'gamma';
     }
     
     return { valid: true, type };
