@@ -5,8 +5,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Blocks, Presentation, Square, MessageSquare, ListOrdered, Columns2, ChevronRight } from 'lucide-react';
+import { Blocks, Presentation, Square, MessageSquare, ListOrdered, Columns2 } from 'lucide-react';
 import { Editor } from '@tiptap/react';
+import { StepIndicatorDialog } from './StepIndicatorDialog';
 
 interface BlocksMenuProps {
   editor: Editor;
@@ -46,11 +47,8 @@ export const BlocksMenu = ({ editor }: BlocksMenuProps) => {
           <ListOrdered className="w-4 h-4 mr-2" />
           Step Card
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => editor.chain().focus().setStepIndicator({ stepCount: 4, activeStep: 2, labels: [] }).run()}
-        >
-          <ChevronRight className="w-4 h-4 mr-2" />
-          Step Indicator
+        <DropdownMenuItem asChild>
+          <StepIndicatorDialog editor={editor} />
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => editor.chain().focus().setColumnLayout({ columns: 2 }).run()}
