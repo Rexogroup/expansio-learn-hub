@@ -44,26 +44,40 @@ export const StylePanel = ({ editor }: StylePanelProps) => {
 
   const updateBlockAttribute = (attribute: string, value: any) => {
     const { state } = editor;
-    const { from } = state.selection;
-    const node = state.doc.nodeAt(from);
+    const { $from } = state.selection;
     
-    if (node) {
-      const blockTypes = [
-        'heroBlock', 
-        'cardBlock', 
-        'calloutBlock', 
-        'stepCard', 
-        'columnItem', 
-        'stepIndicator'
-      ];
+    // List of custom block types that support styling
+    const blockTypes = [
+      'heroBlock', 
+      'cardBlock', 
+      'calloutBlock', 
+      'stepCard', 
+      'columnItem', 
+      'stepIndicator'
+    ];
+    
+    // Traverse up the node tree to find the nearest custom block
+    for (let depth = $from.depth; depth > 0; depth--) {
+      const node = $from.node(depth);
       
-      blockTypes.forEach(blockType => {
-        if (node.type.name === blockType) {
-          editor.chain().focus()
-            .updateAttributes(blockType, { [attribute]: value })
-            .run();
-        }
-      });
+      if (blockTypes.includes(node.type.name)) {
+        // Found a custom block! Update its attributes
+        const pos = $from.before(depth);
+        
+        editor
+          .chain()
+          .focus()
+          .command(({ tr }) => {
+            tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              [attribute]: value,
+            });
+            return true;
+          })
+          .run();
+        
+        return; // Exit after updating the first matching block
+      }
     }
   };
 
