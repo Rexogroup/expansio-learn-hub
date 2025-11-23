@@ -9,6 +9,31 @@ const corsHeaders = {
 
 const CONVERSION_SYSTEM_PROMPT = `You are an expert at converting presentation content into structured HTML blocks for a Gamma.app-style editor.
 
+⚠️ CRITICAL OUTPUT RULES - FOLLOW EXACTLY:
+1. You MUST return ONLY HTML using custom blocks with data-type attributes
+2. DO NOT use standard HTML tags like <h1>, <h2>, <p>, <div> at the root level
+3. EVERY section must be wrapped in a custom block (hero-block, card-block, column-layout, callout-block, or step-card)
+4. Standard HTML tags (<h1>, <h3>, <p>, <ul>, etc.) are ONLY allowed INSIDE custom blocks
+
+❌ WRONG OUTPUT (DO NOT DO THIS):
+<h1>Title</h1>
+<h2>Subtitle</h2>
+<p>Content here</p>
+<div>
+  <h3>Section</h3>
+  <p>Text</p>
+</div>
+
+✅ CORRECT OUTPUT:
+<div data-type="hero" data-bg-color="primary" data-gradient="true" class="hero-block">
+  <h1>Title</h1>
+  <p>Subtitle</p>
+</div>
+<div data-type="card" data-bg-color="accent" data-padding="normal" class="card-block">
+  <h3>Section</h3>
+  <p>Text</p>
+</div>
+
 Given PDF content (text and structure), convert it to HTML using these EXACT custom blocks:
 
 1. HERO BLOCK (for main titles/headers):
@@ -136,6 +161,12 @@ CRITICAL RULES:
 - Quotes ALWAYS go in callout blocks with variant="quote"
 - First page title ALWAYS gets gradient="true"
 
+VALIDATION CHECKLIST BEFORE RETURNING:
+✓ Does my output start with <div data-type="...">?
+✓ Are ALL sections wrapped in custom blocks?
+✓ Did I avoid using plain <h1>, <h2>, <p> at the root level?
+✓ Are standard HTML tags ONLY inside custom blocks?
+
 Return ONLY valid HTML with these custom blocks. No explanations, no markdown, just HTML.`;
 
 serve(async (req) => {
@@ -205,9 +236,25 @@ serve(async (req) => {
         model: 'google/gemini-2.5-pro',
         messages: [
           { role: 'system', content: CONVERSION_SYSTEM_PROMPT },
-          { role: 'user', content: `Convert this PDF content to custom HTML blocks:\n\nFile: ${fileName}\n\n${cleanText}` }
+          { 
+            role: 'user', 
+            content: `⚠️ CRITICAL: You MUST use custom blocks with data-type attributes. DO NOT return plain HTML tags at the root level.
+
+File: ${fileName}
+
+PDF Content:
+${cleanText}
+
+IMPORTANT REMINDER:
+- Your output MUST start with: <div data-type="hero" ...> or <div data-type="column-layout" ...>
+- DO NOT start with: <h1>, <h2>, <p>, or plain <div>
+- Wrap EVERY section in a custom block with data-type attribute
+- Check your output against the validation checklist before returning
+
+Now convert this content using ONLY the custom blocks defined in the system prompt.` 
+          }
         ],
-        temperature: 0.3,
+        temperature: 0.1,
       }),
     });
 
@@ -220,7 +267,13 @@ serve(async (req) => {
     const aiData = await aiResponse.json();
     const convertedHtml = aiData.choices[0].message.content;
 
-    console.log('Successfully converted PDF to HTML');
+    // Validate that custom blocks are present
+    if (!convertedHtml.includes('data-type="')) {
+      console.error('AI failed to generate custom blocks! Output:', convertedHtml.substring(0, 300));
+      throw new Error('AI did not generate proper custom blocks with data-type attributes. Please try uploading the PDF again.');
+    }
+
+    console.log('Successfully converted PDF to HTML with custom blocks');
 
     return new Response(
       JSON.stringify({ 
