@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-lead-magnet]
 verify_jwt = true
+
+[functions.convert-pdf-to-lesson]
+verify_jwt = true
