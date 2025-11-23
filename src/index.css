@@ -286,6 +286,16 @@ p, span, div {
 .rich-text-content .ProseMirror .hero-block[data-bg-color="white"],
 .rich-text-content .hero-block[data-bg-color="white"] { background: hsl(var(--gamma-white)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); }
 
+/* Hero Block - Backward Compatibility for Old Colors */
+.rich-text-content .ProseMirror .hero-block[data-bg-color="primary"],
+.rich-text-content .hero-block[data-bg-color="primary"] { background: hsl(var(--gamma-blue)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="accent"],
+.rich-text-content .hero-block[data-bg-color="accent"] { background: hsl(var(--gamma-blue)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="secondary"],
+.rich-text-content .hero-block[data-bg-color="secondary"] { background: hsl(var(--gamma-navy)); color: white; }
+.rich-text-content .ProseMirror .hero-block[data-bg-color="muted"],
+.rich-text-content .hero-block[data-bg-color="muted"] { background: hsl(var(--gamma-gray)); color: white; }
+
 /* Hero Block Gradients */
 .rich-text-content .ProseMirror .hero-block[data-gradient="true"][data-bg-color="blue"],
 .rich-text-content .hero-block[data-gradient="true"][data-bg-color="blue"] {
@@ -397,6 +407,16 @@ p, span, div {
 .rich-text-content .card-block[data-bg-color="gray-light"] { background: hsl(var(--gamma-gray-light)); color: hsl(var(--foreground)); }
 .rich-text-content .ProseMirror .card-block[data-bg-color="white"],
 .rich-text-content .card-block[data-bg-color="white"] { background: hsl(var(--gamma-white)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); }
+
+/* Card Block - Backward Compatibility for Old Colors */
+.rich-text-content .ProseMirror .card-block[data-bg-color="primary"],
+.rich-text-content .card-block[data-bg-color="primary"] { background: hsl(var(--gamma-blue)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="accent"],
+.rich-text-content .card-block[data-bg-color="accent"] { background: hsl(var(--gamma-blue)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="secondary"],
+.rich-text-content .card-block[data-bg-color="secondary"] { background: hsl(var(--gamma-navy)); color: white; }
+.rich-text-content .ProseMirror .card-block[data-bg-color="muted"],
+.rich-text-content .card-block[data-bg-color="muted"] { background: hsl(var(--gamma-gray-light)); color: hsl(var(--foreground)); }
 
 /* Card Block Text Color Overrides */
 .rich-text-content .ProseMirror .card-block[data-text-color="white"],
@@ -527,6 +547,16 @@ p, span, div {
 .rich-text-content .ProseMirror .callout-block[data-bg-color="teal"],
 .rich-text-content .callout-block[data-bg-color="teal"] { background: hsl(var(--gamma-teal) / 0.1); border-left-color: hsl(var(--gamma-teal)); }
 
+/* Callout Block - Backward Compatibility for Old Colors */
+.rich-text-content .ProseMirror .callout-block[data-bg-color="primary"],
+.rich-text-content .callout-block[data-bg-color="primary"] { background: hsl(var(--gamma-blue) / 0.1); border-left-color: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .callout-block[data-bg-color="accent"],
+.rich-text-content .callout-block[data-bg-color="accent"] { background: hsl(var(--gamma-blue) / 0.1); border-left-color: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .callout-block[data-bg-color="secondary"],
+.rich-text-content .callout-block[data-bg-color="secondary"] { background: hsl(var(--gamma-navy) / 0.1); border-left-color: hsl(var(--gamma-navy)); }
+.rich-text-content .ProseMirror .callout-block[data-bg-color="muted"],
+.rich-text-content .callout-block[data-bg-color="muted"] { background: hsl(var(--muted)); border-left-color: hsl(var(--gamma-gray)); }
+
 /* Callout Block Text Color Overrides */
 .rich-text-content .ProseMirror .callout-block[data-text-color="white"],
 .rich-text-content .callout-block[data-text-color="white"] { color: white !important; }
@@ -589,6 +619,16 @@ p, span, div {
 .rich-text-content .ProseMirror .step-card[data-bg-color="white"],
 .rich-text-content .step-card[data-bg-color="white"] { background: white; color: hsl(var(--foreground)); border-color: hsl(var(--border)); }
 
+/* Step Card - Backward Compatibility for Old Colors */
+.rich-text-content .ProseMirror .step-card[data-bg-color="primary"],
+.rich-text-content .step-card[data-bg-color="primary"] { background: hsl(var(--gamma-blue)); color: white; border-color: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .step-card[data-bg-color="accent"],
+.rich-text-content .step-card[data-bg-color="accent"] { background: hsl(var(--gamma-blue)); color: white; border-color: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .step-card[data-bg-color="secondary"],
+.rich-text-content .step-card[data-bg-color="secondary"] { background: hsl(var(--gamma-navy)); color: white; border-color: hsl(var(--gamma-navy)); }
+.rich-text-content .ProseMirror .step-card[data-bg-color="muted"],
+.rich-text-content .step-card[data-bg-color="muted"] { background: hsl(var(--gamma-gray-light)); color: hsl(var(--foreground)); border-color: hsl(var(--border)); }
+
 /* Step Card Text Color Overrides */
 .rich-text-content .ProseMirror .step-card[data-text-color="white"],
 .rich-text-content .step-card[data-text-color="white"] { color: white !important; }
@@ -617,6 +657,12 @@ p, span, div {
 .rich-text-content .step-indicator-container[data-bg-color="green"] { background: hsl(var(--gamma-green) / 0.1); }
 .rich-text-content .ProseMirror .step-indicator-container[data-bg-color="white"],
 .rich-text-content .step-indicator-container[data-bg-color="white"] { background: white; border: 1px solid hsl(var(--border)); }
+
+/* Step Indicator - Backward Compatibility for Old Colors */
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="primary"],
+.rich-text-content .step-indicator-container[data-bg-color="primary"] { background: hsl(var(--gamma-blue) / 0.1); }
+.rich-text-content .ProseMirror .step-indicator-container[data-bg-color="accent"],
+.rich-text-content .step-indicator-container[data-bg-color="accent"] { background: hsl(var(--gamma-blue) / 0.1); }
 
 .rich-text-content .ProseMirror .step-indicator-container[data-bg-color="blue"] .step-indicator-item.active,
 .rich-text-content .step-indicator-container[data-bg-color="blue"] .step-indicator-item.active { background: hsl(var(--gamma-blue)); }
@@ -741,6 +787,16 @@ p, span, div {
   box-shadow: 0 4px 16px hsl(0 0% 0% / 0.12);
   border-color: hsl(var(--primary) / 0.3);
 }
+
+/* Column Item - Backward Compatibility for Old Colors */
+.rich-text-content .ProseMirror .column-item[data-bg-color="primary"],
+.rich-text-content .column-item[data-bg-color="primary"] { background: hsl(var(--gamma-blue)); color: white; border-color: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .column-item[data-bg-color="accent"],
+.rich-text-content .column-item[data-bg-color="accent"] { background: hsl(var(--gamma-blue)); color: white; border-color: hsl(var(--gamma-blue)); }
+.rich-text-content .ProseMirror .column-item[data-bg-color="secondary"],
+.rich-text-content .column-item[data-bg-color="secondary"] { background: hsl(var(--gamma-navy)); color: white; border-color: hsl(var(--gamma-navy)); }
+.rich-text-content .ProseMirror .column-item[data-bg-color="muted"],
+.rich-text-content .column-item[data-bg-color="muted"] { background: hsl(var(--gamma-gray-light)); color: hsl(var(--foreground)); }
 
 /* Column layout cards with card-block inside */
 .rich-text-content .ProseMirror .column-layout .card-block,
