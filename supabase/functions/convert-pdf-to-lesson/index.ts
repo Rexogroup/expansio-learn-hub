@@ -60,7 +60,12 @@ Variants: info, warning, success, quote
   <p>Step description...</p>
 </div>
 
-5. COLUMN LAYOUT (for side-by-side content):
+5. STEP INDICATOR (for horizontal progress/process flows):
+<div data-type="step-indicator" data-step-count="4" data-active-step="2" data-labels="[]" class="step-indicator-container">
+  <!-- Chevron steps will be auto-generated -->
+</div>
+
+6. COLUMN LAYOUT (for side-by-side content):
 <div data-type="column-layout" data-columns="3" class="column-layout">
   <div data-type="column-item" class="column-item">
     <div data-type="card" data-bg-color="accent" data-padding="normal" class="card-block">

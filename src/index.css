@@ -450,6 +450,99 @@ p, span, div {
   color: hsl(var(--primary));
 }
 
+/* Step Indicator - Chevron Progress Bar */
+.rich-text-content .ProseMirror .step-indicator-container,
+.rich-text-content .step-indicator-container {
+  @apply flex items-center justify-center my-8 gap-0;
+  position: relative;
+  padding: 2rem 0;
+}
+
+.rich-text-content .ProseMirror .step-indicator-item,
+.rich-text-content .step-indicator-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  min-width: 180px;
+  padding: 0 2rem;
+  background: hsl(var(--gamma-blue));
+  color: white;
+  font-weight: 700;
+  font-size: 1.5rem;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 20px 50%);
+  margin-left: -20px;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.rich-text-content .step-indicator-item:first-child {
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%);
+  margin-left: 0;
+  padding-left: 2rem;
+}
+
+.rich-text-content .step-indicator-item:last-child {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 20px 50%);
+  padding-right: 2rem;
+}
+
+.rich-text-content .step-indicator-item.active {
+  background: hsl(var(--gamma-blue));
+  z-index: 2;
+}
+
+.rich-text-content .step-indicator-item.inactive {
+  background: hsl(var(--gamma-navy-light) / 0.4);
+  color: hsl(var(--foreground) / 0.5);
+  z-index: 0;
+}
+
+.rich-text-content .step-indicator-item:hover {
+  transform: scale(1.05);
+  z-index: 3;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.rich-text-content .step-number {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.rich-text-content .step-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+  opacity: 0.9;
+}
+
+/* Responsive - Stack vertically on mobile */
+@media (max-width: 768px) {
+  .rich-text-content .step-indicator-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .rich-text-content .step-indicator-item {
+    clip-path: none;
+    margin-left: 0;
+    width: 100%;
+    max-width: 300px;
+    height: 60px;
+    border-radius: 8px;
+  }
+  
+  .rich-text-content .step-indicator-item:first-child,
+  .rich-text-content .step-indicator-item:last-child {
+    clip-path: none;
+  }
+}
+
 /* Column Layout Styles - Cards with Solid Backgrounds */
 .rich-text-content .ProseMirror .column-layout,
 .rich-text-content .column-layout {
