@@ -189,7 +189,7 @@ export default function CourseView() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             {selectedLesson ? (
-              <Card className="shadow-lg border-border/50 bg-card/50 backdrop-blur-sm">
+              <Card className="shadow-lg border-border/50 bg-card/50 backdrop-blur-sm animate-fade-in">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-primary" />
@@ -198,7 +198,7 @@ export default function CourseView() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {selectedLesson.video_url && (
-                    <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                    <div className="aspect-video rounded-lg overflow-hidden bg-muted animate-scale-in">
                       <iframe
                         src={selectedLesson.video_url}
                         className="w-full h-full"
@@ -208,7 +208,7 @@ export default function CourseView() {
                     </div>
                   )}
                   {selectedLesson.content && (
-                    <div className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none dark:prose-invert [&_*]:dark:!text-white [&_h1]:dark:!text-blue-300 [&_h2]:dark:!text-blue-300 [&_h3]:dark:!text-blue-300 [&_h4]:dark:!text-blue-300 [&_p]:dark:!text-white [&_li]:dark:!text-white [&_span]:dark:!text-white [&_div]:dark:!text-white [&_strong]:dark:!text-white [&_em]:dark:!text-white [&_a]:dark:!text-blue-400">
+                    <div className="rich-text-content animate-fade-in">
                       <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedLesson.content) }} />
                     </div>
                   )}

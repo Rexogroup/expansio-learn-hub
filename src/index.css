@@ -207,128 +207,224 @@ p, span, div {
 }
 
 /* Hero Block Styles */
-.rich-text-content .ProseMirror .hero-block {
+.rich-text-content .ProseMirror .hero-block,
+.rich-text-content .hero-block {
   @apply my-8 p-12 rounded-lg relative overflow-hidden;
   background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
   min-height: 300px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  animation: fade-in 0.5s ease-out;
 }
 
-.rich-text-content .ProseMirror .hero-block[data-bg-color="accent"] {
+.rich-text-content .ProseMirror .hero-block[data-bg-color="accent"],
+.rich-text-content .hero-block[data-bg-color="accent"] {
   background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent) / 0.8) 100%);
 }
 
-.rich-text-content .ProseMirror .hero-block[data-bg-color="secondary"] {
+.rich-text-content .ProseMirror .hero-block[data-bg-color="secondary"],
+.rich-text-content .hero-block[data-bg-color="secondary"] {
   background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--secondary) / 0.8) 100%);
 }
 
-.rich-text-content .ProseMirror .hero-block[data-bg-color="muted"] {
+.rich-text-content .ProseMirror .hero-block[data-bg-color="muted"],
+.rich-text-content .hero-block[data-bg-color="muted"] {
   background: hsl(var(--muted));
 }
 
-.rich-text-content .ProseMirror .hero-block h1 {
-  @apply text-5xl font-bold mb-4;
+.rich-text-content .ProseMirror .hero-block h1,
+.rich-text-content .hero-block h1 {
+  @apply text-4xl md:text-5xl font-bold mb-4;
   color: hsl(var(--primary-foreground));
 }
 
-.rich-text-content .ProseMirror .hero-block p {
-  @apply text-xl;
+.rich-text-content .ProseMirror .hero-block p,
+.rich-text-content .hero-block p {
+  @apply text-lg md:text-xl;
   color: hsl(var(--primary-foreground) / 0.9);
 }
 
 /* Card Block Styles */
-.rich-text-content .ProseMirror .card-block {
-  @apply my-4 p-6 rounded-lg border-2;
+.rich-text-content .ProseMirror .card-block,
+.rich-text-content .card-block {
+  @apply my-4 p-6 rounded-lg border-2 transition-all duration-300;
   background: hsl(var(--accent) / 0.1);
   border-color: hsl(var(--accent) / 0.3);
 }
 
-.rich-text-content .ProseMirror .card-block[data-bg-color="primary"] {
+.rich-text-content .ProseMirror .card-block:hover,
+.rich-text-content .card-block:hover {
+  @apply shadow-lg;
+  transform: translateY(-2px);
+}
+
+.rich-text-content .ProseMirror .card-block[data-bg-color="primary"],
+.rich-text-content .card-block[data-bg-color="primary"] {
   background: hsl(var(--primary) / 0.1);
   border-color: hsl(var(--primary) / 0.3);
 }
 
-.rich-text-content .ProseMirror .card-block[data-bg-color="secondary"] {
+.rich-text-content .ProseMirror .card-block[data-bg-color="secondary"],
+.rich-text-content .card-block[data-bg-color="secondary"] {
   background: hsl(var(--secondary) / 0.1);
   border-color: hsl(var(--secondary) / 0.3);
 }
 
-.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] {
+.rich-text-content .ProseMirror .card-block[data-bg-color="muted"],
+.rich-text-content .card-block[data-bg-color="muted"] {
   background: hsl(var(--muted));
   border-color: hsl(var(--border));
 }
 
-.rich-text-content .ProseMirror .card-block[data-padding="small"] {
+.rich-text-content .ProseMirror .card-block[data-padding="small"],
+.rich-text-content .card-block[data-padding="small"] {
   @apply p-4;
 }
 
-.rich-text-content .ProseMirror .card-block[data-padding="large"] {
+.rich-text-content .ProseMirror .card-block[data-padding="large"],
+.rich-text-content .card-block[data-padding="large"] {
   @apply p-8;
 }
 
 /* Callout Block Styles */
-.rich-text-content .ProseMirror .callout-block {
-  @apply my-4 p-4 rounded-lg border-l-4;
+.rich-text-content .ProseMirror .callout-block,
+.rich-text-content .callout-block {
+  @apply my-4 p-4 rounded-lg border-l-4 transition-all duration-300;
   background: hsl(var(--accent) / 0.1);
   border-left-color: hsl(var(--accent));
 }
 
-.rich-text-content .ProseMirror .callout-block[data-variant="info"] {
+.rich-text-content .ProseMirror .callout-block:hover,
+.rich-text-content .callout-block:hover {
+  @apply shadow-md;
+  padding-left: 1.25rem;
+}
+
+.rich-text-content .ProseMirror .callout-block[data-variant="info"],
+.rich-text-content .callout-block[data-variant="info"] {
   background: hsl(var(--primary) / 0.1);
   border-left-color: hsl(var(--primary));
 }
 
-.rich-text-content .ProseMirror .callout-block[data-variant="success"] {
+.rich-text-content .ProseMirror .callout-block[data-variant="success"],
+.rich-text-content .callout-block[data-variant="success"] {
   background: hsl(142 76% 36% / 0.1);
   border-left-color: hsl(142 76% 36%);
 }
 
-.rich-text-content .ProseMirror .callout-block[data-variant="warning"] {
+.rich-text-content .ProseMirror .callout-block[data-variant="warning"],
+.rich-text-content .callout-block[data-variant="warning"] {
   background: hsl(38 92% 50% / 0.1);
   border-left-color: hsl(38 92% 50%);
 }
 
-.rich-text-content .ProseMirror .callout-block[data-variant="quote"] {
+.rich-text-content .ProseMirror .callout-block[data-variant="quote"],
+.rich-text-content .callout-block[data-variant="quote"] {
   background: hsl(var(--muted));
   border-left-color: hsl(var(--foreground) / 0.3);
   font-style: italic;
 }
 
 /* Step Card Styles */
-.rich-text-content .ProseMirror .step-card {
-  @apply my-4 p-6 rounded-lg border relative;
+.rich-text-content .ProseMirror .step-card,
+.rich-text-content .step-card {
+  @apply my-4 p-6 rounded-lg border relative transition-all duration-300;
   background: hsl(var(--card));
   border-color: hsl(var(--border));
 }
 
-.rich-text-content .ProseMirror .step-card::before {
-  content: attr(data-step-number);
-  @apply absolute top-4 right-4 text-6xl font-bold opacity-10;
+.rich-text-content .ProseMirror .step-card:hover,
+.rich-text-content .step-card:hover {
+  @apply shadow-lg;
+  border-color: hsl(var(--primary) / 0.5);
 }
 
-.rich-text-content .ProseMirror .step-card h3 {
-  @apply text-2xl font-bold mb-2;
+.rich-text-content .ProseMirror .step-card::before,
+.rich-text-content .step-card::before {
+  content: attr(data-step-number);
+  @apply absolute top-4 right-4 text-5xl md:text-6xl font-bold opacity-10;
+  color: hsl(var(--primary));
+}
+
+.rich-text-content .ProseMirror .step-card h3,
+.rich-text-content .step-card h3 {
+  @apply text-xl md:text-2xl font-bold mb-2;
   color: hsl(var(--primary));
 }
 
 /* Column Layout Styles */
-.rich-text-content .ProseMirror .column-layout {
-  @apply my-6 grid gap-6;
+.rich-text-content .ProseMirror .column-layout,
+.rich-text-content .column-layout {
+  @apply my-6 grid gap-4 md:gap-6;
 }
 
-.rich-text-content .ProseMirror .column-layout[data-columns="2"] {
-  @apply md:grid-cols-2;
+.rich-text-content .ProseMirror .column-layout[data-columns="2"],
+.rich-text-content .column-layout[data-columns="2"] {
+  @apply grid-cols-1 md:grid-cols-2;
 }
 
-.rich-text-content .ProseMirror .column-layout[data-columns="3"] {
-  @apply md:grid-cols-3;
+.rich-text-content .ProseMirror .column-layout[data-columns="3"],
+.rich-text-content .column-layout[data-columns="3"] {
+  @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3;
 }
 
-.rich-text-content .ProseMirror .column-item {
-  @apply p-4 rounded-lg border;
+.rich-text-content .ProseMirror .column-item,
+.rich-text-content .column-item {
+  @apply p-4 rounded-lg border transition-all duration-300;
   background: hsl(var(--card));
   border-color: hsl(var(--border));
+}
+
+.rich-text-content .ProseMirror .column-item:hover,
+.rich-text-content .column-item:hover {
+  @apply shadow-md;
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+/* Dark Mode Enhancements */
+.dark .rich-text-content .hero-block {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark .rich-text-content .card-block,
+.dark .rich-text-content .step-card,
+.dark .rich-text-content .column-item {
+  @apply border-border/50;
+}
+
+.dark .rich-text-content .callout-block {
+  border-left-width: 4px;
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  .rich-text-content .hero-block {
+    @apply p-6 min-h-[200px];
+  }
+  
+  .rich-text-content .hero-block h1 {
+    @apply text-3xl;
+  }
+  
+  .rich-text-content .hero-block p {
+    @apply text-base;
+  }
+  
+  .rich-text-content .step-card::before {
+    @apply text-4xl top-2 right-2;
+  }
+}
+
+/* Animation Support */
+.rich-text-content > * {
+  animation: fade-in 0.4s ease-out;
+}
+
+.rich-text-content .hero-block,
+.rich-text-content .card-block,
+.rich-text-content .callout-block,
+.rich-text-content .step-card {
+  animation: scale-in 0.3s ease-out;
 }
 }
