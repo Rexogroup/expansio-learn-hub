@@ -130,8 +130,17 @@ p, span, div {
 }
 
 /* Rich Text Editor Styles */
+/* Force full-width content in presentation editor */
 .rich-text-content .ProseMirror {
   @apply focus:outline-none;
+  max-width: none !important;
+  width: 100%;
+}
+
+/* Ensure prose utility doesn't constrain width */
+.rich-text-content.prose,
+.rich-text-content .prose {
+  max-width: none !important;
 }
 
 .rich-text-content .ProseMirror p {
