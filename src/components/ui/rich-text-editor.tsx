@@ -19,6 +19,7 @@ import { StepCard } from './rich-text-editor/extensions/step-card';
 import { ColumnLayout, ColumnItem } from './rich-text-editor/extensions/column-layout';
 import { BlocksMenu } from './rich-text-editor/toolbar/BlocksMenu';
 import { StylePanel } from './rich-text-editor/toolbar/StylePanel';
+import { TemplateLibrary } from './rich-text-editor/toolbar/TemplateLibrary';
 import { Button } from './button';
 import {
   Bold,
@@ -113,6 +114,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
   return (
     <div className="border border-input rounded-md bg-background">
       <div className="border-b border-input p-2 flex flex-wrap gap-1">
+        <TemplateLibrary editor={editor} />
         <BlocksMenu editor={editor} />
         <StylePanel editor={editor} />
         
