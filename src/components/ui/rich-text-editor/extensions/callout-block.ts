@@ -1,0 +1,66 @@
+import { Node, mergeAttributes } from '@tiptap/core';
+
+export interface CalloutBlockOptions {
+  HTMLAttributes: Record<string, any>;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    calloutBlock: {
+      setCalloutBlock: (attributes?: { variant?: string }) => ReturnType;
+    };
+  }
+}
+
+export const CalloutBlock = Node.create<CalloutBlockOptions>({
+  name: 'calloutBlock',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+
+  addAttributes() {
+    return {
+      variant: {
+        default: 'info',
+        parseHTML: element => element.getAttribute('data-variant'),
+        renderHTML: attributes => ({
+          'data-variant': attributes.variant,
+        }),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'div[data-type="callout"]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'div',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-type': 'callout',
+        class: 'callout-block',
+      }),
+      0,
+    ];
+  },
+
+  addCommands() {
+    return {
+      setCalloutBlock:
+        attributes =>
+        ({ commands }) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: attributes,
+            content: [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: '💡 Important information or quote goes here' }],
+              },
+            ],
+          });
+        },
+    };
+  },
+});

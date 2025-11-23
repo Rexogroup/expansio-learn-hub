@@ -12,6 +12,13 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableCell } from '@tiptap/extension-table-cell';
+import { HeroBlock } from './rich-text-editor/extensions/hero-block';
+import { CardBlock } from './rich-text-editor/extensions/card-block';
+import { CalloutBlock } from './rich-text-editor/extensions/callout-block';
+import { StepCard } from './rich-text-editor/extensions/step-card';
+import { ColumnLayout, ColumnItem } from './rich-text-editor/extensions/column-layout';
+import { BlocksMenu } from './rich-text-editor/toolbar/BlocksMenu';
+import { StylePanel } from './rich-text-editor/toolbar/StylePanel';
 import { Button } from './button';
 import {
   Bold,
@@ -73,6 +80,12 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
       TableRow,
       TableHeader,
       TableCell,
+      HeroBlock,
+      CardBlock,
+      CalloutBlock,
+      StepCard,
+      ColumnLayout,
+      ColumnItem,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -100,6 +113,11 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
   return (
     <div className="border border-input rounded-md bg-background">
       <div className="border-b border-input p-2 flex flex-wrap gap-1">
+        <BlocksMenu editor={editor} />
+        <StylePanel editor={editor} />
+        
+        <div className="w-px h-6 bg-border mx-1" />
+
         <Button
           type="button"
           size="sm"
