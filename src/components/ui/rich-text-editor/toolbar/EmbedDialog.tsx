@@ -38,7 +38,28 @@ export const EmbedDialog = ({ editor }: EmbedDialogProps) => {
     setError('');
     
     if (value) {
-      const validation = validateEmbedUrl(value);
+      let urlToValidate = value.trim();
+      
+      // Check if input is an iframe HTML string
+      if (urlToValidate.includes('<iframe')) {
+        // Extract src attribute from iframe
+        const srcMatch = urlToValidate.match(/src=["']([^"']+)["']/);
+        if (srcMatch && srcMatch[1]) {
+          urlToValidate = srcMatch[1];
+          setUrl(urlToValidate); // Update to just the URL
+          
+          // Extract title attribute if present
+          const titleMatch = value.match(/title=["']([^"']+)["']/);
+          if (titleMatch && titleMatch[1] && !title) {
+            setTitle(titleMatch[1]);
+          }
+        } else {
+          setError('Could not extract URL from iframe code');
+          return;
+        }
+      }
+      
+      const validation = validateEmbedUrl(urlToValidate);
       if (!validation.valid) {
         setError(validation.error || 'Invalid URL');
       } else {
@@ -89,15 +110,15 @@ export const EmbedDialog = ({ editor }: EmbedDialogProps) => {
         <DialogHeader>
           <DialogTitle>Embed External Content</DialogTitle>
           <DialogDescription>
-            Embed videos, documents, and other content from trusted platforms like YouTube, Google Docs, Figma, and more.
+            Paste an embed URL or iframe HTML code from trusted platforms like YouTube, Google Docs, Figma, Gamma, and more.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="embed-url">Content URL *</Label>
+            <Label htmlFor="embed-url">Content URL or iframe code *</Label>
             <Input
               id="embed-url"
-              placeholder="https://youtube.com/watch?v=..."
+              placeholder="https://gamma.app/embed/... or <iframe src=...>"
               value={url}
               onChange={(e) => handleUrlChange(e.target.value)}
             />
@@ -156,7 +177,7 @@ export const EmbedDialog = ({ editor }: EmbedDialogProps) => {
 
           <div className="text-xs text-muted-foreground">
             <p className="font-semibold mb-1">Supported platforms:</p>
-            <p>YouTube, Vimeo, Google Docs/Sheets/Slides, Typeform, Loom, Figma, Miro, Airtable</p>
+            <p>YouTube, Vimeo, Google Docs/Sheets/Slides, Typeform, Loom, Figma, Miro, Airtable, Gamma</p>
           </div>
         </div>
         <div className="flex justify-end gap-2">
