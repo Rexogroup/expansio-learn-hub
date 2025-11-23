@@ -205,4 +205,130 @@ p, span, div {
 .rich-text-content .ProseMirror .selectedCell {
   @apply bg-accent/20;
 }
+
+/* Hero Block Styles */
+.rich-text-content .ProseMirror .hero-block {
+  @apply my-8 p-12 rounded-lg relative overflow-hidden;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.rich-text-content .ProseMirror .hero-block[data-bg-color="accent"] {
+  background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent) / 0.8) 100%);
+}
+
+.rich-text-content .ProseMirror .hero-block[data-bg-color="secondary"] {
+  background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--secondary) / 0.8) 100%);
+}
+
+.rich-text-content .ProseMirror .hero-block[data-bg-color="muted"] {
+  background: hsl(var(--muted));
+}
+
+.rich-text-content .ProseMirror .hero-block h1 {
+  @apply text-5xl font-bold mb-4;
+  color: hsl(var(--primary-foreground));
+}
+
+.rich-text-content .ProseMirror .hero-block p {
+  @apply text-xl;
+  color: hsl(var(--primary-foreground) / 0.9);
+}
+
+/* Card Block Styles */
+.rich-text-content .ProseMirror .card-block {
+  @apply my-4 p-6 rounded-lg border-2;
+  background: hsl(var(--accent) / 0.1);
+  border-color: hsl(var(--accent) / 0.3);
+}
+
+.rich-text-content .ProseMirror .card-block[data-bg-color="primary"] {
+  background: hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+.rich-text-content .ProseMirror .card-block[data-bg-color="secondary"] {
+  background: hsl(var(--secondary) / 0.1);
+  border-color: hsl(var(--secondary) / 0.3);
+}
+
+.rich-text-content .ProseMirror .card-block[data-bg-color="muted"] {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
+
+.rich-text-content .ProseMirror .card-block[data-padding="small"] {
+  @apply p-4;
+}
+
+.rich-text-content .ProseMirror .card-block[data-padding="large"] {
+  @apply p-8;
+}
+
+/* Callout Block Styles */
+.rich-text-content .ProseMirror .callout-block {
+  @apply my-4 p-4 rounded-lg border-l-4;
+  background: hsl(var(--accent) / 0.1);
+  border-left-color: hsl(var(--accent));
+}
+
+.rich-text-content .ProseMirror .callout-block[data-variant="info"] {
+  background: hsl(var(--primary) / 0.1);
+  border-left-color: hsl(var(--primary));
+}
+
+.rich-text-content .ProseMirror .callout-block[data-variant="success"] {
+  background: hsl(142 76% 36% / 0.1);
+  border-left-color: hsl(142 76% 36%);
+}
+
+.rich-text-content .ProseMirror .callout-block[data-variant="warning"] {
+  background: hsl(38 92% 50% / 0.1);
+  border-left-color: hsl(38 92% 50%);
+}
+
+.rich-text-content .ProseMirror .callout-block[data-variant="quote"] {
+  background: hsl(var(--muted));
+  border-left-color: hsl(var(--foreground) / 0.3);
+  font-style: italic;
+}
+
+/* Step Card Styles */
+.rich-text-content .ProseMirror .step-card {
+  @apply my-4 p-6 rounded-lg border relative;
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+.rich-text-content .ProseMirror .step-card::before {
+  content: attr(data-step-number);
+  @apply absolute top-4 right-4 text-6xl font-bold opacity-10;
+}
+
+.rich-text-content .ProseMirror .step-card h3 {
+  @apply text-2xl font-bold mb-2;
+  color: hsl(var(--primary));
+}
+
+/* Column Layout Styles */
+.rich-text-content .ProseMirror .column-layout {
+  @apply my-6 grid gap-6;
+}
+
+.rich-text-content .ProseMirror .column-layout[data-columns="2"] {
+  @apply md:grid-cols-2;
+}
+
+.rich-text-content .ProseMirror .column-layout[data-columns="3"] {
+  @apply md:grid-cols-3;
+}
+
+.rich-text-content .ProseMirror .column-item {
+  @apply p-4 rounded-lg border;
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
 }
