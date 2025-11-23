@@ -165,11 +165,13 @@ CONVERSION PROCESS:
 7. Maintain formatting: <strong>, <em>, <ul>, <ol>, <li>
 
 CRITICAL RULES:
-- Use data-bg-color: "primary", "secondary", "accent", or "muted"
+- Use data-bg-color with values: "blue", "navy", "purple", "pink", "green", "orange", "red", "teal", "yellow", "indigo", "gray", "white"
+- Optional data-text-color: "white", "black", "gray", or "auto" (auto is default and adjusts automatically)
 - Include proper class names on all custom blocks
 - When you see 2-4 similar items together, USE COLUMN LAYOUT with cards inside
 - Quotes ALWAYS go in callout blocks with variant="quote"
 - First page title ALWAYS gets gradient="true"
+- Use vibrant colors: blue/purple/green for main content, white/gray-light for subtle backgrounds
 
 VALIDATION CHECKLIST BEFORE RETURNING:
 ✓ Does my output start with <div data-type="...">?

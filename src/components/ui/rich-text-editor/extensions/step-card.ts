@@ -27,6 +27,33 @@ export const StepCard = Node.create<StepCardOptions>({
           'data-step-number': attributes.stepNumber.toString(),
         }),
       },
+      backgroundColor: {
+        default: 'card',
+        parseHTML: element => element.getAttribute('data-bg-color'),
+        renderHTML: attributes => ({
+          'data-bg-color': attributes.backgroundColor,
+        }),
+      },
+      textColor: {
+        default: 'auto',
+        parseHTML: element => element.getAttribute('data-text-color'),
+        renderHTML: attributes => {
+          if (attributes.textColor && attributes.textColor !== 'auto') {
+            return { 'data-text-color': attributes.textColor };
+          }
+          return {};
+        },
+      },
+      borderColor: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-border-color'),
+        renderHTML: attributes => {
+          if (attributes.borderColor) {
+            return { 'data-border-color': attributes.borderColor };
+          }
+          return {};
+        },
+      },
     };
   },
 

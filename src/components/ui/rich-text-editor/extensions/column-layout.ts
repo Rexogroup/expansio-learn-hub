@@ -80,6 +80,31 @@ export const ColumnItem = Node.create({
   content: 'block+',
   defining: true,
 
+  addAttributes() {
+    return {
+      backgroundColor: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-bg-color'),
+        renderHTML: attributes => {
+          if (attributes.backgroundColor) {
+            return { 'data-bg-color': attributes.backgroundColor };
+          }
+          return {};
+        },
+      },
+      textColor: {
+        default: 'auto',
+        parseHTML: element => element.getAttribute('data-text-color'),
+        renderHTML: attributes => {
+          if (attributes.textColor && attributes.textColor !== 'auto') {
+            return { 'data-text-color': attributes.textColor };
+          }
+          return {};
+        },
+      },
+    };
+  },
+
   parseHTML() {
     return [{ tag: 'div[data-type="column-item"]' }];
   },
