@@ -16,6 +16,7 @@ import { HeroBlock } from './rich-text-editor/extensions/hero-block';
 import { CardBlock } from './rich-text-editor/extensions/card-block';
 import { CalloutBlock } from './rich-text-editor/extensions/callout-block';
 import { StepCard } from './rich-text-editor/extensions/step-card';
+import { StepIndicator } from './rich-text-editor/extensions/step-indicator';
 import { ColumnLayout, ColumnItem } from './rich-text-editor/extensions/column-layout';
 import { BlocksMenu } from './rich-text-editor/toolbar/BlocksMenu';
 import { StylePanel } from './rich-text-editor/toolbar/StylePanel';
@@ -85,6 +86,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
       CardBlock,
       CalloutBlock,
       StepCard,
+      StepIndicator,
       ColumnLayout,
       ColumnItem,
     ],
