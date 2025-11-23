@@ -43,15 +43,21 @@ export const PdfImporter = ({ onContentImported }: PdfImporterProps) => {
     setErrorMessage('');
 
     try {
-      // Convert PDF to text using FileReader
-      const text = await readPdfAsText(file);
+      // Convert PDF to base64 for server-side processing
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          ''
+        )
+      );
       
       setStatus('converting');
 
-      // Call edge function to convert PDF content to HTML
+      // Call edge function with raw PDF data for proper parsing
       const { data, error } = await supabase.functions.invoke('convert-pdf-to-lesson', {
         body: {
-          pdfContent: text,
+          pdfFile: base64,
           fileName: file.name,
         },
       });
@@ -94,34 +100,6 @@ export const PdfImporter = ({ onContentImported }: PdfImporterProps) => {
     event.target.value = '';
   };
 
-  const readPdfAsText = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const arrayBuffer = e.target?.result as ArrayBuffer;
-          // For now, we'll extract basic text from PDF
-          // In a production environment, you'd use a proper PDF parsing library
-          const uint8Array = new Uint8Array(arrayBuffer);
-          const decoder = new TextDecoder('utf-8');
-          const text = decoder.decode(uint8Array);
-          
-          // Extract readable text from PDF structure
-          const cleanText = text
-            .replace(/[^\x20-\x7E\n]/g, ' ')
-            .split('\n')
-            .filter(line => line.trim().length > 0)
-            .join('\n');
-          
-          resolve(cleanText || 'Unable to extract text from PDF');
-        } catch (error) {
-          reject(error);
-        }
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsArrayBuffer(file);
-    });
-  };
 
   return (
     <>
