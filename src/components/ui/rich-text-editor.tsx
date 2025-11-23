@@ -94,7 +94,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-[300px] max-w-none p-4',
+        class: 'prose focus:outline-none min-h-[300px] w-full p-4',
       },
     },
   });
@@ -119,7 +119,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
   };
 
   return (
-    <div className="border border-input rounded-md bg-background">
+    <div className="border border-input rounded-md bg-background w-full">
       <div className="border-b border-input p-2 flex flex-wrap gap-1">
         <TemplateLibrary editor={editor} />
         <BlocksMenu editor={editor} />
@@ -390,7 +390,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
           <Redo className="w-4 h-4" />
         </Button>
       </div>
-      <EditorContent editor={editor} className="rich-text-content" />
+      <EditorContent editor={editor} className="rich-text-content w-full" />
       
       <UrlInputDialog
         open={imageDialogOpen}
