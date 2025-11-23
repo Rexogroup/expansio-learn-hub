@@ -213,115 +213,124 @@ export const LessonManager = () => {
               New Lesson
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] h-[95vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>{editingLesson ? "Edit Lesson" : "Create Lesson"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="course">Course</Label>
-                <Select
-                  value={selectedCourseId}
-                  onValueChange={(value) => {
-                    setSelectedCourseId(value);
-                    setFormData({ ...formData, section_id: "" });
-                  }}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <form onSubmit={handleSubmit} className="flex h-full gap-6 overflow-hidden">
+              {/* Left Sidebar - Form Controls */}
+              <div className="w-80 flex-shrink-0 flex flex-col overflow-hidden border-r pr-6">
+                <div className="flex-1 overflow-y-auto space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="course">Course</Label>
+                    <Select
+                      value={selectedCourseId}
+                      onValueChange={(value) => {
+                        setSelectedCourseId(value);
+                        setFormData({ ...formData, section_id: "" });
+                      }}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((course) => (
+                          <SelectItem key={course.id} value={course.id}>
+                            {course.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="section">Section</Label>
+                    <Select
+                      value={formData.section_id}
+                      onValueChange={(value) => setFormData({ ...formData, section_id: value })}
+                      required
+                      disabled={!selectedCourseId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a section" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredSections.map((section) => (
+                          <SelectItem key={section.id} value={section.id}>
+                            {section.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="video">Video Embed URL</Label>
+                    <Input
+                      id="video"
+                      value={formData.video_url}
+                      onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                      placeholder="https://www.loom.com/embed/..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Loom, YouTube, Vimeo embed URLs supported
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="order">Order</Label>
+                    <Input
+                      id="order"
+                      type="number"
+                      value={formData.order_index}
+                      onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                {/* Sticky Bottom Buttons */}
+                <div className="flex flex-col gap-2 pt-4 border-t mt-4">
+                  <Button type="submit" className="w-full">
+                    {editingLesson ? "Update Lesson" : "Create Lesson"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      resetForm();
+                    }}
+                    className="w-full"
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="section">Section</Label>
-                <Select
-                  value={formData.section_id}
-                  onValueChange={(value) => setFormData({ ...formData, section_id: value })}
-                  required
-                  disabled={!selectedCourseId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredSections.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="content">Content</Label>
+
+              {/* Right Main Area - Editor */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <Label className="text-lg font-semibold">Lesson Content</Label>
                   <PdfImporter 
                     onContentImported={(html) => setFormData({ ...formData, content: html })}
                   />
                 </div>
-                <RichTextEditor
-                  content={formData.content}
-                  onChange={(content) => setFormData({ ...formData, content })}
-                  placeholder="Start writing your lesson content..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="video">Video Embed URL</Label>
-                <Input
-                  id="video"
-                  value={formData.video_url}
-                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                  placeholder="https://www.loom.com/embed/..."
-                />
-                <p className="text-xs text-muted-foreground">
-                  Paste the embed URL from Loom, YouTube, Vimeo, or other video platforms. 
-                  <br />
-                  <strong>Loom:</strong> Share → Embed → Copy the URL from the embed code
-                  <br />
-                  <strong>YouTube:</strong> Share → Embed → Copy the src URL (https://www.youtube.com/embed/...)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="order">Order</Label>
-                <Input
-                  id="order"
-                  type="number"
-                  value={formData.order_index}
-                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
-                  required
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1">
-                  {editingLesson ? "Update" : "Create"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsDialogOpen(false);
-                    resetForm();
-                  }}
-                >
-                  Cancel
-                </Button>
+                
+                <div className="flex-1 overflow-y-auto border rounded-lg p-4 bg-background/50">
+                  <RichTextEditor
+                    content={formData.content}
+                    onChange={(content) => setFormData({ ...formData, content })}
+                    placeholder="Start writing your lesson content or import from PDF..."
+                  />
+                </div>
               </div>
             </form>
           </DialogContent>
