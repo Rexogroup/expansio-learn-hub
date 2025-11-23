@@ -12,7 +12,7 @@ const CONVERSION_SYSTEM_PROMPT = `You are an expert at converting presentation c
 Given PDF content (text and structure), convert it to HTML using these EXACT custom blocks:
 
 1. HERO BLOCK (for main titles/headers):
-<div data-type="hero" data-bg-color="primary" data-gradient="false" class="hero-block">
+<div data-type="hero" data-bg-color="primary" data-gradient="true" class="hero-block">
   <h1>Title Here</h1>
   <p>Subtitle or description</p>
 </div>
@@ -24,8 +24,8 @@ Given PDF content (text and structure), convert it to HTML using these EXACT cus
 </div>
 
 3. CALLOUT BLOCK (for quotes/highlights):
-<div data-type="callout" data-variant="info" class="callout-block">
-  <p>💡 Important information or quote</p>
+<div data-type="callout" data-variant="quote" class="callout-block">
+  <p>"Quote text here"</p>
 </div>
 Variants: info, warning, success, quote
 
@@ -36,26 +36,105 @@ Variants: info, warning, success, quote
 </div>
 
 5. COLUMN LAYOUT (for side-by-side content):
-<div data-type="column-layout" data-columns="2" class="column-layout">
+<div data-type="column-layout" data-columns="3" class="column-layout">
   <div data-type="column-item" class="column-item">
-    <p>Left column content</p>
+    <div data-type="card" data-bg-color="accent" data-padding="normal" class="card-block">
+      <h3>Card Title</h3>
+      <p>Card content</p>
+    </div>
   </div>
   <div data-type="column-item" class="column-item">
-    <p>Right column content</p>
+    <div data-type="card" data-bg-color="accent" data-padding="normal" class="card-block">
+      <h3>Card Title</h3>
+      <p>Card content</p>
+    </div>
+  </div>
+  <div data-type="column-item" class="column-item">
+    <div data-type="card" data-bg-color="accent" data-padding="normal" class="card-block">
+      <h3>Card Title</h3>
+      <p>Card content</p>
+    </div>
   </div>
 </div>
 
-CONVERSION RULES:
-1. First slide/page title → Hero block with gradient
-2. Section headers → Card blocks or Hero blocks
-3. Quotes, tips, important notes → Callout blocks
-4. Numbered lists or processes → Step cards (preserve numbering)
-5. Side-by-side content → Column layouts
+PATTERN DETECTION RULES:
+- First page heading (document title) → hero-block with data-gradient="true"
+- 2-4 consecutive sections with SIMILAR structure (short heading + description) → column-layout with card-block inside each column-item
+- Text in quotation marks ("...") → callout-block with data-variant="quote"
+- Section headings followed by paragraphs → card-block
+- Numbered steps/processes → step-card with appropriate data-step-number
+- Bulleted lists → Keep as <ul><li> inside a card-block
+
+CONCRETE EXAMPLES:
+
+EXAMPLE 1 - Three Side-by-Side Cards:
+INPUT TEXT:
+"Give Valuable Work
+Deliver something they would normally pay for—real, tangible work that solves an actual problem.
+
+Deliver It Free
+No payment required, no strings attached, no friction in the process.
+
+Deliver It Upfront
+Before they commit to anything, before a call, before a meeting—value first, always."
+
+OUTPUT HTML:
+<div data-type="column-layout" data-columns="3" class="column-layout">
+  <div data-type="column-item" class="column-item">
+    <div data-type="card" data-bg-color="accent" data-padding="normal" class="card-block">
+      <h3>Give Valuable Work</h3>
+      <p>Deliver something they would normally pay for—real, tangible work that solves an actual problem.</p>
+    </div>
+  </div>
+  <div data-type="column-item" class="column-item">
+    <div data-type="card" data-bg-color="accent" data-padding="normal" class="card-block">
+      <h3>Deliver It Free</h3>
+      <p>No payment required, no strings attached, no friction in the process.</p>
+    </div>
+  </div>
+  <div data-type="column-item" class="column-item">
+    <div data-type="card" data-bg-color="accent" data-padding="normal" class="card-block">
+      <h3>Deliver It Upfront</h3>
+      <p>Before they commit to anything, before a call, before a meeting—value first, always.</p>
+    </div>
+  </div>
+</div>
+
+EXAMPLE 2 - Quote Callout:
+INPUT TEXT:
+"Give them something valuable enough that they'd normally pay for it, and deliver it for free, upfront, with no friction."
+
+OUTPUT HTML:
+<div data-type="callout" data-variant="quote" class="callout-block">
+  <p>"Give them something valuable enough that they'd normally pay for it, and deliver it for free, upfront, with no friction."</p>
+</div>
+
+EXAMPLE 3 - Main Title:
+INPUT TEXT:
+"The Expansio Philosophy
+Our approach to winning clients"
+
+OUTPUT HTML:
+<div data-type="hero" data-bg-color="primary" data-gradient="true" class="hero-block">
+  <h1>The Expansio Philosophy</h1>
+  <p>Our approach to winning clients</p>
+</div>
+
+CONVERSION PROCESS:
+1. Read the entire text first
+2. Identify the main title/heading → hero-block with data-gradient="true"
+3. Look for groups of 2-4 similar short sections (heading + brief description) → column-layout with card-blocks
+4. Find quotes (text in "..." or standalone quote-like sentences) → callout-block with data-variant="quote"
+5. Convert remaining sections to card-blocks
 6. Preserve ALL text exactly as written
 7. Maintain formatting: <strong>, <em>, <ul>, <ol>, <li>
-8. Use appropriate data-variant for callouts (info=blue, warning=yellow, success=green, quote=purple)
-9. Use data-bg-color: "primary", "secondary", "accent", or "muted"
-10. Include proper class names on all custom blocks
+
+CRITICAL RULES:
+- Use data-bg-color: "primary", "secondary", "accent", or "muted"
+- Include proper class names on all custom blocks
+- When you see 2-4 similar items together, USE COLUMN LAYOUT with cards inside
+- Quotes ALWAYS go in callout blocks with variant="quote"
+- First page title ALWAYS gets gradient="true"
 
 Return ONLY valid HTML with these custom blocks. No explanations, no markdown, just HTML.`;
 
@@ -123,7 +202,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           { role: 'system', content: CONVERSION_SYSTEM_PROMPT },
           { role: 'user', content: `Convert this PDF content to custom HTML blocks:\n\nFile: ${fileName}\n\n${cleanText}` }
