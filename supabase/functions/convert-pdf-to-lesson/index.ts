@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import pdf from "https://esm.sh/pdf-parse@1.1.1";
+import { getDocument } from "https://esm.sh/pdfjs-serverless@0.3.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -93,12 +93,22 @@ serve(async (req) => {
     // Decode base64 PDF to binary
     const pdfData = Uint8Array.from(atob(pdfFile), c => c.charCodeAt(0));
 
-    // Parse PDF using pdf-parse library to extract clean text
-    console.log('Parsing PDF with pdf-parse library...');
-    const pdfParsed = await pdf(pdfData);
-    const cleanText = pdfParsed.text;
+    // Parse PDF using pdfjs-serverless (Deno-compatible)
+    console.log('Parsing PDF with pdfjs-serverless...');
+    const doc = await getDocument({ data: pdfData, useSystemFonts: true }).promise;
 
-    console.log(`Extracted ${cleanText.length} characters from PDF`);
+    // Extract text from all pages
+    let cleanText = '';
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ');
+      cleanText += pageText + '\n\n';
+    }
+
+    console.log(`Extracted ${cleanText.length} characters from ${doc.numPages} pages`);
 
     // Call Lovable AI to convert the PDF content to custom HTML blocks
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
