@@ -26,10 +26,11 @@ export default function OnboardingStep() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [videoWatched, setVideoWatched] = useState(false);
+  const [totalSteps, setTotalSteps] = useState(4);
   const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
 
-  const currentStepNumber = parseInt(stepNumber || "1");
+  const currentStepNumber = parseInt(stepNumber || "0");
 
   useEffect(() => {
     fetchStepData();
@@ -68,15 +69,21 @@ export default function OnboardingStep() {
         return;
       }
 
+      // Fetch total number of steps
+      const { count } = await supabase
+        .from("onboarding_steps")
+        .select("*", { count: 'exact', head: true });
+      setTotalSteps(count || 4);
+
       // Check if user can access this step
-      if (currentStepNumber > 1) {
+      if (currentStepNumber > 0) {
         // Check if all steps are completed (allow free navigation)
         const { data: allProgress } = await supabase
           .from("user_onboarding_progress")
           .select("completed")
           .eq("user_id", user.id);
         
-        const allCompleted = allProgress?.length === 4 && allProgress.every(p => p.completed);
+        const allCompleted = allProgress?.length === (count || 4) && allProgress.every(p => p.completed);
         
         if (!allCompleted) {
           const { data: previousProgress } = await supabase
@@ -84,7 +91,7 @@ export default function OnboardingStep() {
             .select("completed")
             .eq("user_id", user.id)
             .eq("step_number", currentStepNumber - 1)
-            .single();
+            .maybeSingle();
 
           if (!previousProgress?.completed) {
             toast.error("Please complete the previous step first");
@@ -99,9 +106,14 @@ export default function OnboardingStep() {
         .from("onboarding_steps")
         .select("*")
         .eq("step_number", currentStepNumber)
-        .single();
+        .maybeSingle();
 
       if (stepError) throw stepError;
+      if (!stepData) {
+        toast.error("Step not found");
+        navigate("/onboarding");
+        return;
+      }
       setStep(stepData);
 
       // Check if step is already completed
@@ -114,7 +126,7 @@ export default function OnboardingStep() {
 
       if (progressData?.completed) {
         setCompleted(true);
-        if (currentStepNumber === 2) {
+        if (stepData.video_url) {
           setVideoWatched(true);
         }
       }
@@ -147,12 +159,12 @@ export default function OnboardingStep() {
 
       if (error) throw error;
 
-      toast.success(`Step ${currentStepNumber} completed!`);
+      toast.success(`Step ${currentStepNumber + 1} completed!`);
       setCompleted(true);
 
       // Navigate to next step if not the last one
       setTimeout(() => {
-        if (currentStepNumber < 4) {
+        if (currentStepNumber < totalSteps - 1) {
           navigate(`/onboarding/step/${currentStepNumber + 1}`);
         } else {
           navigate("/onboarding");
@@ -198,7 +210,7 @@ export default function OnboardingStep() {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm font-semibold text-muted-foreground">
-              Step {step.step_number} of 4
+              Step {step.step_number + 1} of {totalSteps}
             </span>
             {completed && (
               <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-500 flex items-center gap-1">
@@ -213,8 +225,8 @@ export default function OnboardingStep() {
 
         <Card className="mb-6">
           <CardContent className="pt-6">
-            {/* Step 1: Google Doc */}
-            {step.step_number === 1 && (
+            {/* Dynamic Google Doc Section */}
+            {step.google_doc_url && !step.video_url && !step.template_url && (
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
                   <h3 className="font-semibold mb-2">Instructions:</h3>
@@ -226,20 +238,18 @@ export default function OnboardingStep() {
                   </ol>
                 </div>
 
-                {step.google_doc_url && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => window.open(step.google_doc_url, "_blank")}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Google Doc Template
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.open(step.google_doc_url, "_blank")}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Google Doc Template
+                </Button>
 
                 <div className="flex items-start space-x-2 p-4 border rounded-lg">
                   <Checkbox
-                    id="step1-complete"
+                    id="step-complete"
                     checked={completed}
                     onCheckedChange={(checked) => {
                       if (checked && !completed) {
@@ -249,60 +259,56 @@ export default function OnboardingStep() {
                     disabled={completed || saving}
                   />
                   <label
-                    htmlFor="step1-complete"
+                    htmlFor="step-complete"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                   >
-                    I have completed the ICP template
+                    I have completed this step
                   </label>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Video */}
-            {step.step_number === 2 && (
+            {/* Dynamic Video Section */}
+            {step.video_url && (
               <div className="space-y-4">
                 <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
-                  {step.video_url ? (
-                    step.video_url.includes('loom.com') ? (
-                      <iframe
-                        src={step.video_url.replace('/share/', '/embed/')}
-                        className="w-full h-full rounded-lg"
-                        allow="autoplay; fullscreen; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <video
-                        ref={videoRef}
-                        controls
-                        className="w-full h-full rounded-lg"
-                        src={step.video_url}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    )
+                  {step.video_url.includes('loom.com') ? (
+                    <iframe
+                      src={step.video_url.replace('/share/', '/embed/')}
+                      className="w-full h-full rounded-lg"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
                   ) : (
-                    <p className="text-muted-foreground">Video will be available soon</p>
+                    <video
+                      ref={videoRef}
+                      controls
+                      className="w-full h-full rounded-lg"
+                      src={step.video_url}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
                   )}
                 </div>
 
                 <div className="flex items-start space-x-2 p-4 border rounded-lg">
                   <Checkbox
-                    id="step2-complete"
+                    id="step-complete"
                     checked={completed}
                     onCheckedChange={(checked) => {
-                      if (checked && !completed && (videoWatched || !step.video_url)) {
+                      if (checked && !completed && videoWatched) {
                         markStepComplete();
                       }
                     }}
-                    disabled={completed || saving || (!videoWatched && !!step.video_url)}
+                    disabled={completed || saving || !videoWatched}
                   />
                   <label
-                    htmlFor="step2-complete"
+                    htmlFor="step-complete"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                   >
-                    {videoWatched || !step.video_url
+                    {videoWatched
                       ? "I have watched the video"
-                      : step.video_url?.includes('loom.com')
+                      : step.video_url.includes('loom.com')
                       ? "Watch the video for a few seconds to continue"
                       : "Watch at least 90% of the video to continue"}
                   </label>
@@ -310,23 +316,21 @@ export default function OnboardingStep() {
               </div>
             )}
 
-            {/* Step 3: Template */}
-            {step.step_number === 3 && (
+            {/* Dynamic Template Section */}
+            {step.template_url && !step.video_url && !step.google_doc_url && (
               <div className="space-y-4">
-                {step.template_url && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => window.open(step.template_url, "_blank")}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Appointment Setting Template
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.open(step.template_url, "_blank")}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Template
+                </Button>
 
                 <div className="flex items-start space-x-2 p-4 border rounded-lg">
                   <Checkbox
-                    id="step3-complete"
+                    id="step-complete"
                     checked={completed}
                     onCheckedChange={(checked) => {
                       if (checked && !completed) {
@@ -336,17 +340,17 @@ export default function OnboardingStep() {
                     disabled={completed || saving}
                   />
                   <label
-                    htmlFor="step3-complete"
+                    htmlFor="step-complete"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                   >
-                    I have reviewed the appointment setting templates
+                    I have reviewed the templates
                   </label>
                 </div>
               </div>
             )}
 
-            {/* Step 4: Completion */}
-            {step.step_number === 4 && (
+            {/* Completion Section - for last step or steps without specific resources */}
+            {(step.step_number === totalSteps - 1 || (!step.video_url && !step.google_doc_url && !step.template_url)) && (
               <div className="space-y-6 text-center py-8">
                 <div className="flex justify-center">
                   <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -355,22 +359,27 @@ export default function OnboardingStep() {
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
+                  <h2 className="text-2xl font-bold mb-2">
+                    {step.step_number === totalSteps - 1 ? "Congratulations!" : "Complete This Step"}
+                  </h2>
                   <p className="text-muted-foreground">
-                    You have successfully completed the onboarding process.
-                    You now have full access to all platform resources.
+                    {step.step_number === totalSteps - 1
+                      ? "You have successfully completed the onboarding process. You now have full access to all platform resources."
+                      : "Mark this step as complete to continue."}
                   </p>
                 </div>
 
                 <Button
                   onClick={() => {
                     markStepComplete();
-                    navigate("/courses");
+                    if (step.step_number === totalSteps - 1) {
+                      navigate("/courses");
+                    }
                   }}
                   size="lg"
                   disabled={saving}
                 >
-                  Access Resources
+                  {step.step_number === totalSteps - 1 ? "Access Resources" : "Mark as Complete"}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -379,7 +388,7 @@ export default function OnboardingStep() {
         </Card>
 
         {/* Navigation */}
-        {currentStepNumber < 4 && completed && (
+        {currentStepNumber < totalSteps - 1 && completed && (
           <div className="flex justify-end">
             <Button onClick={() => navigate(`/onboarding/step/${currentStepNumber + 1}`)}>
               Next Step
