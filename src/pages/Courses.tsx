@@ -96,9 +96,6 @@ export default function Courses() {
                         {/* Content */}
                         <div className="flex-1 flex flex-col justify-center min-w-0">
                           <h3 className="text-3xl font-semibold text-foreground whitespace-pre-line mb-2">{course.title}</h3>
-                          <p className="text-muted-foreground text-lg mb-4 line-clamp-2">
-                            {course.description || "No description available"}
-                          </p>
                           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
