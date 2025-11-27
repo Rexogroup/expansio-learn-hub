@@ -62,7 +62,7 @@ export default function Courses() {
             <p className="text-xl text-muted-foreground">No courses available yet</p>
           </div>
         ) : (
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-screen-xl mx-auto px-4">
             <div className="relative">
               {/* Vertical connecting line */}
               <div className="absolute left-6 top-12 bottom-12 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary hidden md:block" />
