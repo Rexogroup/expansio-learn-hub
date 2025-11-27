@@ -62,7 +62,7 @@ export default function Courses() {
             <p className="text-xl text-muted-foreground">No courses available yet</p>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="relative">
               {/* Vertical connecting line */}
               <div className="absolute left-6 top-12 bottom-12 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary hidden md:block" />
@@ -79,10 +79,10 @@ export default function Courses() {
                   {/* Course card */}
                   <Link to={`/course/${course.id}`} className="block ml-16 md:ml-20">
                     <Card className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-border/50 bg-card backdrop-blur-sm">
-                      <div className="flex flex-col md:flex-row gap-4 p-6">
+                      <div className="flex flex-col md:flex-row gap-4 p-8">
                         {/* Thumbnail */}
                         {course.thumbnail_url && (
-                          <div className="w-full md:w-48 flex-shrink-0">
+                          <div className="w-full md:w-64 flex-shrink-0">
                             <div className="aspect-video w-full overflow-hidden rounded-lg">
                               <img
                                 src={course.thumbnail_url}
@@ -97,7 +97,7 @@ export default function Courses() {
                         <div className="flex-1 flex flex-col justify-center min-w-0">
                           <div className="flex items-start gap-2 mb-2">
                             <BookOpen className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                            <h3 className="text-xl font-semibold text-foreground">{course.title}</h3>
+                            <h3 className="text-2xl font-semibold text-foreground">{course.title}</h3>
                           </div>
                           <p className="text-muted-foreground mb-4 line-clamp-2">
                             {course.description || "No description available"}
