@@ -62,43 +62,67 @@ export default function Courses() {
             <p className="text-xl text-muted-foreground">No courses available yet</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <Link key={course.id} to={`/course/${course.id}`}>
-                <Card className="h-full hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer border-border/50 bg-card/50 backdrop-blur-sm">
-                  {course.thumbnail_url && (
-                    <div className="aspect-video w-full overflow-hidden rounded-t-lg">
-                      <img
-                        src={course.thumbnail_url}
-                        alt={course.title}
-                        className="w-full h-full object-cover"
-                      />
+          <div className="max-w-4xl mx-auto">
+            <div className="relative">
+              {/* Vertical connecting line */}
+              <div className="absolute left-6 top-12 bottom-12 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary hidden md:block" />
+              
+              {courses.map((course, index) => (
+                <div key={course.id} className="relative mb-8 last:mb-0">
+                  {/* Step number badge */}
+                  <div className="absolute left-0 top-6 md:top-1/2 md:-translate-y-1/2 z-10">
+                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                      <span className="text-primary-foreground font-bold text-lg">{index + 1}</span>
                     </div>
-                  )}
-                  <CardHeader>
-                    <CardTitle className="flex items-start gap-2">
-                      <BookOpen className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                      <span>{course.title}</span>
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {course.description || "No description available"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        <span>Added {new Date(course.created_at).toLocaleDateString()}</span>
+                  </div>
+
+                  {/* Course card */}
+                  <Link to={`/course/${course.id}`} className="block ml-16 md:ml-20">
+                    <Card className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-border/50 bg-card backdrop-blur-sm">
+                      <div className="flex flex-col md:flex-row gap-4 p-6">
+                        {/* Thumbnail */}
+                        {course.thumbnail_url && (
+                          <div className="w-full md:w-48 flex-shrink-0">
+                            <div className="aspect-video w-full overflow-hidden rounded-lg">
+                              <img
+                                src={course.thumbnail_url}
+                                alt={course.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Content */}
+                        <div className="flex-1 flex flex-col justify-center min-w-0">
+                          <div className="flex items-start gap-2 mb-2">
+                            <BookOpen className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                            <h3 className="text-xl font-semibold text-foreground">{course.title}</h3>
+                          </div>
+                          <p className="text-muted-foreground mb-4 line-clamp-2">
+                            {course.description || "No description available"}
+                          </p>
+                          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              <span>Added {new Date(course.created_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* CTA Button */}
+                        <div className="flex items-center justify-end md:justify-center">
+                          <div className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                            <span>Start</span>
+                            <span>→</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        <span>Last updated {new Date(course.updated_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                    </Card>
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
