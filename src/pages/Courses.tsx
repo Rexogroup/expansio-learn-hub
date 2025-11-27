@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Clock } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface Course {
   id: string;
@@ -14,12 +15,21 @@ interface Course {
   updated_at: string;
 }
 
+interface CourseProgress {
+  courseId: string;
+  totalLessons: number;
+  completedLessons: number;
+  progressPercentage: number;
+}
+
 export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [courseProgress, setCourseProgress] = useState<Map<string, CourseProgress>>(new Map());
 
   useEffect(() => {
     fetchCourses();
+    fetchCourseProgress();
   }, []);
 
   const fetchCourses = async () => {
@@ -36,6 +46,67 @@ export default function Courses() {
       console.error("Error fetching courses:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCourseProgress = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch all lessons grouped by course
+      const { data: lessonsData, error: lessonsError } = await supabase
+        .from("lessons")
+        .select(`
+          id,
+          section_id,
+          sections!inner(
+            course_id
+          )
+        `);
+
+      if (lessonsError) throw lessonsError;
+
+      // Fetch user's completed lessons
+      const { data: progressData, error: progressError } = await supabase
+        .from("lesson_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id)
+        .eq("completed", true);
+
+      if (progressError) throw progressError;
+
+      // Calculate progress for each course
+      const progressMap = new Map<string, CourseProgress>();
+      const completedLessonIds = new Set(progressData?.map(p => p.lesson_id) || []);
+
+      // Group lessons by course
+      const courseGroups = new Map<string, string[]>();
+      lessonsData?.forEach(lesson => {
+        const courseId = (lesson.sections as any).course_id;
+        if (!courseGroups.has(courseId)) {
+          courseGroups.set(courseId, []);
+        }
+        courseGroups.get(courseId)?.push(lesson.id);
+      });
+
+      // Calculate progress for each course
+      courseGroups.forEach((lessonIds, courseId) => {
+        const totalLessons = lessonIds.length;
+        const completedLessons = lessonIds.filter(id => completedLessonIds.has(id)).length;
+        const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+        
+        progressMap.set(courseId, {
+          courseId,
+          totalLessons,
+          completedLessons,
+          progressPercentage
+        });
+      });
+
+      setCourseProgress(progressMap);
+    } catch (error) {
+      console.error("Error fetching course progress:", error);
     }
   };
 
@@ -96,6 +167,22 @@ export default function Courses() {
                         {/* Content */}
                         <div className="flex-1 flex flex-col justify-center min-w-0">
                           <h3 className="text-3xl font-semibold text-foreground whitespace-pre-line mb-2">{course.title}</h3>
+                          
+                          {/* Progress Bar */}
+                          {courseProgress.has(course.id) && (
+                            <div className="mb-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-muted-foreground">
+                                  {courseProgress.get(course.id)?.completedLessons} of {courseProgress.get(course.id)?.totalLessons} lessons completed
+                                </span>
+                                <span className="text-sm font-medium text-primary">
+                                  {courseProgress.get(course.id)?.progressPercentage}%
+                                </span>
+                              </div>
+                              <Progress value={courseProgress.get(course.id)?.progressPercentage} className="h-2" />
+                            </div>
+                          )}
+
                           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
