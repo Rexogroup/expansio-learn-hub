@@ -95,10 +95,7 @@ export default function Courses() {
 
                         {/* Content */}
                         <div className="flex-1 flex flex-col justify-center min-w-0">
-                          <div className="flex items-start gap-2 mb-2">
-                            <BookOpen className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                            <h3 className="text-3xl font-semibold text-foreground whitespace-pre-line">{course.title}</h3>
-                          </div>
+                          <h3 className="text-3xl font-semibold text-foreground whitespace-pre-line mb-2">{course.title}</h3>
                           <p className="text-muted-foreground text-lg mb-4 line-clamp-2">
                             {course.description || "No description available"}
                           </p>
