@@ -75,25 +75,20 @@ export default function OnboardingStep() {
         .select("*", { count: 'exact', head: true });
       setTotalSteps(count || 4);
 
-      // Check if user can access this step
+      // Check if user can access this step (step 0 is always accessible)
       if (currentStepNumber > 0) {
-        // Check if all steps are completed (allow free navigation)
         const { data: allProgress } = await supabase
           .from("user_onboarding_progress")
-          .select("completed")
+          .select("completed, step_number")
           .eq("user_id", user.id);
         
         const allCompleted = allProgress?.length === (count || 4) && allProgress.every(p => p.completed);
         
         if (!allCompleted) {
-          const { data: previousProgress } = await supabase
-            .from("user_onboarding_progress")
-            .select("completed")
-            .eq("user_id", user.id)
-            .eq("step_number", currentStepNumber - 1)
-            .maybeSingle();
-
-          if (!previousProgress?.completed) {
+          const previousProgress = allProgress?.find(p => p.step_number === currentStepNumber - 1);
+          const hasLaterProgress = allProgress?.some(p => p.step_number > currentStepNumber && p.completed);
+          
+          if (!previousProgress?.completed && !hasLaterProgress) {
             toast.error("Please complete the previous step first");
             navigate("/onboarding");
             return;

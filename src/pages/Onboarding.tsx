@@ -64,7 +64,7 @@ export default function Onboarding() {
 
       // Determine current step (first incomplete step)
       const currentStepNumber = progressData?.find(p => !p.completed)?.step_number || 
-        (progressData?.length === 4 && progressData.every(p => p.completed) ? 5 : 1);
+        (progressData?.length === stepsData.length && progressData.every(p => p.completed) ? stepsData.length : 0);
       
       setCurrentStep(currentStepNumber);
     } catch (error: any) {
@@ -84,13 +84,18 @@ export default function Onboarding() {
   };
 
   const canAccessStep = (stepNumber: number) => {
+    // Step 0 is always accessible
+    if (stepNumber === 0) return true;
+    
     // Allow access to all steps if onboarding is complete
-    const allCompleted = progress.length === 4 && progress.every(p => p.completed);
+    const allCompleted = progress.length === steps.length && progress.every(p => p.completed);
     if (allCompleted) return true;
     
-    if (stepNumber === 1) return true;
+    // For step 1 and beyond: allow if previous step is done OR any later step is done
     const previousProgress = progress.find(p => p.step_number === stepNumber - 1);
-    return previousProgress?.completed || false;
+    const hasLaterProgress = progress.some(p => p.step_number > stepNumber && p.completed);
+    
+    return previousProgress?.completed || hasLaterProgress;
   };
 
   const handleStepClick = (stepNumber: number) => {
@@ -102,7 +107,7 @@ export default function Onboarding() {
   };
 
   const completedSteps = progress.filter(p => p.completed).length;
-  const progressPercentage = (completedSteps / 4) * 100;
+  const progressPercentage = steps.length > 0 ? (completedSteps / steps.length) * 100 : 0;
 
   if (loading) {
     return (
