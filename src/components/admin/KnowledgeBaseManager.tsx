@@ -40,6 +40,7 @@ const CATEGORIES = [
   { value: "services", label: "Service Offerings" },
   { value: "pain_points", label: "Pain Points" },
   { value: "examples", label: "Success Examples" },
+  { value: "framework", label: "Framework" },
   { value: "other", label: "Other" },
 ];
 
@@ -256,6 +257,23 @@ export default function KnowledgeBaseManager() {
     } catch (error: any) {
       console.error("Error toggling document:", error);
       toast.error("Failed to update document");
+    }
+  };
+
+  const updateDocumentCategory = async (doc: KnowledgeDocument, newCategory: string) => {
+    try {
+      const { error } = await supabase
+        .from("knowledge_base_documents")
+        .update({ category: newCategory })
+        .eq("id", doc.id);
+
+      if (error) throw error;
+
+      toast.success("Category updated");
+      fetchDocuments();
+    } catch (error: any) {
+      console.error("Error updating category:", error);
+      toast.error("Failed to update category");
     }
   };
 
@@ -518,7 +536,21 @@ export default function KnowledgeBaseManager() {
                       <Badge variant={doc.is_active ? "default" : "secondary"}>
                         {doc.is_active ? "Active" : "Inactive"}
                       </Badge>
-                      <Badge variant="outline">{getCategoryLabel(doc.category)}</Badge>
+                      <Select
+                        value={doc.category || "other"}
+                        onValueChange={(val) => updateDocumentCategory(doc, val)}
+                      >
+                        <SelectTrigger className="h-7 w-[160px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>
+                              {cat.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span>{doc.file_name}</span>
