@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Save } from "lucide-react";
+import { Copy, Check, Save, Star } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,8 +14,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const CATEGORIES = [
+  { value: "general", label: "General" },
+  { value: "seo", label: "SEO" },
+  { value: "ads", label: "Ads & Creatives" },
+  { value: "cro", label: "CRO" },
+  { value: "content", label: "Content Marketing" },
+  { value: "email", label: "Email Marketing" },
+  { value: "social", label: "Social Media" },
+  { value: "web", label: "Web Development" },
+  { value: "ai", label: "AI Services" },
+  { value: "other", label: "Other" },
+];
 
 interface Message {
   id: string;
@@ -32,7 +52,10 @@ interface ChatMessageProps {
 const ChatMessage = ({ message, conversationId }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [favoriteDialogOpen, setFavoriteDialogOpen] = useState(false);
   const [scriptTitle, setScriptTitle] = useState("");
+  const [favoriteTitle, setFavoriteTitle] = useState("");
+  const [favoriteCategory, setFavoriteCategory] = useState("general");
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -61,6 +84,31 @@ const ChatMessage = ({ message, conversationId }: ChatMessageProps) => {
     } catch (error: any) {
       console.error("Error saving script:", error);
       toast.error("Failed to save script");
+    }
+  };
+
+  const handleSaveToFavorites = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from("saved_lead_magnets").insert({
+        user_id: user.id,
+        conversation_id: conversationId,
+        title: favoriteTitle || "Untitled Lead Magnet",
+        content: message.content,
+        category: favoriteCategory,
+      });
+
+      if (error) throw error;
+
+      toast.success("Added to favorites!");
+      setFavoriteDialogOpen(false);
+      setFavoriteTitle("");
+      setFavoriteCategory("general");
+    } catch (error: any) {
+      console.error("Error saving to favorites:", error);
+      toast.error("Failed to save to favorites");
     }
   };
 
@@ -131,6 +179,58 @@ const ChatMessage = ({ message, conversationId }: ChatMessageProps) => {
                     Cancel
                   </Button>
                   <Button onClick={handleSave}>Save</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={favoriteDialogOpen} onOpenChange={setFavoriteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 text-yellow-600 hover:text-yellow-700">
+                  <Star className="h-3 w-3 mr-1" />
+                  Add to Favorites
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add to Favorites</DialogTitle>
+                  <DialogDescription>
+                    Save this lead magnet to your favorites for quick access.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="favorite-title">Title</Label>
+                    <Input
+                      id="favorite-title"
+                      placeholder="e.g., 4 UGC Creatives Offer"
+                      value={favoriteTitle}
+                      onChange={(e) => setFavoriteTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="favorite-category">Category</Label>
+                    <Select value={favoriteCategory} onValueChange={setFavoriteCategory}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setFavoriteDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveToFavorites} className="bg-yellow-600 hover:bg-yellow-700">
+                    <Star className="h-4 w-4 mr-1" />
+                    Add to Favorites
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
