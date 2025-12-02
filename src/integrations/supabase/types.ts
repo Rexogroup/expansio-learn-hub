@@ -960,6 +960,60 @@ export type Database = {
           },
         ]
       }
+      user_script_profiles: {
+        Row: {
+          company_description: string | null
+          company_name: string | null
+          created_at: string
+          custom_notes: string | null
+          icp_additional_details: string | null
+          icp_employee_count: string | null
+          icp_location: string | null
+          icp_revenue_range: string | null
+          icp_tech_stack: string | null
+          id: string
+          pain_points: Json | null
+          services_offered: string | null
+          target_industries: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_description?: string | null
+          company_name?: string | null
+          created_at?: string
+          custom_notes?: string | null
+          icp_additional_details?: string | null
+          icp_employee_count?: string | null
+          icp_location?: string | null
+          icp_revenue_range?: string | null
+          icp_tech_stack?: string | null
+          id?: string
+          pain_points?: Json | null
+          services_offered?: string | null
+          target_industries?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_description?: string | null
+          company_name?: string | null
+          created_at?: string
+          custom_notes?: string | null
+          icp_additional_details?: string | null
+          icp_employee_count?: string | null
+          icp_location?: string | null
+          icp_revenue_range?: string | null
+          icp_tech_stack?: string | null
+          id?: string
+          pain_points?: Json | null
+          services_offered?: string | null
+          target_industries?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
