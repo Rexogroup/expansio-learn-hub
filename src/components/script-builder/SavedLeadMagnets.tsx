@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Copy, Download, Trash2, Star, Edit2, Search, Filter } from "lucide-react";
+import { Copy, Download, Trash2, Star, Edit2, Search, Filter, MessageSquarePlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import ReactMarkdown from "react-markdown";
 
@@ -31,6 +31,10 @@ interface SavedLeadMagnet {
   content: string;
   category: string;
   created_at: string;
+}
+
+interface SavedLeadMagnetsProps {
+  onRefineInChat?: (content: string, title: string) => void;
 }
 
 const CATEGORIES = [
@@ -47,7 +51,7 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
-const SavedLeadMagnets = () => {
+const SavedLeadMagnets = ({ onRefineInChat }: SavedLeadMagnetsProps) => {
   const [leadMagnets, setLeadMagnets] = useState<SavedLeadMagnet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -245,6 +249,17 @@ const SavedLeadMagnets = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  {onRefineInChat && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => onRefineInChat(item.content, item.title)}
+                      className="bg-primary"
+                    >
+                      <MessageSquarePlus className="h-3 w-3 mr-1" />
+                      Refine in Chat
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
