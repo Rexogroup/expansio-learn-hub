@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { BookOpen, LogOut, LayoutDashboard, User as UserIcon } from "lucide-react";
+import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +20,9 @@ export const Navbar = () => {
   const location = useLocation();
 
   const isActiveRoute = (path: string) => {
+    if (path === "/dashboard") {
+      return location.pathname === "/dashboard";
+    }
     if (path === "/courses") {
       return location.pathname === "/courses" || location.pathname.startsWith("/course/");
     }
@@ -111,6 +114,12 @@ export const Navbar = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
+              <Link to="/dashboard" aria-current={isActiveRoute("/dashboard") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/dashboard") ? "default" : "ghost"}>
+                  <Home className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
               <Link to="/onboarding" aria-current={isActiveRoute("/onboarding") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/onboarding") ? "default" : "ghost"}>
                   Onboarding
