@@ -6,6 +6,7 @@ import { Navbar } from "@/components/Navbar";
 import ChatInterface from "@/components/script-builder/ChatInterface";
 import ConversationList from "@/components/script-builder/ConversationList";
 import SavedScripts from "@/components/script-builder/SavedScripts";
+import UserProfile from "@/components/script-builder/UserProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ScriptBuilder = () => {
@@ -77,8 +78,9 @@ const ScriptBuilder = () => {
         </div>
 
         <Tabs defaultValue="chat" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-lg grid-cols-4">
             <TabsTrigger value="chat">Chat</TabsTrigger>
+            <TabsTrigger value="profile">My Profile</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="saved">Saved Scripts</TabsTrigger>
           </TabsList>
@@ -88,6 +90,10 @@ const ScriptBuilder = () => {
               conversationId={currentConversationId}
               onNewConversation={handleNewConversation}
             />
+          </TabsContent>
+
+          <TabsContent value="profile" className="mt-6">
+            <UserProfile />
           </TabsContent>
 
           <TabsContent value="history" className="mt-6">

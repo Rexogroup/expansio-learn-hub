@@ -203,7 +203,18 @@ serve(async (req) => {
       console.error('Error fetching knowledge base:', kbError);
     }
 
-    // Build the enhanced system prompt with knowledge base
+    // Fetch user's profile for personalization
+    const { data: userProfile, error: profileError } = await supabase
+      .from('user_script_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+    }
+
+    // Build the enhanced system prompt with knowledge base and user profile
     let systemPrompt = BASE_SYSTEM_PROMPT;
 
     if (knowledgeDocs && knowledgeDocs.length > 0) {
@@ -230,6 +241,77 @@ END OF KNOWLEDGE BASE
 ================================================================================
 
 IMPORTANT: When creating lead magnets, reference and adapt the patterns, language, and structures from the knowledge base above. These are proven, high-performing examples that you should learn from and customize for each user's specific situation.`;
+    }
+
+    // Add user profile context if available
+    if (userProfile) {
+      console.log('Adding user profile to context');
+      
+      let profileSection = `
+
+================================================================================
+USER BUSINESS PROFILE (PERSONALIZATION CONTEXT)
+================================================================================
+
+This user has saved their business profile. Use this information to provide highly personalized lead magnet suggestions that are specifically tailored to their agency and ideal clients.
+
+`;
+
+      if (userProfile.company_name) {
+        profileSection += `**Company Name:** ${userProfile.company_name}\n`;
+      }
+      if (userProfile.company_description) {
+        profileSection += `**Company Description:** ${userProfile.company_description}\n`;
+      }
+      if (userProfile.services_offered) {
+        profileSection += `\n**Services Offered:**\n${userProfile.services_offered}\n`;
+      }
+      if (userProfile.target_industries) {
+        profileSection += `\n**Target Industries:** ${userProfile.target_industries}\n`;
+      }
+
+      // ICP Details
+      const icpDetails = [];
+      if (userProfile.icp_revenue_range) icpDetails.push(`Revenue: ${userProfile.icp_revenue_range}`);
+      if (userProfile.icp_employee_count) icpDetails.push(`Size: ${userProfile.icp_employee_count}`);
+      if (userProfile.icp_location) icpDetails.push(`Location: ${userProfile.icp_location}`);
+      if (userProfile.icp_tech_stack) icpDetails.push(`Tech Stack: ${userProfile.icp_tech_stack}`);
+      
+      if (icpDetails.length > 0) {
+        profileSection += `\n**Ideal Client Profile (ICP):**\n${icpDetails.join(' | ')}\n`;
+      }
+      if (userProfile.icp_additional_details) {
+        profileSection += `**Additional ICP Details:** ${userProfile.icp_additional_details}\n`;
+      }
+
+      // Pain Points
+      const painPoints = userProfile.pain_points as Array<{ problem: string; solution?: string }> | null;
+      if (painPoints && painPoints.length > 0) {
+        profileSection += `\n**Client Pain Points:**\n`;
+        painPoints.forEach((pp, index) => {
+          profileSection += `${index + 1}. Problem: ${pp.problem}`;
+          if (pp.solution) profileSection += ` → Solution: ${pp.solution}`;
+          profileSection += `\n`;
+        });
+      }
+
+      if (userProfile.custom_notes) {
+        profileSection += `\n**Additional Notes:** ${userProfile.custom_notes}\n`;
+      }
+
+      profileSection += `
+================================================================================
+END OF USER PROFILE
+================================================================================
+
+IMPORTANT: You already have this user's complete business context above. DO NOT ask them basic questions about their services, ICP, or pain points - you already know this information! Instead:
+1. Jump straight into generating tailored lead magnet offers based on their profile
+2. Reference their specific services when creating offers
+3. Address their specific pain points
+4. Target their specific ICP characteristics
+5. Only ask clarifying questions if you need MORE SPECIFIC details beyond what's in their profile`;
+
+      systemPrompt += profileSection;
     }
 
     // Get conversation history
