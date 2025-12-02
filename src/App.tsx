@@ -16,7 +16,8 @@ import SalesVault from "./pages/SalesVault";
 import SalesCallView from "./pages/SalesCallView";
 import Admin from "./pages/Admin";
 import ScriptBuilder from "./pages/ScriptBuilder";
-
+import AffiliatePortal from "./pages/AffiliatePortal";
+import AgencyProfile from "./pages/AgencyProfile";
 import Tools from "./pages/Tools";
 import NotFound from "./pages/NotFound";
 
@@ -48,7 +49,8 @@ const App = () => (
             <Route path="/sales-vault" element={<AuthenticatedLayout><SalesVault /></AuthenticatedLayout>} />
             <Route path="/sales-call/:id" element={<AuthenticatedLayout><SalesCallView /></AuthenticatedLayout>} />
             <Route path="/script-builder" element={<AuthenticatedLayout><ScriptBuilder /></AuthenticatedLayout>} />
-            
+            <Route path="/network" element={<AuthenticatedLayout><AffiliatePortal /></AuthenticatedLayout>} />
+            <Route path="/agency/:id" element={<AuthenticatedLayout><AgencyProfile /></AuthenticatedLayout>} />
             <Route path="/tools" element={<AuthenticatedLayout><Tools /></AuthenticatedLayout>} />
             <Route path="/admin" element={<AuthenticatedLayout><Admin /></AuthenticatedLayout>} />
             <Route path="*" element={<NotFound />} />

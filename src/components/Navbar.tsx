@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home } from "lucide-react";
+import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,9 @@ export const Navbar = () => {
     }
     if (path === "/script-builder") {
       return location.pathname === "/script-builder";
+    }
+    if (path === "/network") {
+      return location.pathname === "/network" || location.pathname.startsWith("/agency/");
     }
     return location.pathname === path;
   };
@@ -130,6 +133,12 @@ export const Navbar = () => {
               </Link>
               <Link to="/sales-vault" aria-current={isActiveRoute("/sales-vault") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/sales-vault") ? "default" : "ghost"}>Sales Vault</Button>
+              </Link>
+              <Link to="/network" aria-current={isActiveRoute("/network") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/network") ? "default" : "ghost"}>
+                  <Users className="w-4 h-4 mr-2" />
+                  Network
+                </Button>
               </Link>
               {isAdmin && (
                 <Link to="/tools" aria-current={isActiveRoute("/tools") ? "page" : undefined}>
