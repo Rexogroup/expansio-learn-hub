@@ -6,6 +6,7 @@ import { Navbar } from "@/components/Navbar";
 import ChatInterface from "@/components/script-builder/ChatInterface";
 import ConversationList from "@/components/script-builder/ConversationList";
 import SavedScripts from "@/components/script-builder/SavedScripts";
+import SavedLeadMagnets from "@/components/script-builder/SavedLeadMagnets";
 import UserProfile from "@/components/script-builder/UserProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -78,9 +79,10 @@ const ScriptBuilder = () => {
         </div>
 
         <Tabs defaultValue="chat" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-4">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="profile">My Profile</TabsTrigger>
+            <TabsTrigger value="favorites">Favorites</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="saved">Saved Scripts</TabsTrigger>
           </TabsList>
@@ -94,6 +96,10 @@ const ScriptBuilder = () => {
 
           <TabsContent value="profile" className="mt-6">
             <UserProfile />
+          </TabsContent>
+
+          <TabsContent value="favorites" className="mt-6">
+            <SavedLeadMagnets />
           </TabsContent>
 
           <TabsContent value="history" className="mt-6">

@@ -718,6 +718,47 @@ export type Database = {
           },
         ]
       }
+      saved_lead_magnets: {
+        Row: {
+          category: string | null
+          content: string
+          conversation_id: string | null
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_lead_magnets_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "script_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       script_conversations: {
         Row: {
           created_at: string
