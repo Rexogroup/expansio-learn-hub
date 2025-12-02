@@ -1,18 +1,15 @@
 import { Card } from "@/components/ui/card";
 import { Sparkles, Target, Zap } from "lucide-react";
-
 const WelcomeMessage = () => {
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h3 className="text-2xl font-bold flex items-center justify-center gap-2">
-          <Sparkles className="h-6 w-6 text-primary" />
+        <h3 className="text-2xl font-bold flex items-center justify-center gap-2">Start building your Lead Magnets based on our proven framworks<Sparkles className="h-6 w-6 text-primary" />
           Welcome to AI Lead Magnet Builder
         </h3>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          I'll help you create high-converting lead magnet scripts using our proven value-first scriptwriting framework.
-          Click "New Conversation" to get started!
-        </p>
+        <p className="text-muted-foreground max-w-2xl mx-auto">I'll help you create high-converting lead magnet scripts using our proven value-first scriptwriting framework.
+
+1. Feed me with the right info about your company under the "My Profile" section.
+2. Click "New Conversation" to get started!</p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
@@ -57,8 +54,6 @@ const WelcomeMessage = () => {
           <li>"I offer conversion rate optimization. Let's build some lead magnets!"</li>
         </ul>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default WelcomeMessage;

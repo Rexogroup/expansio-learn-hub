@@ -9,20 +9,21 @@ import SavedScripts from "@/components/script-builder/SavedScripts";
 import SavedLeadMagnets from "@/components/script-builder/SavedLeadMagnets";
 import UserProfile from "@/components/script-builder/UserProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 const ScriptBuilder = () => {
   const navigate = useNavigate();
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState("chat");
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
-
   useEffect(() => {
     checkAuth();
   }, []);
-
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: {
+        session
+      }
+    } = await supabase.auth.getSession();
     if (!session) {
       toast.error("Please log in to access Script Builder");
       navigate("/auth");
@@ -30,32 +31,31 @@ const ScriptBuilder = () => {
     }
 
     // Check if user is admin
-    const { data: roles, error } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .eq("role", "admin")
-      .single();
-
+    const {
+      data: roles,
+      error
+    } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).eq("role", "admin").single();
     if (error || !roles) {
       toast.error("Access denied. Admin privileges required.");
       navigate("/courses");
     }
   };
-
   const handleNewConversation = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
-        .from("script_conversations")
-        .insert({ user_id: user.id, title: "New Conversation" })
-        .select()
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from("script_conversations").insert({
+        user_id: user.id,
+        title: "New Conversation"
+      }).select().single();
       if (error) throw error;
-
       setCurrentConversationId(data.id);
       setRefreshTrigger(prev => prev + 1);
       toast.success("New conversation started");
@@ -66,11 +66,9 @@ const ScriptBuilder = () => {
       return null;
     }
   };
-
   const handleSelectConversation = (id: string) => {
     setCurrentConversationId(id);
   };
-
   const handleRefineInChat = useCallback(async (content: string, title: string) => {
     // Create a new conversation for refinement
     const newConvId = await handleNewConversation();
@@ -79,22 +77,19 @@ const ScriptBuilder = () => {
     // Set the initial message with the lead magnet content
     const refinementPrompt = `I want to refine this lead magnet "${title}":\n\n${content}\n\nPlease help me improve it. What aspects would you like me to focus on - the hook, the deliverable specifics, or the value proposition?`;
     setInitialMessage(refinementPrompt);
-    
+
     // Switch to chat tab
     setActiveTab("chat");
     toast.success("Lead magnet loaded for refinement");
   }, []);
-
   const clearInitialMessage = useCallback(() => {
     setInitialMessage(undefined);
   }, []);
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">AI Lead Magnet Builder</h1>
+          <h1 className="text-4xl font-bold mb-2">Expansio Lead Magnet Agent</h1>
           <p className="text-muted-foreground">
             Create high-converting lead magnet scripts using our proven scriptwriting framework
           </p>
@@ -110,12 +105,7 @@ const ScriptBuilder = () => {
           </TabsList>
 
           <TabsContent value="chat" className="mt-6">
-            <ChatInterface
-              conversationId={currentConversationId}
-              onNewConversation={handleNewConversation}
-              initialMessage={initialMessage}
-              onClearInitialMessage={clearInitialMessage}
-            />
+            <ChatInterface conversationId={currentConversationId} onNewConversation={handleNewConversation} initialMessage={initialMessage} onClearInitialMessage={clearInitialMessage} />
           </TabsContent>
 
           <TabsContent value="profile" className="mt-6">
@@ -127,10 +117,7 @@ const ScriptBuilder = () => {
           </TabsContent>
 
           <TabsContent value="history" className="mt-6">
-            <ConversationList
-              onSelectConversation={handleSelectConversation}
-              refreshTrigger={refreshTrigger}
-            />
+            <ConversationList onSelectConversation={handleSelectConversation} refreshTrigger={refreshTrigger} />
           </TabsContent>
 
           <TabsContent value="saved" className="mt-6">
@@ -138,8 +125,6 @@ const ScriptBuilder = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default ScriptBuilder;
