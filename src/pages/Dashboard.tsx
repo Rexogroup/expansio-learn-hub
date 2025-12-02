@@ -25,9 +25,15 @@ interface DashboardMetrics {
   };
 }
 
+interface UserProfile {
+  full_name: string | null;
+  email: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,7 +46,55 @@ const Dashboard = () => {
       navigate("/auth");
       return;
     }
-    await fetchMetrics(user.id);
+    await Promise.all([fetchMetrics(user.id), fetchUserProfile(user.id)]);
+  };
+
+  const fetchUserProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", userId)
+      .single();
+    
+    if (data) {
+      setUserProfile(data);
+    }
+  };
+
+  const getMotivationalMessage = () => {
+    if (!metrics) return "Let's make today count!";
+    
+    const totalProgress = metrics.courses.totalLessons > 0 
+      ? (metrics.courses.completedLessons / metrics.courses.totalLessons) * 100 
+      : 0;
+    
+    if (totalProgress === 0) {
+      return "Ready to start your journey? Dive into your first lesson!";
+    } else if (totalProgress < 25) {
+      return "Great start! Keep the momentum going!";
+    } else if (totalProgress < 50) {
+      return "You're making solid progress. Keep pushing forward!";
+    } else if (totalProgress < 75) {
+      return "Impressive work! You're more than halfway there!";
+    } else if (totalProgress < 100) {
+      return "Almost there! The finish line is in sight!";
+    } else {
+      return "Outstanding! You've completed all lessons. Keep exploring!";
+    }
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const getFirstName = () => {
+    if (userProfile?.full_name) {
+      return userProfile.full_name.split(" ")[0];
+    }
+    return userProfile?.email?.split("@")[0] || "there";
   };
 
   const fetchMetrics = async (userId: string) => {
@@ -208,11 +262,27 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Your learning progress and activity overview
+        {/* Welcome Banner */}
+        <div className="mb-8 rounded-lg bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 p-6">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            {getGreeting()}, {getFirstName()}! 👋
+          </h1>
+          <p className="text-muted-foreground mt-2 text-lg">
+            {getMotivationalMessage()}
           </p>
+          {metrics && metrics.courses.totalLessons > 0 && (
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-2 flex-1 max-w-xs rounded-full bg-muted">
+                <div 
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.round((metrics.courses.completedLessons / metrics.courses.totalLessons) * 100)}%` }}
+                />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">
+                {Math.round((metrics.courses.completedLessons / metrics.courses.totalLessons) * 100)}% complete
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Courses Section */}
