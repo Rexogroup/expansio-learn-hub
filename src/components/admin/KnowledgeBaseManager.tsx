@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Loader2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Eye, RefreshCw, X, CheckCircle, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 
 interface KnowledgeDocument {
   id: string;
@@ -23,6 +24,14 @@ interface KnowledgeDocument {
   category: string | null;
   is_active: boolean;
   created_at: string;
+}
+
+interface PendingFile {
+  file: File;
+  title: string;
+  category: string;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  error?: string;
 }
 
 const CATEGORIES = [
@@ -38,11 +47,11 @@ export default function KnowledgeBaseManager() {
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<string>("lead_magnet");
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [defaultCategory, setDefaultCategory] = useState<string>("lead_magnet");
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState("");
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     fetchDocuments();
@@ -66,45 +75,67 @@ export default function KnowledgeBaseManager() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const validTypes = [
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
-      ];
-      
+  const handleFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+    ];
+
+    const newPendingFiles: PendingFile[] = [];
+    let skipped = 0;
+
+    files.forEach((file) => {
       if (!validTypes.includes(file.type) && !file.name.endsWith(".docx")) {
-        toast.error("Please select a PDF or DOCX file");
+        skipped++;
         return;
       }
-      
+
       if (file.size > 10 * 1024 * 1024) {
-        toast.error("File size must be less than 10MB");
+        skipped++;
         return;
       }
-      
-      setSelectedFile(file);
-      if (!title) {
-        setTitle(file.name.replace(/\.[^/.]+$/, ""));
-      }
+
+      newPendingFiles.push({
+        file,
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        category: defaultCategory,
+        status: 'pending',
+      });
+    });
+
+    if (skipped > 0) {
+      toast.warning(`${skipped} file(s) skipped (invalid type or >10MB)`);
     }
+
+    if (newPendingFiles.length > 0) {
+      setPendingFiles((prev) => [...prev, ...newPendingFiles]);
+    }
+
+    // Reset input
+    e.target.value = '';
   };
 
-  const uploadDocument = async () => {
-    if (!selectedFile || !title) {
-      toast.error("Please select a file and enter a title");
-      return;
-    }
+  const updatePendingFile = (index: number, updates: Partial<PendingFile>) => {
+    setPendingFiles((prev) =>
+      prev.map((pf, i) => (i === index ? { ...pf, ...updates } : pf))
+    );
+  };
 
-    setUploading(true);
+  const removePendingFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadSingleDocument = async (pendingFile: PendingFile, index: number): Promise<boolean> => {
+    updatePendingFile(index, { status: 'uploading' });
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       // Convert file to base64
-      const arrayBuffer = await selectedFile.arrayBuffer();
+      const arrayBuffer = await pendingFile.file.arrayBuffer();
       const base64 = btoa(
         new Uint8Array(arrayBuffer).reduce(
           (data, byte) => data + String.fromCharCode(byte),
@@ -113,14 +144,13 @@ export default function KnowledgeBaseManager() {
       );
 
       // Parse document to extract text
-      toast.info("Extracting text from document...");
       const { data: parseResult, error: parseError } = await supabase.functions.invoke(
         "parse-knowledge-document",
         {
           body: {
             fileBase64: base64,
-            fileName: selectedFile.name,
-            mimeType: selectedFile.type,
+            fileName: pendingFile.file.name,
+            mimeType: pendingFile.file.type,
           },
         }
       );
@@ -129,10 +159,10 @@ export default function KnowledgeBaseManager() {
       if (!parseResult?.success) throw new Error(parseResult?.error || "Failed to parse document");
 
       // Upload file to storage
-      const filePath = `admin/${Date.now()}_${selectedFile.name}`;
+      const filePath = `admin/${Date.now()}_${pendingFile.file.name}`;
       const { error: uploadError } = await supabase.storage
         .from("knowledge-base")
-        .upload(filePath, selectedFile);
+        .upload(filePath, pendingFile.file);
 
       if (uploadError) throw uploadError;
 
@@ -147,29 +177,69 @@ export default function KnowledgeBaseManager() {
         .insert({
           uploaded_by: user.id,
           document_type: "admin",
-          title,
-          file_name: selectedFile.name,
+          title: pendingFile.title,
+          file_name: pendingFile.file.name,
           file_url: urlData.publicUrl,
-          file_size: selectedFile.size,
-          mime_type: selectedFile.type,
+          file_size: pendingFile.file.size,
+          mime_type: pendingFile.file.type,
           extracted_content: parseResult.extractedContent,
-          category,
+          category: pendingFile.category,
           is_active: true,
         });
 
       if (insertError) throw insertError;
 
-      toast.success(`Document uploaded! Extracted ${parseResult.characterCount} characters.`);
-      setSelectedFile(null);
-      setTitle("");
-      setCategory("lead_magnet");
-      fetchDocuments();
+      updatePendingFile(index, { status: 'success' });
+      return true;
     } catch (error: any) {
       console.error("Error uploading document:", error);
-      toast.error(error.message || "Failed to upload document");
-    } finally {
-      setUploading(false);
+      updatePendingFile(index, { status: 'error', error: error.message || "Upload failed" });
+      return false;
     }
+  };
+
+  const uploadAllDocuments = async () => {
+    const filesToUpload = pendingFiles.filter((pf) => pf.status === 'pending' || pf.status === 'error');
+    if (filesToUpload.length === 0) {
+      toast.error("No files to upload");
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress({ current: 0, total: filesToUpload.length });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < pendingFiles.length; i++) {
+      const pf = pendingFiles[i];
+      if (pf.status !== 'pending' && pf.status !== 'error') continue;
+
+      const success = await uploadSingleDocument(pf, i);
+      if (success) {
+        successCount++;
+      } else {
+        errorCount++;
+      }
+      setUploadProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+    }
+
+    setUploading(false);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} document(s) uploaded successfully`);
+      fetchDocuments();
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} document(s) failed to upload`);
+    }
+
+    // Remove successful uploads from pending list
+    setPendingFiles((prev) => prev.filter((pf) => pf.status !== 'success'));
+  };
+
+  const clearAllPending = () => {
+    setPendingFiles([]);
   };
 
   const toggleDocumentActive = async (doc: KnowledgeDocument) => {
@@ -180,7 +250,7 @@ export default function KnowledgeBaseManager() {
         .eq("id", doc.id);
 
       if (error) throw error;
-      
+
       toast.success(doc.is_active ? "Document deactivated" : "Document activated");
       fetchDocuments();
     } catch (error: any) {
@@ -224,7 +294,7 @@ export default function KnowledgeBaseManager() {
   };
 
   const getCategoryLabel = (value: string | null) => {
-    return CATEGORIES.find(c => c.value === value)?.label || value || "Uncategorized";
+    return CATEGORIES.find((c) => c.value === value)?.label || value || "Uncategorized";
   };
 
   if (loading) {
@@ -242,48 +312,34 @@ export default function KnowledgeBaseManager() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Upload Knowledge Document
+            Bulk Upload Knowledge Documents
           </CardTitle>
           <CardDescription>
-            Upload PDF or DOCX files containing lead magnet examples, ICP templates, or other knowledge to enhance the AI's responses.
+            Select multiple PDF or DOCX files to upload at once. You can customize titles and categories for each file before uploading.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="file">Document File</Label>
+              <Label htmlFor="files">Select Documents</Label>
               <Input
-                id="file"
+                id="files"
                 type="file"
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={handleFileSelect}
+                onChange={handleFilesSelect}
                 disabled={uploading}
+                multiple
               />
-              {selectedFile && (
-                <p className="text-sm text-muted-foreground">
-                  Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                PDF or DOCX files, max 10MB each. You can select multiple files.
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="title">Document Title</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter document title"
-                disabled={uploading}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={category} onValueChange={setCategory} disabled={uploading}>
+              <Label htmlFor="default-category">Default Category</Label>
+              <Select value={defaultCategory} onValueChange={setDefaultCategory} disabled={uploading}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder="Select default category" />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map((cat) => (
@@ -293,28 +349,131 @@ export default function KnowledgeBaseManager() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Applied to newly added files
+              </p>
             </div>
+          </div>
 
-            <div className="flex items-end">
+          {/* Pending Files List */}
+          {pendingFiles.length > 0 && (
+            <div className="space-y-3 border rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">
+                  Files to Upload ({pendingFiles.length})
+                </h4>
+                <Button variant="ghost" size="sm" onClick={clearAllPending} disabled={uploading}>
+                  <X className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
+
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {pendingFiles.map((pf, index) => (
+                  <div
+                    key={`${pf.file.name}-${index}`}
+                    className={`flex items-center gap-3 p-3 border rounded-md ${
+                      pf.status === 'success'
+                        ? 'bg-green-50 dark:bg-green-950/20 border-green-200'
+                        : pf.status === 'error'
+                        ? 'bg-red-50 dark:bg-red-950/20 border-red-200'
+                        : pf.status === 'uploading'
+                        ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200'
+                        : 'bg-background'
+                    }`}
+                  >
+                    {/* Status Icon */}
+                    <div className="shrink-0">
+                      {pf.status === 'uploading' && <Loader2 className="h-5 w-5 animate-spin text-blue-500" />}
+                      {pf.status === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                      {pf.status === 'error' && <AlertCircle className="h-5 w-5 text-red-500" />}
+                      {pf.status === 'pending' && <FileText className="h-5 w-5 text-muted-foreground" />}
+                    </div>
+
+                    {/* File Info & Editable Fields */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={pf.title}
+                          onChange={(e) => updatePendingFile(index, { title: e.target.value })}
+                          placeholder="Document title"
+                          disabled={uploading || pf.status === 'success'}
+                          className="h-8"
+                        />
+                        <Select
+                          value={pf.category}
+                          onValueChange={(val) => updatePendingFile(index, { category: val })}
+                          disabled={uploading || pf.status === 'success'}
+                        >
+                          <SelectTrigger className="w-[180px] h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORIES.map((cat) => (
+                              <SelectItem key={cat.value} value={cat.value}>
+                                {cat.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="truncate">{pf.file.name}</span>
+                        <span>•</span>
+                        <span>{formatFileSize(pf.file.size)}</span>
+                        {pf.error && (
+                          <>
+                            <span>•</span>
+                            <span className="text-red-500 truncate">{pf.error}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Remove Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePendingFile(index)}
+                      disabled={uploading || pf.status === 'uploading'}
+                      className="shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Upload Progress */}
+              {uploading && (
+                <div className="space-y-2">
+                  <Progress value={(uploadProgress.current / uploadProgress.total) * 100} />
+                  <p className="text-sm text-center text-muted-foreground">
+                    Processing {uploadProgress.current} of {uploadProgress.total} files...
+                  </p>
+                </div>
+              )}
+
+              {/* Upload Button */}
               <Button
-                onClick={uploadDocument}
-                disabled={!selectedFile || !title || uploading}
+                onClick={uploadAllDocuments}
+                disabled={uploading || pendingFiles.filter((pf) => pf.status === 'pending' || pf.status === 'error').length === 0}
                 className="w-full"
               >
                 {uploading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    Uploading...
                   </>
                 ) : (
                   <>
                     <Upload className="mr-2 h-4 w-4" />
-                    Upload & Extract
+                    Upload All ({pendingFiles.filter((pf) => pf.status === 'pending' || pf.status === 'error').length} files)
                   </>
                 )}
               </Button>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -385,7 +544,7 @@ export default function KnowledgeBaseManager() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    
+
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={doc.is_active}
