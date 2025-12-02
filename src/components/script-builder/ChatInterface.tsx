@@ -18,14 +18,29 @@ interface Message {
 interface ChatInterfaceProps {
   conversationId: string | null;
   onNewConversation: () => void;
+  initialMessage?: string;
+  onClearInitialMessage?: () => void;
 }
 
-const ChatInterface = ({ conversationId, onNewConversation }: ChatInterfaceProps) => {
+const ChatInterface = ({ 
+  conversationId, 
+  onNewConversation, 
+  initialMessage,
+  onClearInitialMessage 
+}: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Handle initial message from refinement
+  useEffect(() => {
+    if (initialMessage && conversationId) {
+      setInput(initialMessage);
+      onClearInitialMessage?.();
+    }
+  }, [initialMessage, conversationId, onClearInitialMessage]);
 
   useEffect(() => {
     if (conversationId) {

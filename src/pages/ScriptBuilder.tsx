@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +14,8 @@ const ScriptBuilder = () => {
   const navigate = useNavigate();
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState("chat");
+  const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     checkAuth();
@@ -57,15 +59,35 @@ const ScriptBuilder = () => {
       setCurrentConversationId(data.id);
       setRefreshTrigger(prev => prev + 1);
       toast.success("New conversation started");
+      return data.id;
     } catch (error: any) {
       console.error("Error creating conversation:", error);
       toast.error("Failed to create conversation");
+      return null;
     }
   };
 
   const handleSelectConversation = (id: string) => {
     setCurrentConversationId(id);
   };
+
+  const handleRefineInChat = useCallback(async (content: string, title: string) => {
+    // Create a new conversation for refinement
+    const newConvId = await handleNewConversation();
+    if (!newConvId) return;
+
+    // Set the initial message with the lead magnet content
+    const refinementPrompt = `I want to refine this lead magnet "${title}":\n\n${content}\n\nPlease help me improve it. What aspects would you like me to focus on - the hook, the deliverable specifics, or the value proposition?`;
+    setInitialMessage(refinementPrompt);
+    
+    // Switch to chat tab
+    setActiveTab("chat");
+    toast.success("Lead magnet loaded for refinement");
+  }, []);
+
+  const clearInitialMessage = useCallback(() => {
+    setInitialMessage(undefined);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,7 +100,7 @@ const ScriptBuilder = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="chat" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="profile">My Profile</TabsTrigger>
@@ -91,6 +113,8 @@ const ScriptBuilder = () => {
             <ChatInterface
               conversationId={currentConversationId}
               onNewConversation={handleNewConversation}
+              initialMessage={initialMessage}
+              onClearInitialMessage={clearInitialMessage}
             />
           </TabsContent>
 
@@ -99,7 +123,7 @@ const ScriptBuilder = () => {
           </TabsContent>
 
           <TabsContent value="favorites" className="mt-6">
-            <SavedLeadMagnets />
+            <SavedLeadMagnets onRefineInChat={handleRefineInChat} />
           </TabsContent>
 
           <TabsContent value="history" className="mt-6">
