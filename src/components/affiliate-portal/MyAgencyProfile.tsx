@@ -9,7 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ServiceSelector } from "./ServiceSelector";
-import { Save, Eye, Globe, Upload } from "lucide-react";
+import { ImageUpload } from "./ImageUpload";
+import { Save, Eye, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AgencyProfile {
@@ -313,21 +314,23 @@ export const MyAgencyProfile = () => {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="logo_url">Logo URL</Label>
-              <Input
-                id="logo_url"
+              <Label>Logo</Label>
+              <ImageUpload
                 value={profile.logo_url}
-                onChange={(e) => setProfile(prev => ({ ...prev, logo_url: e.target.value }))}
-                placeholder="https://example.com/logo.png"
+                onChange={(url) => setProfile(prev => ({ ...prev, logo_url: url }))}
+                folder="logos"
+                aspectRatio="square"
+                placeholder="Upload logo"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="banner_url">Banner URL</Label>
-              <Input
-                id="banner_url"
+              <Label>Banner</Label>
+              <ImageUpload
                 value={profile.banner_url}
-                onChange={(e) => setProfile(prev => ({ ...prev, banner_url: e.target.value }))}
-                placeholder="https://example.com/banner.png"
+                onChange={(url) => setProfile(prev => ({ ...prev, banner_url: url }))}
+                folder="banners"
+                aspectRatio="wide"
+                placeholder="Upload banner"
               />
             </div>
           </div>

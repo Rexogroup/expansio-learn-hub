@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home, Users } from "lucide-react";
@@ -16,6 +17,7 @@ export const Navbar = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(true);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,6 +50,7 @@ export const Navbar = () => {
         checkAdminStatus(session.user.id);
         checkEditorStatus(session.user.id);
         checkOnboardingStatus(session.user.id);
+        fetchUnreadMessages(session.user.id);
       }
     });
 
@@ -57,10 +60,12 @@ export const Navbar = () => {
         checkAdminStatus(session.user.id);
         checkEditorStatus(session.user.id);
         checkOnboardingStatus(session.user.id);
+        fetchUnreadMessages(session.user.id);
       } else {
         setIsAdmin(false);
         setIsEditor(false);
         setOnboardingComplete(true);
+        setUnreadMessages(0);
       }
     });
 
@@ -99,6 +104,53 @@ export const Navbar = () => {
     setOnboardingComplete(allCompleted);
   };
 
+  const fetchUnreadMessages = async (userId: string) => {
+    const { data: participations } = await supabase
+      .from("conversation_participants")
+      .select("conversation_id, last_read_at")
+      .eq("user_id", userId);
+
+    if (!participations?.length) {
+      setUnreadMessages(0);
+      return;
+    }
+
+    let total = 0;
+    for (const p of participations) {
+      const { count } = await supabase
+        .from("direct_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("conversation_id", p.conversation_id)
+        .neq("sender_id", userId)
+        .gt("created_at", p.last_read_at || "1970-01-01");
+      
+      total += count || 0;
+    }
+    setUnreadMessages(total);
+  };
+
+  // Subscribe to new messages for badge updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('navbar-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'direct_messages'
+        },
+        () => fetchUnreadMessages(user.id)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -135,9 +187,17 @@ export const Navbar = () => {
                 <Button variant={isActiveRoute("/sales-vault") ? "default" : "ghost"}>Sales Vault</Button>
               </Link>
               <Link to="/network" aria-current={isActiveRoute("/network") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/network") ? "default" : "ghost"}>
+                <Button variant={isActiveRoute("/network") ? "default" : "ghost"} className="relative">
                   <Users className="w-4 h-4 mr-2" />
                   Network
+                  {unreadMessages > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                    >
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
               {isAdmin && (
