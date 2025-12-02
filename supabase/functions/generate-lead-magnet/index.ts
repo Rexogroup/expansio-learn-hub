@@ -20,7 +20,7 @@ const requestSchema = z.object({
     )
 });
 
-const SYSTEM_PROMPT = `You are an elite consultant and direct response copywriter specializing in creating irresistible lead magnets for B2B agencies. You have mastered the art of transforming agency services into compelling "free work" offers that prospects cannot refuse.
+const BASE_SYSTEM_PROMPT = `You are an elite consultant and direct response copywriter specializing in creating irresistible lead magnets for B2B agencies. You have mastered the art of transforming agency services into compelling "free work" offers that prospects cannot refuse.
 
 YOUR EXPERTISE:
 You are a consultant for agencies who helps them create lead magnets that convert. You understand that the best lead magnets are FREE WORK offers based on the core services of the agency - actual deliverables, not audits, not strategies, not consultations. These are things that prospects would normally pay for if provided by similar agencies.
@@ -191,6 +191,47 @@ serve(async (req) => {
 
     const { conversationId, message } = validationResult.data;
 
+    // Fetch knowledge base documents
+    const { data: knowledgeDocs, error: kbError } = await supabase
+      .from('knowledge_base_documents')
+      .select('title, extracted_content, category')
+      .eq('document_type', 'admin')
+      .eq('is_active', true)
+      .not('extracted_content', 'is', null);
+
+    if (kbError) {
+      console.error('Error fetching knowledge base:', kbError);
+    }
+
+    // Build the enhanced system prompt with knowledge base
+    let systemPrompt = BASE_SYSTEM_PROMPT;
+
+    if (knowledgeDocs && knowledgeDocs.length > 0) {
+      console.log(`Found ${knowledgeDocs.length} knowledge base documents`);
+      
+      const knowledgeSection = knowledgeDocs.map(doc => {
+        const categoryLabel = doc.category ? `[${doc.category.toUpperCase()}]` : '';
+        return `### ${doc.title} ${categoryLabel}\n${doc.extracted_content}`;
+      }).join('\n\n---\n\n');
+
+      systemPrompt += `
+
+================================================================================
+KNOWLEDGE BASE - TOP PERFORMING LEAD MAGNETS & REFERENCE MATERIALS
+================================================================================
+
+The following documents contain proven lead magnet examples, templates, and reference materials. 
+Use these as inspiration and source material when crafting lead magnet offers:
+
+${knowledgeSection}
+
+================================================================================
+END OF KNOWLEDGE BASE
+================================================================================
+
+IMPORTANT: When creating lead magnets, reference and adapt the patterns, language, and structures from the knowledge base above. These are proven, high-performing examples that you should learn from and customize for each user's specific situation.`;
+    }
+
     // Get conversation history
     const { data: messages } = await supabase
       .from('script_messages')
@@ -212,12 +253,12 @@ serve(async (req) => {
 
     const conversationHistory = messages || [];
     const allMessages = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       ...conversationHistory,
       { role: 'user', content: message },
     ];
 
-    console.log('Calling Lovable AI with', allMessages.length, 'messages');
+    console.log('Calling Lovable AI with', allMessages.length, 'messages, system prompt length:', systemPrompt.length);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
