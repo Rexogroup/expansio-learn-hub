@@ -14,6 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
+      agency_profiles: {
+        Row: {
+          affiliate_commission: string | null
+          agency_name: string
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          location: string | null
+          logo_url: string | null
+          minimum_project_value: string | null
+          open_to_collaborations: boolean
+          profile_views: number
+          social_links: Json | null
+          tagline: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+          website_url: string | null
+          whitelabel_pricing: string | null
+        }
+        Insert: {
+          affiliate_commission?: string | null
+          agency_name: string
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          location?: string | null
+          logo_url?: string | null
+          minimum_project_value?: string | null
+          open_to_collaborations?: boolean
+          profile_views?: number
+          social_links?: Json | null
+          tagline?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+          website_url?: string | null
+          whitelabel_pricing?: string | null
+        }
+        Update: {
+          affiliate_commission?: string | null
+          agency_name?: string
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          location?: string | null
+          logo_url?: string | null
+          minimum_project_value?: string | null
+          open_to_collaborations?: boolean
+          profile_views?: number
+          social_links?: Json | null
+          tagline?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+          website_url?: string | null
+          whitelabel_pricing?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_services: {
+        Row: {
+          agency_id: string
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          pricing_model: string | null
+          service_name: string | null
+        }
+        Insert: {
+          agency_id: string
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          pricing_model?: string | null
+          service_name?: string | null
+        }
+        Update: {
+          agency_id?: string
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          pricing_model?: string | null
+          service_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_services_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_services_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           arr_value: string | null
@@ -110,6 +232,90 @@ export type Database = {
           },
         ]
       }
+      connections: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          id: string
+          intro_message: string | null
+          recipient_id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["connection_status"]
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          intro_message?: string | null
+          recipient_id: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["connection_status"]
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string
+          id?: string
+          intro_message?: string | null
+          recipient_id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["connection_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connections_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "direct_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string | null
@@ -148,6 +354,66 @@ export type Database = {
           {
             foreignKeyName: "courses_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      direct_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      direct_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "direct_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "direct_messages_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -853,6 +1119,36 @@ export type Database = {
           },
         ]
       }
+      service_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tool_categories: {
         Row: {
           created_at: string
@@ -1083,6 +1379,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "editor"
+      connection_status: "pending" | "accepted" | "declined"
       project_priority: "low" | "medium" | "high" | "urgent"
       project_status:
         | "onboarding"
@@ -1229,6 +1526,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "editor"],
+      connection_status: ["pending", "accepted", "declined"],
       project_priority: ["low", "medium", "high", "urgent"],
       project_status: [
         "onboarding",
