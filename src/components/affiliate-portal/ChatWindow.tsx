@@ -6,13 +6,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MessageBubble } from "./MessageBubble";
-import { ArrowLeft, Send, Briefcase, ExternalLink } from "lucide-react";
+import { ArrowLeft, Send, Briefcase, ExternalLink, Paperclip, X } from "lucide-react";
 
 interface Message {
   id: string;
   content: string;
   sender_id: string;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
 }
 
 interface ChatWindowProps {
@@ -28,6 +31,9 @@ export const ChatWindow = ({ conversationId, onBack, onMessageSent }: ChatWindow
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [otherParticipant, setOtherParticipant] = useState<{
     id: string;
     full_name: string | null;
@@ -132,31 +138,96 @@ export const ChatWindow = ({ conversationId, onBack, onMessageSent }: ChatWindow
       .eq("user_id", uid);
   };
 
+  const uploadFile = async (file: File): Promise<{ url: string; name: string; type: string } | null> => {
+    if (!userId) return null;
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}/${conversationId}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('message-attachments')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('message-attachments')
+      .getPublicUrl(fileName);
+
+    return {
+      url: publicUrl,
+      name: file.name,
+      type: file.type,
+    };
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File size must be less than 10MB");
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || !userId) return;
+    if ((!newMessage.trim() && !selectedFile) || !userId) return;
 
     setSending(true);
+    setUploading(!!selectedFile);
+
+    let attachment: { url: string; name: string; type: string } | null = null;
+
+    if (selectedFile) {
+      attachment = await uploadFile(selectedFile);
+      if (!attachment) {
+        toast.error("Failed to upload file");
+        setSending(false);
+        setUploading(false);
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("direct_messages")
       .insert({
         conversation_id: conversationId,
         sender_id: userId,
-        content: newMessage.trim(),
+        content: newMessage.trim() || (attachment ? `Shared a file: ${attachment.name}` : ''),
+        attachment_url: attachment?.url || null,
+        attachment_name: attachment?.name || null,
+        attachment_type: attachment?.type || null,
       });
 
     if (error) {
       toast.error("Failed to send message");
     } else {
       setNewMessage("");
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       onMessageSent();
       
-      // Update conversation updated_at
       await supabase
         .from("direct_conversations")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", conversationId);
     }
     setSending(false);
+    setUploading(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -226,7 +297,31 @@ export const ChatWindow = ({ conversationId, onBack, onMessageSent }: ChatWindow
       </CardContent>
 
       <div className="flex-shrink-0 border-t p-4">
+        {selectedFile && (
+          <div className="flex items-center gap-2 mb-2 p-2 bg-muted rounded-lg">
+            <Paperclip className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={removeSelectedFile}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
         <div className="flex gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending}
+          >
+            <Paperclip className="w-4 h-4" />
+          </Button>
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
@@ -235,8 +330,15 @@ export const ChatWindow = ({ conversationId, onBack, onMessageSent }: ChatWindow
             rows={1}
             className="resize-none"
           />
-          <Button onClick={handleSend} disabled={sending || !newMessage.trim()}>
-            <Send className="w-4 h-4" />
+          <Button 
+            onClick={handleSend} 
+            disabled={sending || (!newMessage.trim() && !selectedFile)}
+          >
+            {uploading ? (
+              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>
