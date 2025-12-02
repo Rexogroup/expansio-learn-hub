@@ -12,6 +12,7 @@ import { InviteManager } from "@/components/admin/InviteManager";
 import OnboardingManager from "@/components/admin/OnboardingManager";
 import { ToolCategoryManager } from "@/components/admin/ToolCategoryManager";
 import { ToolManager } from "@/components/admin/ToolManager";
+import KnowledgeBaseManager from "@/components/admin/KnowledgeBaseManager";
 import { toast } from "sonner";
 
 export default function Admin() {
@@ -83,7 +84,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="courses" className="w-full">
-          <TabsList className="grid w-full max-w-7xl grid-cols-9">
+          <TabsList className="grid w-full max-w-7xl grid-cols-10">
             <TabsTrigger value="courses">Courses</TabsTrigger>
             <TabsTrigger value="sections">Sections</TabsTrigger>
             <TabsTrigger value="lessons">Lessons</TabsTrigger>
@@ -93,6 +94,7 @@ export default function Admin() {
             <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
             <TabsTrigger value="tool-categories">Tool Categories</TabsTrigger>
             <TabsTrigger value="tools">Tools</TabsTrigger>
+            <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
           </TabsList>
           <TabsContent value="courses" className="mt-6">
             <CourseManager />
@@ -120,6 +122,9 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="tools" className="mt-6">
             <ToolManager />
+          </TabsContent>
+          <TabsContent value="knowledge-base" className="mt-6">
+            <KnowledgeBaseManager />
           </TabsContent>
         </Tabs>
       </div>
