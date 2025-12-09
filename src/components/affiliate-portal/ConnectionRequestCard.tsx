@@ -64,6 +64,31 @@ export const ConnectionRequestCard = ({ connection, type, onUpdate }: Connection
     } else {
       toast.success("Connection accepted!");
       onUpdate();
+
+      // Send email notification to the requester
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && connection.requester) {
+        const { data: acceptorProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+
+        const { data: acceptorAgency } = await supabase
+          .from("agency_profiles")
+          .select("agency_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        supabase.functions.invoke("send-notification-email", {
+          body: {
+            type: "connection_accepted",
+            recipientUserId: connection.requester_id,
+            senderName: acceptorProfile?.full_name || user.email,
+            senderAgencyName: acceptorAgency?.agency_name,
+          },
+        }).catch(console.error);
+      }
     }
     setProcessing(false);
   };

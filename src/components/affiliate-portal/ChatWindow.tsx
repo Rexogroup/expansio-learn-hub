@@ -225,6 +225,25 @@ export const ChatWindow = ({ conversationId, onBack, onMessageSent }: ChatWindow
         .from("direct_conversations")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", conversationId);
+
+      // Send email notification to recipient
+      if (otherParticipant) {
+        const { data: senderProfile } = await supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", userId)
+          .single();
+
+        supabase.functions.invoke("send-notification-email", {
+          body: {
+            type: "new_message",
+            recipientUserId: otherParticipant.id,
+            senderName: senderProfile?.full_name || senderProfile?.email || "Someone",
+            senderAgencyName: otherParticipant.agency?.agency_name,
+            messagePreview: newMessage.trim() || (attachment ? `Shared a file: ${attachment.name}` : ''),
+          },
+        }).catch(console.error);
+      }
     }
     setSending(false);
     setUploading(false);
