@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -22,9 +23,58 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify the user is authenticated and has admin role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Invalid token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Check if user has admin role
+    const { data: roleData, error: roleError } = await supabaseClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    if (roleError || !roleData) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: Admin access required" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const { firstName, lastName, email, inviteCode, company }: InviteEmailRequest = await req.json();
 
-    console.log(`Sending invite email to ${email} with code ${inviteCode}`);
+    // Validate required fields
+    if (!firstName || !lastName || !email || !inviteCode) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     const inviteUrl = `https://learn.expansio.io/signup?invite=${inviteCode}`;
 
@@ -172,13 +222,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!emailResponse.ok) {
       const error = await emailResponse.json();
-      throw new Error(`Resend API error: ${JSON.stringify(error)}`);
+      throw new Error(`Email service error: ${JSON.stringify(error)}`);
     }
 
     const result = await emailResponse.json();
-    console.log("Email sent successfully:", result);
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -186,9 +235,9 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in send-invite-email function:", error);
+    console.error("Error in send-invite-email function:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Failed to send invite email" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
