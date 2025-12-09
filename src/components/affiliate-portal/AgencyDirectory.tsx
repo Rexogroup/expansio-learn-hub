@@ -80,8 +80,10 @@ export const AgencyDirectory = () => {
     setLoading(false);
   };
 
+  const ownAgency = agencies.find((agency) => agency.user_id === currentUserId);
+
   const filteredAgencies = agencies.filter((agency) => {
-    // Don't show own agency in directory
+    // Don't show own agency in regular filtered list (we show it separately)
     if (agency.user_id === currentUserId) return false;
 
     const matchesSearch = agency.agency_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -166,6 +168,9 @@ export const AgencyDirectory = () => {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {ownAgency && (
+            <AgencyCard key={ownAgency.id} agency={ownAgency} isOwnProfile />
+          )}
           {filteredAgencies.map((agency) => (
             <AgencyCard key={agency.id} agency={agency} />
           ))}

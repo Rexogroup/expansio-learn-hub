@@ -25,9 +25,10 @@ interface AgencyCardProps {
     verified: boolean;
     services?: AgencyService[];
   };
+  isOwnProfile?: boolean;
 }
 
-export const AgencyCard = ({ agency }: AgencyCardProps) => {
+export const AgencyCard = ({ agency, isOwnProfile = false }: AgencyCardProps) => {
   const navigate = useNavigate();
   const [showMessageDialog, setShowMessageDialog] = useState(false);
 
@@ -40,7 +41,13 @@ export const AgencyCard = ({ agency }: AgencyCardProps) => {
 
   return (
     <>
-      <Card className="group hover:shadow-lg transition-all duration-300 hover:border-primary/50 cursor-pointer overflow-hidden">
+      <Card className={`group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${isOwnProfile ? 'border-2 border-dashed border-primary/50 bg-primary/5' : 'hover:border-primary/50'}`}>
+        {isOwnProfile && (
+          <div className="bg-primary/10 px-4 py-2 text-xs font-medium text-primary flex items-center gap-2 border-b border-primary/20">
+            <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
+            Preview — This is how your profile appears to others
+          </div>
+        )}
         <CardContent 
           className="pt-6"
           onClick={() => navigate(`/agency/${agency.id}`)}
@@ -102,16 +109,29 @@ export const AgencyCard = ({ agency }: AgencyCardProps) => {
         </CardContent>
 
         <CardFooter className="pt-0">
-          <Button 
-            className="w-full gap-2"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMessageDialog(true);
-            }}
-          >
-            <MessageSquare className="w-4 h-4" />
-            Send Message
-          </Button>
+          {isOwnProfile ? (
+            <Button 
+              variant="outline"
+              className="w-full gap-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/network?tab=profile');
+              }}
+            >
+              Edit Profile
+            </Button>
+          ) : (
+            <Button 
+              className="w-full gap-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMessageDialog(true);
+              }}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Send Message
+            </Button>
+          )}
         </CardFooter>
       </Card>
 
