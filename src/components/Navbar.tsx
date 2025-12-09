@@ -349,11 +349,6 @@ export const Navbar = () => {
                 </Button>
               </Link>
               {isAdmin && (
-                <Link to="/tools" aria-current={isActiveRoute("/tools") ? "page" : undefined}>
-                  <Button variant={isActiveRoute("/tools") ? "default" : "ghost"}>Tools</Button>
-                </Link>
-              )}
-              {isAdmin && (
                 <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
                   <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
                 </Link>
