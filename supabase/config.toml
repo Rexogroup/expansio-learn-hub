@@ -1,7 +1,7 @@
 project_id = "teelukblrpynzcdabtuu"
 
 [functions.send-invite-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-lead-magnet]
 verify_jwt = true
