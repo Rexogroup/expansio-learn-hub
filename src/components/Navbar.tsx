@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -18,6 +19,7 @@ export const Navbar = () => {
   const [isEditor, setIsEditor] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -51,6 +53,7 @@ export const Navbar = () => {
         checkEditorStatus(session.user.id);
         checkOnboardingStatus(session.user.id);
         fetchUnreadMessages(session.user.id);
+        fetchPendingRequests(session.user.id);
       }
     });
 
@@ -61,11 +64,13 @@ export const Navbar = () => {
         checkEditorStatus(session.user.id);
         checkOnboardingStatus(session.user.id);
         fetchUnreadMessages(session.user.id);
+        fetchPendingRequests(session.user.id);
       } else {
         setIsAdmin(false);
         setIsEditor(false);
         setOnboardingComplete(true);
         setUnreadMessages(0);
+        setPendingRequests(0);
       }
     });
 
@@ -129,11 +134,21 @@ export const Navbar = () => {
     setUnreadMessages(total);
   };
 
-  // Subscribe to new messages for badge updates
+  const fetchPendingRequests = async (userId: string) => {
+    const { count } = await supabase
+      .from("connections")
+      .select("*", { count: "exact", head: true })
+      .eq("recipient_id", userId)
+      .eq("status", "pending");
+    
+    setPendingRequests(count || 0);
+  };
+
+  // Subscribe to new messages for badge updates and toast notifications
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    const messagesChannel = supabase
       .channel('navbar-messages')
       .on(
         'postgres_changes',
@@ -142,19 +157,152 @@ export const Navbar = () => {
           schema: 'public',
           table: 'direct_messages'
         },
-        () => fetchUnreadMessages(user.id)
+        async (payload) => {
+          const newMessage = payload.new as { sender_id: string; content: string; conversation_id: string };
+          
+          // Only notify if the message is from someone else
+          if (newMessage.sender_id !== user.id) {
+            // Fetch sender info for toast
+            const { data: senderProfile } = await supabase
+              .from("profiles")
+              .select("full_name, email")
+              .eq("id", newMessage.sender_id)
+              .single();
+
+            const senderName = senderProfile?.full_name || senderProfile?.email || "Someone";
+            
+            // Show toast only if not on the network page viewing that conversation
+            if (!location.pathname.includes('/network')) {
+              toast.info(`New message from ${senderName}`, {
+                description: newMessage.content.substring(0, 50) + (newMessage.content.length > 50 ? "..." : ""),
+                action: {
+                  label: "View",
+                  onClick: () => navigate("/network")
+                }
+              });
+            }
+            
+            fetchUnreadMessages(user.id);
+          }
+        }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
     };
-  }, [user]);
+  }, [user, location.pathname, navigate]);
+
+  // Subscribe to connection requests for badge updates and toast notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const connectionsChannel = supabase
+      .channel('navbar-connections')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'connections'
+        },
+        async (payload) => {
+          const newConnection = payload.new as { requester_id: string; recipient_id: string };
+          
+          // Only notify if we're the recipient of the request
+          if (newConnection.recipient_id === user.id) {
+            // Fetch requester info
+            const { data: requesterProfile } = await supabase
+              .from("profiles")
+              .select("full_name, email")
+              .eq("id", newConnection.requester_id)
+              .single();
+
+            const { data: requesterAgency } = await supabase
+              .from("agency_profiles")
+              .select("agency_name")
+              .eq("user_id", newConnection.requester_id)
+              .single();
+
+            const requesterName = requesterAgency?.agency_name || requesterProfile?.full_name || "Someone";
+            
+            toast.info(`New connection request`, {
+              description: `${requesterName} wants to connect with you`,
+              action: {
+                label: "View",
+                onClick: () => navigate("/network")
+              }
+            });
+            
+            fetchPendingRequests(user.id);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'connections'
+        },
+        async (payload) => {
+          const updatedConnection = payload.new as { requester_id: string; recipient_id: string; status: string };
+          
+          // Notify requester when their request is accepted
+          if (updatedConnection.requester_id === user.id && updatedConnection.status === "accepted") {
+            const { data: recipientProfile } = await supabase
+              .from("profiles")
+              .select("full_name, email")
+              .eq("id", updatedConnection.recipient_id)
+              .single();
+
+            const { data: recipientAgency } = await supabase
+              .from("agency_profiles")
+              .select("agency_name")
+              .eq("user_id", updatedConnection.recipient_id)
+              .single();
+
+            const recipientName = recipientAgency?.agency_name || recipientProfile?.full_name || "Someone";
+            
+            toast.success(`Connection accepted!`, {
+              description: `${recipientName} accepted your connection request`,
+              action: {
+                label: "View",
+                onClick: () => navigate("/network")
+              }
+            });
+          }
+          
+          // Update pending count if we're the recipient
+          if (updatedConnection.recipient_id === user.id) {
+            fetchPendingRequests(user.id);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'connections'
+        },
+        () => {
+          fetchPendingRequests(user.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(connectionsChannel);
+    };
+  }, [user, navigate]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
+
+  const totalNotifications = unreadMessages + pendingRequests;
 
   return (
     <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -190,12 +338,12 @@ export const Navbar = () => {
                 <Button variant={isActiveRoute("/network") ? "default" : "ghost"} className="relative">
                   <Users className="w-4 h-4 mr-2" />
                   Network
-                  {unreadMessages > 0 && (
+                  {totalNotifications > 0 && (
                     <Badge 
                       variant="destructive" 
                       className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
                     >
-                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                      {totalNotifications > 9 ? "9+" : totalNotifications}
                     </Badge>
                   )}
                 </Button>
