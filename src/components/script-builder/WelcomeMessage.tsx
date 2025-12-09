@@ -3,8 +3,9 @@ import { Sparkles, Target, Zap } from "lucide-react";
 const WelcomeMessage = () => {
   return <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h3 className="text-2xl font-bold flex items-center justify-center gap-2">Start building your Lead Magnets based on our proven framworks<Sparkles className="h-6 w-6 text-primary" />
-          Welcome to AI Lead Magnet Builder
+        <h3 className="text-2xl font-bold flex items-center justify-center gap-2">
+          <Sparkles className="h-6 w-6 text-primary" />
+          Start building your Lead Magnets based on our proven frameworks
         </h3>
         <p className="text-muted-foreground max-w-2xl mx-auto">I'll help you create high-converting lead magnet scripts using our proven value-first scriptwriting framework.  </p>
       </div>
