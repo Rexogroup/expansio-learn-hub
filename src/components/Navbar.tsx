@@ -334,20 +334,22 @@ export const Navbar = () => {
               <Link to="/sales-vault" aria-current={isActiveRoute("/sales-vault") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/sales-vault") ? "default" : "ghost"}>Sales Vault</Button>
               </Link>
-              <Link to="/network" aria-current={isActiveRoute("/network") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/network") ? "default" : "ghost"} className="relative">
-                  <Users className="w-4 h-4 mr-2" />
-                  Network
-                  {totalNotifications > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                    >
-                      {totalNotifications > 9 ? "9+" : totalNotifications}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link to="/network" aria-current={isActiveRoute("/network") ? "page" : undefined}>
+                  <Button variant={isActiveRoute("/network") ? "default" : "ghost"} className="relative">
+                    <Users className="w-4 h-4 mr-2" />
+                    Network
+                    {totalNotifications > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                      >
+                        {totalNotifications > 9 ? "9+" : totalNotifications}
+                      </Badge>
+                    )}
+                  </Button>
+                </Link>
+              )}
               {isAdmin && (
                 <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
                   <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
