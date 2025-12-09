@@ -106,6 +106,30 @@ export const StartConversationDialog = ({
               recipient_id: recipientUserId,
               intro_message: message.trim().substring(0, 200),
             });
+
+          // Get sender's profile for email notification
+          const { data: senderProfile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .single();
+
+          const { data: senderAgency } = await supabase
+            .from("agency_profiles")
+            .select("agency_name")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          // Send connection request email notification
+          supabase.functions.invoke("send-notification-email", {
+            body: {
+              type: "connection_request",
+              recipientUserId,
+              senderName: senderProfile?.full_name || user.email,
+              senderAgencyName: senderAgency?.agency_name,
+              messagePreview: message.trim().substring(0, 200),
+            },
+          }).catch(console.error);
         }
       }
 
@@ -119,6 +143,30 @@ export const StartConversationDialog = ({
         });
 
       if (msgError) throw msgError;
+
+      // Get sender info for email notification
+      const { data: senderProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      const { data: senderAgency } = await supabase
+        .from("agency_profiles")
+        .select("agency_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      // Send new message email notification
+      supabase.functions.invoke("send-notification-email", {
+        body: {
+          type: "new_message",
+          recipientUserId,
+          senderName: senderProfile?.full_name || user.email,
+          senderAgencyName: senderAgency?.agency_name,
+          messagePreview: message.trim(),
+        },
+      }).catch(console.error);
 
       toast.success("Message sent!");
       setMessage("");
