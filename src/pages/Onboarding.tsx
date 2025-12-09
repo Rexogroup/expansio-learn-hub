@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Circle, Lock } from "lucide-react";
+import { CheckCircle2, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 
@@ -83,27 +83,8 @@ export default function Onboarding() {
     return "locked";
   };
 
-  const canAccessStep = (stepNumber: number) => {
-    // Step 0 is always accessible
-    if (stepNumber === 0) return true;
-    
-    // Allow access to all steps if onboarding is complete
-    const allCompleted = progress.length === steps.length && progress.every(p => p.completed);
-    if (allCompleted) return true;
-    
-    // For step 1 and beyond: allow if previous step is done OR any later step is done
-    const previousProgress = progress.find(p => p.step_number === stepNumber - 1);
-    const hasLaterProgress = progress.some(p => p.step_number > stepNumber && p.completed);
-    
-    return previousProgress?.completed || hasLaterProgress;
-  };
-
   const handleStepClick = (stepNumber: number) => {
-    if (canAccessStep(stepNumber)) {
-      navigate(`/onboarding/step/${stepNumber}`);
-    } else {
-      toast.error("Please complete the previous step first");
-    }
+    navigate(`/onboarding/step/${stepNumber}`);
   };
 
   const completedSteps = progress.filter(p => p.completed).length;
@@ -143,14 +124,13 @@ export default function Onboarding() {
         <div className="space-y-4">
           {steps.map((step) => {
             const status = getStepStatus(step.step_number);
-            const canAccess = canAccessStep(step.step_number);
 
             return (
               <Card
                 key={step.id}
                 className={`cursor-pointer transition-all hover:shadow-md ${
                   status === "current" ? "ring-2 ring-primary" : ""
-                } ${!canAccess ? "opacity-60" : ""}`}
+                }`}
                 onClick={() => handleStepClick(step.step_number)}
               >
                 <CardHeader>
@@ -158,10 +138,8 @@ export default function Onboarding() {
                     <div className="mt-1">
                       {status === "completed" ? (
                         <CheckCircle2 className="w-6 h-6 text-green-500" />
-                      ) : status === "current" ? (
-                        <Circle className="w-6 h-6 text-primary" />
                       ) : (
-                        <Lock className="w-6 h-6 text-muted-foreground" />
+                        <Circle className="w-6 h-6 text-primary" />
                       )}
                     </div>
                     <div className="flex-1">
@@ -188,7 +166,6 @@ export default function Onboarding() {
                 <CardContent>
                   <Button
                     variant={status === "current" ? "default" : "outline"}
-                    disabled={!canAccess}
                     className="w-full sm:w-auto"
                   >
                     {status === "completed" ? "Review" : status === "current" ? "Continue" : "Start"}
