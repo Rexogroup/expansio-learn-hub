@@ -48,7 +48,7 @@ export default function UserProfile() {
   const [profile, setProfile] = useState<UserScriptProfile>(defaultProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [newPainPoint, setNewPainPoint] = useState<PainPoint>({ problem: "", solution: "" });
+  const [pendingPainPoints, setPendingPainPoints] = useState<PainPoint[]>([{ problem: "", solution: "" }]);
 
   useEffect(() => {
     fetchProfile();
@@ -137,16 +137,32 @@ export default function UserProfile() {
     }
   };
 
-  const addPainPoint = () => {
-    if (!newPainPoint.problem.trim()) {
-      toast.error("Please enter a problem");
+  const addPendingRow = () => {
+    setPendingPainPoints(prev => [...prev, { problem: "", solution: "" }]);
+  };
+
+  const updatePendingPainPoint = (index: number, field: keyof PainPoint, value: string) => {
+    setPendingPainPoints(prev => prev.map((pp, i) => 
+      i === index ? { ...pp, [field]: value } : pp
+    ));
+  };
+
+  const removePendingRow = (index: number) => {
+    setPendingPainPoints(prev => prev.length > 1 ? prev.filter((_, i) => i !== index) : prev);
+  };
+
+  const addAllPainPoints = () => {
+    const validPainPoints = pendingPainPoints.filter(pp => pp.problem.trim());
+    if (validPainPoints.length === 0) {
+      toast.error("Please enter at least one pain point");
       return;
     }
     setProfile(prev => ({
       ...prev,
-      pain_points: [...prev.pain_points, { ...newPainPoint }],
+      pain_points: [...prev.pain_points, ...validPainPoints],
     }));
-    setNewPainPoint({ problem: "", solution: "" });
+    setPendingPainPoints([{ problem: "", solution: "" }]);
+    toast.success(`Added ${validPainPoints.length} pain point${validPainPoints.length > 1 ? 's' : ''}`);
   };
 
   const removePainPoint = (index: number) => {
@@ -374,25 +390,52 @@ export default function UserProfile() {
 
           <Separator />
 
-          {/* Add New Pain Point */}
+          {/* Batch Add Pain Points */}
           <div className="space-y-3">
-            <Label>Add New Pain Point</Label>
-            <div className="grid gap-3 md:grid-cols-2">
-              <Input
-                value={newPainPoint.problem}
-                onChange={(e) => setNewPainPoint(prev => ({ ...prev, problem: e.target.value }))}
-                placeholder="Pain point / Problem..."
-              />
-              <Input
-                value={newPainPoint.solution}
-                onChange={(e) => setNewPainPoint(prev => ({ ...prev, solution: e.target.value }))}
-                placeholder="How you solve it (optional)..."
-              />
+            <Label>Add New Pain Points</Label>
+            <p className="text-sm text-muted-foreground">
+              Add multiple pain points at once, then click "Add All" to save them together.
+            </p>
+            <div className="space-y-2">
+              {pendingPainPoints.map((pp, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={pp.problem}
+                    onChange={(e) => updatePendingPainPoint(index, "problem", e.target.value)}
+                    placeholder="Pain point / Problem..."
+                    className="flex-1"
+                  />
+                  <Input
+                    value={pp.solution}
+                    onChange={(e) => updatePendingPainPoint(index, "solution", e.target.value)}
+                    placeholder="How you solve it (optional)..."
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removePendingRow(index)}
+                    disabled={pendingPainPoints.length === 1 && !pp.problem && !pp.solution}
+                    className="text-muted-foreground hover:text-destructive shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
-            <Button variant="outline" size="sm" onClick={addPainPoint}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Pain Point
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={addPendingRow}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Another Row
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={addAllPainPoints}
+                disabled={!pendingPainPoints.some(pp => pp.problem.trim())}
+              >
+                Confirm & Add All ({pendingPainPoints.filter(pp => pp.problem.trim()).length})
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
