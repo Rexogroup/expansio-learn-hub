@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Pencil, Trash2, Plus, Users } from "lucide-react";
 import {
@@ -25,8 +26,15 @@ interface OnboardingStep {
   video_url?: string;
   google_doc_url?: string;
   template_url?: string;
+  step_type?: string;
   order_index: number;
 }
+
+const STEP_TYPES = [
+  { value: 'document', label: 'Document/Template' },
+  { value: 'video', label: 'Video' },
+  { value: 'intake_form', label: 'Business Intake Form' },
+];
 
 interface UserProgress {
   id: string;
@@ -110,6 +118,7 @@ export default function OnboardingManager() {
         step_number: parseInt(formData.get("step_number") as string),
         title: formData.get("title") as string,
         description: formData.get("description") as string,
+        step_type: formData.get("step_type") as string || 'document',
         video_url: formData.get("video_url") as string || null,
         google_doc_url: formData.get("google_doc_url") as string || null,
         template_url: formData.get("template_url") as string || null,
@@ -243,6 +252,25 @@ export default function OnboardingManager() {
                     </div>
 
                     <div>
+                      <Label htmlFor="step_type">Step Type</Label>
+                      <Select name="step_type" defaultValue={editingStep?.step_type || 'document'}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select step type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STEP_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        "Business Intake Form" will display an in-platform form instead of external links
+                      </p>
+                    </div>
+
+                    <div>
                       <Label htmlFor="video_url">Video URL (optional)</Label>
                       <Input
                         id="video_url"
@@ -296,6 +324,7 @@ export default function OnboardingManager() {
               <TableRow>
                 <TableHead>Step</TableHead>
                 <TableHead>Title</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -305,6 +334,17 @@ export default function OnboardingManager() {
                 <TableRow key={step.id}>
                   <TableCell className="font-medium">{step.step_number}</TableCell>
                   <TableCell>{step.title}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      step.step_type === 'intake_form' 
+                        ? 'bg-primary/10 text-primary' 
+                        : step.step_type === 'video' 
+                        ? 'bg-blue-500/10 text-blue-500'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {STEP_TYPES.find(t => t.value === step.step_type)?.label || 'Document'}
+                    </span>
+                  </TableCell>
                   <TableCell className="max-w-md truncate">{step.description}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
