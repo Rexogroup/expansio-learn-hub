@@ -14,3 +14,6 @@ verify_jwt = true
 
 [functions.send-notification-email]
 verify_jwt = true
+
+[functions.generate-bulk-lead-magnets]
+verify_jwt = true

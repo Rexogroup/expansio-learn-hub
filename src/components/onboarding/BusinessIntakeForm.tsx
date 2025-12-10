@@ -173,7 +173,21 @@ export function BusinessIntakeForm({ onComplete }: BusinessIntakeFormProps) {
 
       if (error) throw error;
 
-      toast.success("Business profile saved successfully!");
+      toast.success("Profile saved! Generating your personalized lead magnets...");
+      
+      // Trigger bulk lead magnet generation in background
+      supabase.functions.invoke('generate-bulk-lead-magnets', {
+        body: { count: 20 }
+      }).then(({ data, error: genError }) => {
+        if (genError) {
+          console.error('Lead magnet generation error:', genError);
+        } else if (data?.skipped) {
+          console.log('Lead magnets already exist');
+        } else {
+          console.log('Lead magnet generation started');
+        }
+      });
+
       onComplete();
     } catch (error) {
       console.error("Error saving profile:", error);
