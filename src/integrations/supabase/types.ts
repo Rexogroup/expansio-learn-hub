@@ -666,6 +666,7 @@ export type Database = {
           id: string
           order_index: number
           step_number: number
+          step_type: string | null
           template_url: string | null
           title: string
           updated_at: string
@@ -678,6 +679,7 @@ export type Database = {
           id?: string
           order_index?: number
           step_number: number
+          step_type?: string | null
           template_url?: string | null
           title: string
           updated_at?: string
@@ -690,6 +692,7 @@ export type Database = {
           id?: string
           order_index?: number
           step_number?: number
+          step_type?: string | null
           template_url?: string | null
           title?: string
           updated_at?: string

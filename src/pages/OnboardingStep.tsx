@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { BusinessIntakeForm } from "@/components/onboarding/BusinessIntakeForm";
 
 interface OnboardingStep {
   id: string;
@@ -16,6 +17,7 @@ interface OnboardingStep {
   video_url?: string;
   google_doc_url?: string;
   template_url?: string;
+  step_type?: string;
 }
 
 
@@ -197,50 +199,58 @@ export default function OnboardingStep() {
           <p className="text-muted-foreground">{step.description}</p>
         </div>
 
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            {/* Dynamic Google Doc Section */}
-            {step.google_doc_url && !step.video_url && !step.template_url && (
-              <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="font-semibold mb-2">Instructions:</h3>
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>Click the button below to open the Google Doc template</li>
-                    <li>Make a copy of the template to your Google Drive</li>
-                    <li>Fill in your Ideal Customer Profile details and pain points</li>
-                    <li>Return here and mark the step as complete</li>
-                  </ol>
-                </div>
+        {/* Intake Form Step Type */}
+        {step.step_type === 'intake_form' ? (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <BusinessIntakeForm onComplete={markStepComplete} />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              {/* Dynamic Google Doc Section */}
+              {step.google_doc_url && !step.video_url && !step.template_url && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h3 className="font-semibold mb-2">Instructions:</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm">
+                      <li>Click the button below to open the Google Doc template</li>
+                      <li>Make a copy of the template to your Google Drive</li>
+                      <li>Fill in your Ideal Customer Profile details and pain points</li>
+                      <li>Return here and mark the step as complete</li>
+                    </ol>
+                  </div>
 
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => window.open(step.google_doc_url, "_blank")}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Google Doc Template
-                </Button>
-
-                <div className="flex items-start space-x-2 p-4 border rounded-lg">
-                  <Checkbox
-                    id="step-complete"
-                    checked={completed}
-                    onCheckedChange={(checked) => {
-                      if (checked && !completed) {
-                        markStepComplete();
-                      }
-                    }}
-                    disabled={completed || saving}
-                  />
-                  <label
-                    htmlFor="step-complete"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(step.google_doc_url, "_blank")}
                   >
-                    I have completed this step
-                  </label>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Google Doc Template
+                  </Button>
+
+                  <div className="flex items-start space-x-2 p-4 border rounded-lg">
+                    <Checkbox
+                      id="step-complete"
+                      checked={completed}
+                      onCheckedChange={(checked) => {
+                        if (checked && !completed) {
+                          markStepComplete();
+                        }
+                      }}
+                      disabled={completed || saving}
+                    />
+                    <label
+                      htmlFor="step-complete"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      I have completed this step
+                    </label>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Dynamic Video Section */}
             {step.video_url && (
@@ -360,7 +370,7 @@ export default function OnboardingStep() {
             )}
           </CardContent>
         </Card>
-
+        )}
         {/* Navigation */}
         {currentStepNumber < totalSteps - 1 && completed && (
           <div className="flex justify-end">
