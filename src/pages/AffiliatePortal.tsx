@@ -16,21 +16,39 @@ const AffiliatePortal = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingConnections, setPendingConnections] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const activeTab = searchParams.get("tab") || "directory";
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndAdmin = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         navigate("/auth");
         return;
       }
+
+      // Check admin role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (!roleData) {
+        navigate("/dashboard");
+        return;
+      }
+
+      setIsAdmin(true);
       setUserId(user.id);
+      setLoading(false);
       fetchUnreadCount(user.id);
       fetchPendingConnections(user.id);
     };
-    checkAuth();
+    checkAuthAndAdmin();
   }, [navigate]);
 
   useEffect(() => {
@@ -108,6 +126,17 @@ const AffiliatePortal = () => {
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-12 text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
