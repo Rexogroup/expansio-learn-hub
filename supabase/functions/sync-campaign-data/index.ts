@@ -23,39 +23,15 @@ interface CampaignMetrics {
   raw_data: Record<string, unknown>;
 }
 
-interface CampaignStats {
-  sent_count?: number;
-  opened_count?: number;
-  replies_count?: number;
-  interested_count?: number;
-  bounced_count?: number;
-  unsubscribed_count?: number;
-}
-
 interface Campaign {
   id: string | number;
   name?: string;
   title?: string;
   status?: string;
-  emails_sent?: number;
-  unique_opens?: number;
-  unique_replies?: number;
-  interested?: number;
-  bounced?: number;
-  unsubscribed?: number;
-  sent_count?: number;
-  opened_count?: number;
-  replies_count?: number;
-  bounced_count?: number;
 }
 
 interface LeadCampaignData {
   campaign_id: number;
-  status?: string;
-  emails_sent?: number;
-  replies?: number;
-  opens?: number;
-  interested?: boolean;
 }
 
 interface Lead {
@@ -67,11 +43,72 @@ interface Lead {
   [key: string]: unknown;
 }
 
+interface CampaignEventStats {
+  sent: number;
+  opened: number;
+  replied: number;
+  interested: number;
+  bounced: number;
+  unsubscribed: number;
+}
+
+// Fetch date-filtered stats using /api/campaign-events/stats endpoint
+async function fetchEmailBisonCampaignEventsStats(
+  apiKey: string,
+  campaignId: string,
+  startDate: string,
+  endDate: string
+): Promise<CampaignEventStats> {
+  const result: CampaignEventStats = { sent: 0, opened: 0, replied: 0, interested: 0, bounced: 0, unsubscribed: 0 };
+  
+  try {
+    const url = `https://send.expansio.io/api/campaign-events/stats?start_date=${startDate}&end_date=${endDate}&campaign_ids[0]=${campaignId}`;
+    console.log(`Fetching campaign events stats: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.log(`Campaign events stats failed: ${response.status}`);
+      return result;
+    }
+
+    const data = await response.json();
+    console.log(`Campaign events stats response for ${campaignId}: ${JSON.stringify(data)}`);
+    
+    // Parse the response - it returns arrays of [date, count] per event type
+    // Example: { data: [{ label: 'Sent', dates: [['2024-01-01', 10], ['2024-01-02', 5]] }] }
+    const eventGroups = data.data || data || [];
+    
+    for (const eventGroup of eventGroups) {
+      const dates = eventGroup.dates || [];
+      const totalForEvent = dates.reduce((sum: number, item: [string, number]) => sum + (item[1] || 0), 0);
+      
+      const label = (eventGroup.label || '').toLowerCase();
+      if (label.includes('sent')) result.sent = totalForEvent;
+      else if (label.includes('unique opens') || label === 'opened') result.opened = totalForEvent;
+      else if (label.includes('replied') || label.includes('reply')) result.replied = totalForEvent;
+      else if (label.includes('interested')) result.interested = totalForEvent;
+      else if (label.includes('bounced') || label.includes('bounce')) result.bounced = totalForEvent;
+      else if (label.includes('unsubscribed') || label.includes('unsubscribe')) result.unsubscribed = totalForEvent;
+    }
+    
+    console.log(`Parsed stats for campaign ${campaignId}: sent=${result.sent}, replied=${result.replied}, interested=${result.interested}`);
+  } catch (err) {
+    console.error(`Error fetching campaign events stats for ${campaignId}:`, err);
+  }
+  
+  return result;
+}
+
 async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[]> {
   const campaigns: CampaignMetrics[] = [];
   
   try {
-    // First, get list of campaigns
     const campaignsResponse = await fetch('https://api.instantly.ai/api/v2/campaigns', {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -86,7 +123,6 @@ async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[
     const campaignsData = await campaignsResponse.json();
     const campaignList = campaignsData.items || campaignsData || [];
 
-    // For each campaign, get analytics
     for (const campaign of campaignList) {
       try {
         const analyticsResponse = await fetch(
@@ -137,28 +173,16 @@ async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[
   return campaigns;
 }
 
-async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | null, days?: number): Promise<CampaignMetrics[]> {
+async function fetchEmailBisonCampaigns(
+  apiKey: string, 
+  meetingsTagId: string | null, 
+  days?: number
+): Promise<CampaignMetrics[]> {
   const campaigns: CampaignMetrics[] = [];
   
   try {
-    // Build URL with date filter if specified
-    let campaignsUrl = 'https://send.expansio.io/api/campaigns';
-    if (days) {
-      // Calculate date range
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-      
-      const startDateStr = startDate.toISOString().split('T')[0];
-      const endDateStr = endDate.toISOString().split('T')[0];
-      
-      // Try date filtering - EmailBison may support: start_date, end_date, date_from, date_to, or days
-      campaignsUrl = `https://send.expansio.io/api/campaigns?start_date=${startDateStr}&end_date=${endDateStr}`;
-      console.log(`Fetching campaigns with date filter: ${startDateStr} to ${endDateStr}`);
-    }
-
-    // Get campaigns from EmailBison
-    const response = await fetch(campaignsUrl, {
+    // First, get list of campaigns (basic info)
+    const response = await fetch('https://send.expansio.io/api/campaigns', {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
@@ -173,6 +197,20 @@ async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | 
     const campaignList: Campaign[] = campaignsData.data || campaignsData || [];
 
     console.log(`Processing ${campaignList.length} campaigns from EmailBison`);
+
+    // Calculate date range for filtering
+    const endDate = new Date();
+    const startDate = new Date();
+    if (days) {
+      startDate.setDate(startDate.getDate() - days);
+    } else {
+      // For all-time, go back 3 years
+      startDate.setFullYear(startDate.getFullYear() - 3);
+    }
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    console.log(`Date range: ${startDateStr} to ${endDateStr} (days=${days || 'all-time'})`);
 
     // Fetch meetings count if tag is configured
     let meetingsPerCampaign: Map<string, number> = new Map();
@@ -193,16 +231,9 @@ async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | 
           const leadsData = await leadsResponse.json();
           const leads: Lead[] = leadsData.data || leadsData || [];
           console.log(`Found ${leads.length} leads with meetings tag`);
-          
-          // Log first lead structure to understand the API response
-          if (leads.length > 0) {
-            console.log(`First lead structure: ${JSON.stringify(leads[0])}`);
-          }
 
-          // Count leads per campaign - extract campaign_id from lead_campaign_data array
           let mappedCount = 0;
           for (const lead of leads) {
-            // Primary: Get campaign_id from lead_campaign_data array (EmailBison structure)
             const leadCampaignData = lead.lead_campaign_data;
             let campaignId: string | undefined;
             
@@ -210,7 +241,6 @@ async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | 
               campaignId = leadCampaignData[0].campaign_id?.toString();
             }
             
-            // Fallback: Try direct campaign_id or other fields
             if (!campaignId) {
               campaignId = 
                 lead.campaign_id?.toString() || 
@@ -225,12 +255,8 @@ async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | 
           }
           
           console.log(`Mapped ${mappedCount} out of ${leads.length} leads to campaigns`);
-          console.log(`Meetings per campaign: ${JSON.stringify(Object.fromEntries(meetingsPerCampaign))}`);
           
-          // If no leads were mapped to campaigns, store total as a fallback
           if (mappedCount === 0 && leads.length > 0) {
-            console.log(`No campaign mapping found. Total meetings from tag: ${leads.length}`);
-            // Store with a special key that we'll use as fallback
             meetingsPerCampaign.set('__total__', leads.length);
           }
         }
@@ -239,64 +265,37 @@ async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | 
       }
     }
 
+    // Fetch stats for each campaign using the campaign-events/stats endpoint
     for (const campaign of campaignList) {
-      // Get campaign stats (may be empty, but we try)
-      let stats: CampaignStats = {};
-      try {
-        const statsResponse = await fetch(
-          `https://send.expansio.io/api/campaigns/${campaign.id}/stats`,
-          {
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (statsResponse.ok) {
-          stats = await statsResponse.json();
-        }
-      } catch (err) {
-        console.log(`Stats endpoint failed for campaign ${campaign.id}, using campaign object data`);
-      }
-
-      // PRIORITY: Extract from campaign object first (EmailBison stores metrics directly on campaign)
-      // Fallback to stats endpoint if available
-      const emailsSent = campaign.emails_sent || stats.sent_count || campaign.sent_count || 0;
-      const uniqueOpens = campaign.unique_opens || stats.opened_count || campaign.opened_count || 0;
-      const uniqueReplies = campaign.unique_replies || stats.replies_count || campaign.replies_count || 0;
-      const interested = campaign.interested || stats.interested_count || 0;
-      const bounces = campaign.bounced || stats.bounced_count || campaign.bounced_count || 0;
-      const unsubscribes = campaign.unsubscribed || stats.unsubscribed_count || 0;
-      // Get meetings: try campaign-specific first, then fall back to distributing total
-      let meetingsBooked = meetingsPerCampaign.get(campaign.id.toString()) || 0;
+      const campaignId = campaign.id.toString();
       
-      // If no campaign-specific mapping and we have a total, distribute evenly (or assign to first active campaign)
+      // Use the date-filtered stats endpoint
+      const stats = await fetchEmailBisonCampaignEventsStats(apiKey, campaignId, startDateStr, endDateStr);
+      
+      // Get meetings count
+      let meetingsBooked = meetingsPerCampaign.get(campaignId) || 0;
       if (meetingsBooked === 0 && meetingsPerCampaign.has('__total__')) {
-        const totalMeetings = meetingsPerCampaign.get('__total__') || 0;
-        // For now, show total meetings on the first campaign only (can be improved later)
         if (campaignList.indexOf(campaign) === 0) {
-          meetingsBooked = totalMeetings;
-          console.log(`Assigned ${totalMeetings} total meetings to first campaign: ${campaign.id}`);
+          meetingsBooked = meetingsPerCampaign.get('__total__') || 0;
         }
       }
 
-      console.log(`Campaign ${campaign.id}: emails_sent=${emailsSent}, replies=${uniqueReplies}, interested=${interested}, meetings=${meetingsBooked}`);
+      console.log(`Campaign ${campaignId}: sent=${stats.sent}, replied=${stats.replied}, interested=${stats.interested}, meetings=${meetingsBooked}`);
 
       campaigns.push({
-        external_campaign_id: campaign.id.toString(),
+        external_campaign_id: campaignId,
         campaign_name: campaign.name || campaign.title || 'Unnamed Campaign',
         campaign_status: campaign.status || 'unknown',
-        emails_sent: emailsSent,
-        unique_opens: uniqueOpens,
-        unique_replies: uniqueReplies,
-        interested_count: interested,
+        emails_sent: stats.sent,
+        unique_opens: stats.opened,
+        unique_replies: stats.replied,
+        interested_count: stats.interested,
         meetings_booked: meetingsBooked,
-        bounces: bounces,
-        unsubscribes: unsubscribes,
-        open_rate: emailsSent > 0 ? (uniqueOpens / emailsSent) * 100 : 0,
-        reply_rate: emailsSent > 0 ? (uniqueReplies / emailsSent) * 100 : 0,
-        interested_rate: emailsSent > 0 ? (interested / emailsSent) * 100 : 0,
+        bounces: stats.bounced,
+        unsubscribes: stats.unsubscribed,
+        open_rate: stats.sent > 0 ? (stats.opened / stats.sent) * 100 : 0,
+        reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
+        interested_rate: stats.sent > 0 ? (stats.interested / stats.sent) * 100 : 0,
         raw_data: { campaign, stats },
       });
     }
@@ -318,7 +317,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get authorization header to identify user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -327,7 +325,6 @@ serve(async (req) => {
       );
     }
 
-    // Verify user token
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
@@ -338,7 +335,6 @@ serve(async (req) => {
       );
     }
 
-    // Get user's integration
     const { data: integration, error: integrationError } = await supabase
       .from('user_integrations')
       .select('*')
@@ -353,7 +349,6 @@ serve(async (req) => {
       );
     }
 
-    // Update sync status to syncing
     await supabase
       .from('user_integrations')
       .update({ sync_status: 'syncing', sync_error: null })
@@ -370,18 +365,17 @@ serve(async (req) => {
         console.log(`Timeline filter requested: last ${days} days`);
       }
     } catch {
-      // No body or invalid JSON, use defaults
+      // No body or invalid JSON, use defaults (all-time)
     }
 
     try {
-      // Fetch campaigns based on platform
       if (integration.platform === 'instantly') {
         campaigns = await fetchInstantlyCampaigns(integration.api_key);
       } else {
         campaigns = await fetchEmailBisonCampaigns(integration.api_key, integration.meetings_tag_id, days);
       }
 
-      console.log(`Syncing ${campaigns.length} campaigns for user ${user.id}`);
+      console.log(`Syncing ${campaigns.length} campaigns for user ${user.id} (timeline_days=${days || 'null'})`);
 
       // Upsert campaigns into database with timeline_days
       for (const campaign of campaigns) {
@@ -405,9 +399,9 @@ serve(async (req) => {
             interested_rate: campaign.interested_rate,
             raw_data: campaign.raw_data,
             synced_at: new Date().toISOString(),
-            timeline_days: days || null, // Store which time period this data is for
+            timeline_days: days || null,
           }, {
-            onConflict: 'user_id,external_campaign_id,timeline_days',
+            onConflict: 'user_id,platform,external_campaign_id,timeline_days',
           });
 
         if (upsertError) {
@@ -444,7 +438,6 @@ serve(async (req) => {
           onConflict: 'user_id,date',
         });
 
-      // Update sync status to success
       await supabase
         .from('user_integrations')
         .update({ 
@@ -458,13 +451,13 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           campaigns_synced: campaigns.length,
+          timeline_days: days || null,
           totals 
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
     } catch (syncError: unknown) {
-      // Update sync status to error
       const errorMessage = syncError instanceof Error ? syncError.message : 'Unknown sync error';
       await supabase
         .from('user_integrations')
@@ -474,12 +467,15 @@ serve(async (req) => {
         })
         .eq('id', integration.id);
 
-      throw syncError;
+      return new Response(
+        JSON.stringify({ error: errorMessage }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
   } catch (error: unknown) {
-    console.error('Sync error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Sync failed';
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Sync error:', errorMessage);
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
