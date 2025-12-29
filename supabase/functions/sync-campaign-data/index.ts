@@ -49,11 +49,21 @@ interface Campaign {
   bounced_count?: number;
 }
 
+interface LeadCampaignData {
+  campaign_id: number;
+  status?: string;
+  emails_sent?: number;
+  replies?: number;
+  opens?: number;
+  interested?: boolean;
+}
+
 interface Lead {
   id: string | number;
   campaign_id?: string | number;
   sequence_id?: string | number;
   campaign?: { id: string | number } | string | number;
+  lead_campaign_data?: LeadCampaignData[];
   [key: string]: unknown;
 }
 
@@ -127,12 +137,28 @@ async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[
   return campaigns;
 }
 
-async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | null): Promise<CampaignMetrics[]> {
+async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | null, days?: number): Promise<CampaignMetrics[]> {
   const campaigns: CampaignMetrics[] = [];
   
   try {
+    // Build URL with date filter if specified
+    let campaignsUrl = 'https://send.expansio.io/api/campaigns';
+    if (days) {
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      // Try date filtering - EmailBison may support: start_date, end_date, date_from, date_to, or days
+      campaignsUrl = `https://send.expansio.io/api/campaigns?start_date=${startDateStr}&end_date=${endDateStr}`;
+      console.log(`Fetching campaigns with date filter: ${startDateStr} to ${endDateStr}`);
+    }
+
     // Get campaigns from EmailBison
-    const response = await fetch('https://send.expansio.io/api/campaigns', {
+    const response = await fetch(campaignsUrl, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
@@ -173,14 +199,24 @@ async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | 
             console.log(`First lead structure: ${JSON.stringify(leads[0])}`);
           }
 
-          // Count leads per campaign - try multiple field names
+          // Count leads per campaign - extract campaign_id from lead_campaign_data array
           let mappedCount = 0;
           for (const lead of leads) {
-            // Try multiple possible field names for campaign identification
-            const campaignId = 
-              lead.campaign_id?.toString() || 
-              lead.sequence_id?.toString() ||
-              (typeof lead.campaign === 'object' && lead.campaign !== null ? (lead.campaign as { id: string | number }).id?.toString() : lead.campaign?.toString());
+            // Primary: Get campaign_id from lead_campaign_data array (EmailBison structure)
+            const leadCampaignData = lead.lead_campaign_data;
+            let campaignId: string | undefined;
+            
+            if (leadCampaignData && Array.isArray(leadCampaignData) && leadCampaignData.length > 0) {
+              campaignId = leadCampaignData[0].campaign_id?.toString();
+            }
+            
+            // Fallback: Try direct campaign_id or other fields
+            if (!campaignId) {
+              campaignId = 
+                lead.campaign_id?.toString() || 
+                lead.sequence_id?.toString() ||
+                (typeof lead.campaign === 'object' && lead.campaign !== null ? (lead.campaign as { id: string | number }).id?.toString() : lead.campaign?.toString());
+            }
             
             if (campaignId) {
               meetingsPerCampaign.set(campaignId, (meetingsPerCampaign.get(campaignId) || 0) + 1);
@@ -324,13 +360,25 @@ serve(async (req) => {
       .eq('id', integration.id);
 
     let campaigns: CampaignMetrics[];
+    
+    // Parse request body for optional days parameter
+    let days: number | undefined;
+    try {
+      const body = await req.json();
+      days = body.days;
+      if (days) {
+        console.log(`Timeline filter requested: last ${days} days`);
+      }
+    } catch {
+      // No body or invalid JSON, use defaults
+    }
 
     try {
       // Fetch campaigns based on platform
       if (integration.platform === 'instantly') {
         campaigns = await fetchInstantlyCampaigns(integration.api_key);
       } else {
-        campaigns = await fetchEmailBisonCampaigns(integration.api_key, integration.meetings_tag_id);
+        campaigns = await fetchEmailBisonCampaigns(integration.api_key, integration.meetings_tag_id, days);
       }
 
       console.log(`Syncing ${campaigns.length} campaigns for user ${user.id}`);

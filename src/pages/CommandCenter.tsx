@@ -203,6 +203,7 @@ export default function CommandCenter() {
       if (!session) return;
 
       const response = await supabase.functions.invoke('sync-campaign-data', {
+        body: { days: timelineDays },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
