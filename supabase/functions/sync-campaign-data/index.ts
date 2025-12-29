@@ -37,6 +37,12 @@ interface Campaign {
   name?: string;
   title?: string;
   status?: string;
+  emails_sent?: number;
+  unique_opens?: number;
+  unique_replies?: number;
+  interested?: number;
+  bounced?: number;
+  unsubscribed?: number;
   sent_count?: number;
   opened_count?: number;
   replies_count?: number;
@@ -92,7 +98,7 @@ async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[
             unique_opens: uniqueOpens,
             unique_replies: uniqueReplies,
             interested_count: interested,
-            meetings_booked: 0, // Would need lead status filtering
+            meetings_booked: 0,
             bounces: bounces,
             unsubscribes: analytics.unsubscribed_count || 0,
             open_rate: emailsSent > 0 ? (uniqueOpens / emailsSent) * 100 : 0,
@@ -132,8 +138,11 @@ async function fetchEmailBisonCampaigns(apiKey: string): Promise<CampaignMetrics
     const campaignsData = await response.json();
     const campaignList: Campaign[] = campaignsData.data || campaignsData || [];
 
+    console.log(`Processing ${campaignList.length} campaigns from EmailBison`);
+
     for (const campaign of campaignList) {
-      // Get campaign stats
+      // Get campaign stats (may be empty, but we try)
+      let stats: CampaignStats = {};
       try {
         const statsResponse = await fetch(
           `https://send.expansio.io/api/campaigns/${campaign.id}/stats`,
@@ -145,36 +154,40 @@ async function fetchEmailBisonCampaigns(apiKey: string): Promise<CampaignMetrics
           }
         );
 
-        let stats: CampaignStats = {};
         if (statsResponse.ok) {
           stats = await statsResponse.json();
         }
-
-        const emailsSent = stats.sent_count || campaign.sent_count || 0;
-        const uniqueOpens = stats.opened_count || campaign.opened_count || 0;
-        const uniqueReplies = stats.replies_count || campaign.replies_count || 0;
-        const interested = stats.interested_count || 0;
-        const bounces = stats.bounced_count || campaign.bounced_count || 0;
-
-        campaigns.push({
-          external_campaign_id: campaign.id.toString(),
-          campaign_name: campaign.name || campaign.title || 'Unnamed Campaign',
-          campaign_status: campaign.status || 'unknown',
-          emails_sent: emailsSent,
-          unique_opens: uniqueOpens,
-          unique_replies: uniqueReplies,
-          interested_count: interested,
-          meetings_booked: 0,
-          bounces: bounces,
-          unsubscribes: stats.unsubscribed_count || 0,
-          open_rate: emailsSent > 0 ? (uniqueOpens / emailsSent) * 100 : 0,
-          reply_rate: emailsSent > 0 ? (uniqueReplies / emailsSent) * 100 : 0,
-          interested_rate: emailsSent > 0 ? (interested / emailsSent) * 100 : 0,
-          raw_data: { campaign, stats },
-        });
       } catch (err) {
-        console.error(`Error fetching stats for campaign ${campaign.id}:`, err);
+        console.log(`Stats endpoint failed for campaign ${campaign.id}, using campaign object data`);
       }
+
+      // PRIORITY: Extract from campaign object first (EmailBison stores metrics directly on campaign)
+      // Fallback to stats endpoint if available
+      const emailsSent = campaign.emails_sent || stats.sent_count || campaign.sent_count || 0;
+      const uniqueOpens = campaign.unique_opens || stats.opened_count || campaign.opened_count || 0;
+      const uniqueReplies = campaign.unique_replies || stats.replies_count || campaign.replies_count || 0;
+      const interested = campaign.interested || stats.interested_count || 0;
+      const bounces = campaign.bounced || stats.bounced_count || campaign.bounced_count || 0;
+      const unsubscribes = campaign.unsubscribed || stats.unsubscribed_count || 0;
+
+      console.log(`Campaign ${campaign.id}: emails_sent=${emailsSent}, replies=${uniqueReplies}, interested=${interested}`);
+
+      campaigns.push({
+        external_campaign_id: campaign.id.toString(),
+        campaign_name: campaign.name || campaign.title || 'Unnamed Campaign',
+        campaign_status: campaign.status || 'unknown',
+        emails_sent: emailsSent,
+        unique_opens: uniqueOpens,
+        unique_replies: uniqueReplies,
+        interested_count: interested,
+        meetings_booked: 0,
+        bounces: bounces,
+        unsubscribes: unsubscribes,
+        open_rate: emailsSent > 0 ? (uniqueOpens / emailsSent) * 100 : 0,
+        reply_rate: emailsSent > 0 ? (uniqueReplies / emailsSent) * 100 : 0,
+        interested_rate: emailsSent > 0 ? (interested / emailsSent) * 100 : 0,
+        raw_data: { campaign, stats },
+      });
     }
   } catch (error) {
     console.error('Error fetching EmailBison campaigns:', error);
@@ -245,9 +258,11 @@ serve(async (req) => {
         campaigns = await fetchEmailBisonCampaigns(integration.api_key);
       }
 
+      console.log(`Syncing ${campaigns.length} campaigns for user ${user.id}`);
+
       // Upsert campaigns into database
       for (const campaign of campaigns) {
-        await supabase
+        const { error: upsertError } = await supabase
           .from('synced_campaigns')
           .upsert({
             user_id: user.id,
@@ -270,6 +285,10 @@ serve(async (req) => {
           }, {
             onConflict: 'user_id,external_campaign_id,platform',
           });
+
+        if (upsertError) {
+          console.error(`Error upserting campaign ${campaign.external_campaign_id}:`, upsertError);
+        }
       }
 
       // Calculate and store daily aggregates
@@ -281,6 +300,8 @@ serve(async (req) => {
         interested: acc.interested + c.interested_count,
         meetings: acc.meetings + c.meetings_booked,
       }), { emails_sent: 0, opens: 0, replies: 0, interested: 0, meetings: 0 });
+
+      console.log(`Daily totals: emails_sent=${totals.emails_sent}, replies=${totals.replies}, interested=${totals.interested}`);
 
       await supabase
         .from('daily_campaign_metrics')
