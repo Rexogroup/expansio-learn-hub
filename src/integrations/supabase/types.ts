@@ -759,6 +759,45 @@ export type Database = {
           },
         ]
       }
+      meeting_tag_events: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          id: string
+          lead_email: string | null
+          lead_id: string
+          raw_payload: Json | null
+          tag_id: string
+          tag_name: string | null
+          tagged_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_email?: string | null
+          lead_id: string
+          raw_payload?: Json | null
+          tag_id: string
+          tag_name?: string | null
+          tagged_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_email?: string | null
+          lead_id?: string
+          raw_payload?: Json | null
+          tag_id?: string
+          tag_name?: string | null
+          tagged_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_steps: {
         Row: {
           created_at: string
