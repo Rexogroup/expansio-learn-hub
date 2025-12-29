@@ -62,7 +62,7 @@ async function validateInstantly(apiKey: string): Promise<ValidationResponse> {
 async function validateEmailBison(apiKey: string): Promise<ValidationResponse> {
   try {
     // Test the API key by fetching user info
-    const response = await fetch('https://dedi.emailbison.com/api/users', {
+    const response = await fetch('https://send.expansio.io/api/users', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
