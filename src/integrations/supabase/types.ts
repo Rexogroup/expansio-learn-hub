@@ -360,6 +360,59 @@ export type Database = {
           },
         ]
       }
+      daily_campaign_metrics: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          interested_rate: number | null
+          open_rate: number | null
+          reply_rate: number | null
+          total_emails_sent: number | null
+          total_interested: number | null
+          total_meetings: number | null
+          total_opens: number | null
+          total_replies: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          interested_rate?: number | null
+          open_rate?: number | null
+          reply_rate?: number | null
+          total_emails_sent?: number | null
+          total_interested?: number | null
+          total_meetings?: number | null
+          total_opens?: number | null
+          total_replies?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          interested_rate?: number | null
+          open_rate?: number | null
+          reply_rate?: number | null
+          total_emails_sent?: number | null
+          total_interested?: number | null
+          total_meetings?: number | null
+          total_opens?: number | null
+          total_replies?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_campaign_metrics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       direct_conversations: {
         Row: {
           created_at: string
@@ -1161,6 +1214,77 @@ export type Database = {
         }
         Relationships: []
       }
+      synced_campaigns: {
+        Row: {
+          bounces: number | null
+          campaign_name: string | null
+          campaign_status: string | null
+          emails_sent: number | null
+          external_campaign_id: string
+          id: string
+          interested_count: number | null
+          interested_rate: number | null
+          meetings_booked: number | null
+          open_rate: number | null
+          platform: string
+          raw_data: Json | null
+          reply_rate: number | null
+          synced_at: string | null
+          unique_opens: number | null
+          unique_replies: number | null
+          unsubscribes: number | null
+          user_id: string
+        }
+        Insert: {
+          bounces?: number | null
+          campaign_name?: string | null
+          campaign_status?: string | null
+          emails_sent?: number | null
+          external_campaign_id: string
+          id?: string
+          interested_count?: number | null
+          interested_rate?: number | null
+          meetings_booked?: number | null
+          open_rate?: number | null
+          platform: string
+          raw_data?: Json | null
+          reply_rate?: number | null
+          synced_at?: string | null
+          unique_opens?: number | null
+          unique_replies?: number | null
+          unsubscribes?: number | null
+          user_id: string
+        }
+        Update: {
+          bounces?: number | null
+          campaign_name?: string | null
+          campaign_status?: string | null
+          emails_sent?: number | null
+          external_campaign_id?: string
+          id?: string
+          interested_count?: number | null
+          interested_rate?: number | null
+          meetings_booked?: number | null
+          open_rate?: number | null
+          platform?: string
+          raw_data?: Json | null
+          reply_rate?: number | null
+          synced_at?: string | null
+          unique_opens?: number | null
+          unique_replies?: number | null
+          unsubscribes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "synced_campaigns_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tool_categories: {
         Row: {
           created_at: string
@@ -1243,6 +1367,56 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "tool_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_integrations: {
+        Row: {
+          api_key: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          platform: string
+          sync_error: string | null
+          sync_status: string | null
+          updated_at: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          platform: string
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          platform?: string
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_integrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
