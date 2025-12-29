@@ -49,6 +49,11 @@ interface Campaign {
   bounced_count?: number;
 }
 
+interface Lead {
+  id: string | number;
+  campaign_id?: string | number;
+}
+
 async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[]> {
   const campaigns: CampaignMetrics[] = [];
   
@@ -119,7 +124,7 @@ async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[
   return campaigns;
 }
 
-async function fetchEmailBisonCampaigns(apiKey: string): Promise<CampaignMetrics[]> {
+async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | null): Promise<CampaignMetrics[]> {
   const campaigns: CampaignMetrics[] = [];
   
   try {
@@ -139,6 +144,39 @@ async function fetchEmailBisonCampaigns(apiKey: string): Promise<CampaignMetrics
     const campaignList: Campaign[] = campaignsData.data || campaignsData || [];
 
     console.log(`Processing ${campaignList.length} campaigns from EmailBison`);
+
+    // Fetch meetings count if tag is configured
+    let meetingsPerCampaign: Map<string, number> = new Map();
+    if (meetingsTagId) {
+      try {
+        console.log(`Fetching leads with meetings tag: ${meetingsTagId}`);
+        const leadsResponse = await fetch(
+          `https://send.expansio.io/api/leads?filters[tag_ids][0]=${meetingsTagId}&per_page=1000`,
+          {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (leadsResponse.ok) {
+          const leadsData = await leadsResponse.json();
+          const leads: Lead[] = leadsData.data || leadsData || [];
+          console.log(`Found ${leads.length} leads with meetings tag`);
+
+          // Count leads per campaign
+          for (const lead of leads) {
+            if (lead.campaign_id) {
+              const campaignId = lead.campaign_id.toString();
+              meetingsPerCampaign.set(campaignId, (meetingsPerCampaign.get(campaignId) || 0) + 1);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching leads with meetings tag:', err);
+      }
+    }
 
     for (const campaign of campaignList) {
       // Get campaign stats (may be empty, but we try)
@@ -169,8 +207,9 @@ async function fetchEmailBisonCampaigns(apiKey: string): Promise<CampaignMetrics
       const interested = campaign.interested || stats.interested_count || 0;
       const bounces = campaign.bounced || stats.bounced_count || campaign.bounced_count || 0;
       const unsubscribes = campaign.unsubscribed || stats.unsubscribed_count || 0;
+      const meetingsBooked = meetingsPerCampaign.get(campaign.id.toString()) || 0;
 
-      console.log(`Campaign ${campaign.id}: emails_sent=${emailsSent}, replies=${uniqueReplies}, interested=${interested}`);
+      console.log(`Campaign ${campaign.id}: emails_sent=${emailsSent}, replies=${uniqueReplies}, interested=${interested}, meetings=${meetingsBooked}`);
 
       campaigns.push({
         external_campaign_id: campaign.id.toString(),
@@ -180,7 +219,7 @@ async function fetchEmailBisonCampaigns(apiKey: string): Promise<CampaignMetrics
         unique_opens: uniqueOpens,
         unique_replies: uniqueReplies,
         interested_count: interested,
-        meetings_booked: 0,
+        meetings_booked: meetingsBooked,
         bounces: bounces,
         unsubscribes: unsubscribes,
         open_rate: emailsSent > 0 ? (uniqueOpens / emailsSent) * 100 : 0,
@@ -255,7 +294,7 @@ serve(async (req) => {
       if (integration.platform === 'instantly') {
         campaigns = await fetchInstantlyCampaigns(integration.api_key);
       } else {
-        campaigns = await fetchEmailBisonCampaigns(integration.api_key);
+        campaigns = await fetchEmailBisonCampaigns(integration.api_key, integration.meetings_tag_id);
       }
 
       console.log(`Syncing ${campaigns.length} campaigns for user ${user.id}`);
@@ -301,7 +340,7 @@ serve(async (req) => {
         meetings: acc.meetings + c.meetings_booked,
       }), { emails_sent: 0, opens: 0, replies: 0, interested: 0, meetings: 0 });
 
-      console.log(`Daily totals: emails_sent=${totals.emails_sent}, replies=${totals.replies}, interested=${totals.interested}`);
+      console.log(`Daily totals: emails_sent=${totals.emails_sent}, replies=${totals.replies}, interested=${totals.interested}, meetings=${totals.meetings}`);
 
       await supabase
         .from('daily_campaign_metrics')

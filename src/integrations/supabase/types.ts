@@ -1536,6 +1536,8 @@ export type Database = {
           id: string
           is_active: boolean | null
           last_sync_at: string | null
+          meetings_tag_id: string | null
+          meetings_tag_name: string | null
           platform: string
           sync_error: string | null
           sync_status: string | null
@@ -1549,6 +1551,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
+          meetings_tag_id?: string | null
+          meetings_tag_name?: string | null
           platform: string
           sync_error?: string | null
           sync_status?: string | null
@@ -1562,6 +1566,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
+          meetings_tag_id?: string | null
+          meetings_tag_name?: string | null
           platform?: string
           sync_error?: string | null
           sync_status?: string | null
