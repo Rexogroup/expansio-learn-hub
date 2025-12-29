@@ -52,6 +52,9 @@ interface Campaign {
 interface Lead {
   id: string | number;
   campaign_id?: string | number;
+  sequence_id?: string | number;
+  campaign?: { id: string | number } | string | number;
+  [key: string]: unknown;
 }
 
 async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[]> {
@@ -164,13 +167,35 @@ async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | 
           const leadsData = await leadsResponse.json();
           const leads: Lead[] = leadsData.data || leadsData || [];
           console.log(`Found ${leads.length} leads with meetings tag`);
+          
+          // Log first lead structure to understand the API response
+          if (leads.length > 0) {
+            console.log(`First lead structure: ${JSON.stringify(leads[0])}`);
+          }
 
-          // Count leads per campaign
+          // Count leads per campaign - try multiple field names
+          let mappedCount = 0;
           for (const lead of leads) {
-            if (lead.campaign_id) {
-              const campaignId = lead.campaign_id.toString();
+            // Try multiple possible field names for campaign identification
+            const campaignId = 
+              lead.campaign_id?.toString() || 
+              lead.sequence_id?.toString() ||
+              (typeof lead.campaign === 'object' && lead.campaign !== null ? (lead.campaign as { id: string | number }).id?.toString() : lead.campaign?.toString());
+            
+            if (campaignId) {
               meetingsPerCampaign.set(campaignId, (meetingsPerCampaign.get(campaignId) || 0) + 1);
+              mappedCount++;
             }
+          }
+          
+          console.log(`Mapped ${mappedCount} out of ${leads.length} leads to campaigns`);
+          console.log(`Meetings per campaign: ${JSON.stringify(Object.fromEntries(meetingsPerCampaign))}`);
+          
+          // If no leads were mapped to campaigns, store total as a fallback
+          if (mappedCount === 0 && leads.length > 0) {
+            console.log(`No campaign mapping found. Total meetings from tag: ${leads.length}`);
+            // Store with a special key that we'll use as fallback
+            meetingsPerCampaign.set('__total__', leads.length);
           }
         }
       } catch (err) {
@@ -207,7 +232,18 @@ async function fetchEmailBisonCampaigns(apiKey: string, meetingsTagId: string | 
       const interested = campaign.interested || stats.interested_count || 0;
       const bounces = campaign.bounced || stats.bounced_count || campaign.bounced_count || 0;
       const unsubscribes = campaign.unsubscribed || stats.unsubscribed_count || 0;
-      const meetingsBooked = meetingsPerCampaign.get(campaign.id.toString()) || 0;
+      // Get meetings: try campaign-specific first, then fall back to distributing total
+      let meetingsBooked = meetingsPerCampaign.get(campaign.id.toString()) || 0;
+      
+      // If no campaign-specific mapping and we have a total, distribute evenly (or assign to first active campaign)
+      if (meetingsBooked === 0 && meetingsPerCampaign.has('__total__')) {
+        const totalMeetings = meetingsPerCampaign.get('__total__') || 0;
+        // For now, show total meetings on the first campaign only (can be improved later)
+        if (campaignList.indexOf(campaign) === 0) {
+          meetingsBooked = totalMeetings;
+          console.log(`Assigned ${totalMeetings} total meetings to first campaign: ${campaign.id}`);
+        }
+      }
 
       console.log(`Campaign ${campaign.id}: emails_sent=${emailsSent}, replies=${uniqueReplies}, interested=${interested}, meetings=${meetingsBooked}`);
 

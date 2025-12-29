@@ -51,15 +51,13 @@ export function CampaignPerformanceHistory({
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - timelineDays);
-
+    // Fetch all campaigns - showing all-time cumulative data
+    // Timeline filtering will work properly once historical snapshots are collected
     const { data, error } = await supabase
       .from('synced_campaigns')
       .select('*')
       .eq('user_id', session.user.id)
-      .gte('synced_at', cutoffDate.toISOString())
-      .order('synced_at', { ascending: false });
+      .order('interested_rate', { ascending: false });
 
     if (!error && data) {
       setCampaigns(data.map(c => ({
@@ -248,7 +246,8 @@ export function CampaignPerformanceHistory({
           </div>
 
           {/* Benchmark Legend */}
-          <div className="flex items-center justify-end gap-4 text-xs text-muted-foreground pt-2">
+          <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground pt-2">
+            <span className="text-muted-foreground/70">Showing all-time cumulative data</span>
             <span>Benchmark: {benchmark}% interested rate</span>
           </div>
         </CardContent>

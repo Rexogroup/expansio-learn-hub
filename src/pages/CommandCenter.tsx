@@ -141,17 +141,13 @@ export default function CommandCenter() {
     }
   };
 
-  const fetchCampaignMetrics = async (userId: string, days: number) => {
-    // Calculate date range for aggregation
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-
-    // Fetch campaigns within the timeline and aggregate
+  const fetchCampaignMetrics = async (userId: string, _days: number) => {
+    // Fetch all campaigns - showing all-time cumulative data
+    // Timeline filtering will work properly once historical snapshots are collected
     const { data, error } = await supabase
       .from('synced_campaigns')
       .select('emails_sent, unique_opens, unique_replies, interested_count, meetings_booked')
-      .eq('user_id', userId)
-      .gte('synced_at', cutoffDate.toISOString());
+      .eq('user_id', userId);
 
     if (!error && data && data.length > 0) {
       // Aggregate metrics from all campaigns

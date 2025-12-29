@@ -105,7 +105,7 @@ export function CampaignMetricsCard({
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat) => (
             <div key={stat.label} className="space-y-1">
@@ -117,6 +117,9 @@ export function CampaignMetricsCard({
             </div>
           ))}
         </div>
+        <p className="text-xs text-muted-foreground/70">
+          Showing all-time cumulative data across all campaigns
+        </p>
       </CardContent>
     </Card>
   );
