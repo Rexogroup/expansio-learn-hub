@@ -5,8 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail } from "lucide-react";
+import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag } from "lucide-react";
 
 type Platform = 'instantly' | 'emailbison';
 type SyncStatus = 'pending' | 'syncing' | 'success' | 'error';
@@ -19,6 +27,8 @@ interface Integration {
   last_sync_at: string | null;
   sync_status: SyncStatus;
   sync_error: string | null;
+  meetings_tag_id: string | null;
+  meetings_tag_name: string | null;
 }
 
 interface SyncedCampaign {
@@ -29,10 +39,16 @@ interface SyncedCampaign {
   unique_opens: number;
   unique_replies: number;
   interested_count: number;
+  meetings_booked: number;
   open_rate: number;
   reply_rate: number;
   interested_rate: number;
   synced_at: string;
+}
+
+interface EmailBisonTag {
+  id: string;
+  name: string;
 }
 
 export default function IntegrationSettings() {
@@ -45,10 +61,26 @@ export default function IntegrationSettings() {
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Meetings tag state
+  const [availableTags, setAvailableTags] = useState<EmailBisonTag[]>([]);
+  const [loadingTags, setLoadingTags] = useState(false);
+  const [selectedTagId, setSelectedTagId] = useState<string>("");
+  const [savingTag, setSavingTag] = useState(false);
 
   useEffect(() => {
     fetchIntegration();
   }, []);
+
+  useEffect(() => {
+    // Fetch tags when integration is connected and is EmailBison
+    if (integration && integration.platform === 'emailbison') {
+      fetchAvailableTags();
+      if (integration.meetings_tag_id) {
+        setSelectedTagId(integration.meetings_tag_id);
+      }
+    }
+  }, [integration?.id]);
 
   async function fetchIntegration() {
     try {
@@ -77,13 +109,81 @@ export default function IntegrationSettings() {
           .order('emails_sent', { ascending: false });
 
         if (campaignsData) {
-          setCampaigns(campaignsData as SyncedCampaign[]);
+          setCampaigns(campaignsData.map(c => ({
+            ...c,
+            meetings_booked: c.meetings_booked || 0,
+          })) as SyncedCampaign[]);
         }
       }
     } catch (error) {
       console.error('Error fetching integration:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchAvailableTags() {
+    if (!integration) return;
+    
+    setLoadingTags(true);
+    try {
+      // Fetch tags from EmailBison API via edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch('https://send.expansio.io/api/tags', {
+        headers: {
+          'Authorization': `Bearer ${integration.api_key}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const tagsData = await response.json();
+        const tags = tagsData.data || tagsData || [];
+        setAvailableTags(tags.map((t: { id: string | number; name: string }) => ({
+          id: t.id.toString(),
+          name: t.name,
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    } finally {
+      setLoadingTags(false);
+    }
+  }
+
+  async function saveMeetingsTag() {
+    if (!integration || !selectedTagId) return;
+    
+    setSavingTag(true);
+    try {
+      const selectedTag = availableTags.find(t => t.id === selectedTagId);
+      
+      const { error } = await supabase
+        .from('user_integrations')
+        .update({
+          meetings_tag_id: selectedTagId,
+          meetings_tag_name: selectedTag?.name || null,
+        })
+        .eq('id', integration.id);
+
+      if (error) throw error;
+
+      setIntegration({
+        ...integration,
+        meetings_tag_id: selectedTagId,
+        meetings_tag_name: selectedTag?.name || null,
+      });
+
+      toast.success("Meetings tag saved!", {
+        description: `"${selectedTag?.name}" will be used to track booked meetings.`
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Failed to save tag", { description: errorMessage });
+    } finally {
+      setSavingTag(false);
     }
   }
 
@@ -110,8 +210,9 @@ export default function IntegrationSettings() {
       } else {
         toast.error("Connection failed", { description: data.error });
       }
-    } catch (error: any) {
-      toast.error("Connection test failed", { description: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Connection test failed", { description: errorMessage });
     } finally {
       setTesting(false);
     }
@@ -159,8 +260,9 @@ export default function IntegrationSettings() {
       await fetchIntegration();
       await syncData();
 
-    } catch (error: any) {
-      toast.error("Failed to save integration", { description: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Failed to save integration", { description: errorMessage });
     } finally {
       setSaving(false);
     }
@@ -185,8 +287,9 @@ export default function IntegrationSettings() {
       });
 
       await fetchIntegration();
-    } catch (error: any) {
-      toast.error("Sync failed", { description: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Sync failed", { description: errorMessage });
     } finally {
       setSyncing(false);
     }
@@ -207,9 +310,12 @@ export default function IntegrationSettings() {
       setCampaigns([]);
       setSelectedPlatform(null);
       setApiKey("");
+      setAvailableTags([]);
+      setSelectedTagId("");
       toast.success("Integration disconnected");
-    } catch (error: any) {
-      toast.error("Failed to disconnect", { description: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Failed to disconnect", { description: errorMessage });
     }
   }
 
@@ -309,6 +415,70 @@ export default function IntegrationSettings() {
                 </CardContent>
               </Card>
 
+              {/* Meetings Tag Configuration (EmailBison only) */}
+              {integration.platform === 'emailbison' && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Tag className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Meetings Tracking</CardTitle>
+                        <CardDescription>
+                          Select the tag you use to mark leads when a meeting is booked
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Meetings Booked Tag</Label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={selectedTagId}
+                          onValueChange={setSelectedTagId}
+                          disabled={loadingTags}
+                        >
+                          <SelectTrigger className="flex-1">
+                            {loadingTags ? (
+                              <span className="text-muted-foreground">Loading tags...</span>
+                            ) : (
+                              <SelectValue placeholder="Select a tag" />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTags.map((tag) => (
+                              <SelectItem key={tag.id} value={tag.id}>
+                                {tag.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          onClick={saveMeetingsTag}
+                          disabled={savingTag || !selectedTagId || selectedTagId === integration.meetings_tag_id}
+                        >
+                          {savingTag ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            'Save'
+                          )}
+                        </Button>
+                      </div>
+                      {integration.meetings_tag_name && (
+                        <p className="text-sm text-muted-foreground">
+                          Currently tracking: <span className="font-medium">{integration.meetings_tag_name}</span>
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Leads with this tag will be counted as "Meetings Booked" during sync.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Synced Campaigns */}
               {campaigns.length > 0 && (
                 <Card>
@@ -331,22 +501,26 @@ export default function IntegrationSettings() {
                               {campaign.campaign_status}
                             </Badge>
                           </div>
-                          <div className="grid grid-cols-4 gap-4 text-sm">
+                          <div className="grid grid-cols-5 gap-4 text-sm">
                             <div>
                               <span className="text-muted-foreground">Sent</span>
                               <p className="font-medium">{campaign.emails_sent.toLocaleString()}</p>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Open Rate</span>
-                              <p className="font-medium">{campaign.open_rate.toFixed(1)}%</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Reply Rate</span>
-                              <p className="font-medium">{campaign.reply_rate.toFixed(1)}%</p>
+                              <span className="text-muted-foreground">Replies</span>
+                              <p className="font-medium">{campaign.unique_replies.toLocaleString()}</p>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Interested</span>
-                              <p className="font-medium">{campaign.interested_count}</p>
+                              <p className="font-medium">{campaign.interested_count.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Meetings</span>
+                              <p className="font-medium">{campaign.meetings_booked.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">IR%</span>
+                              <p className="font-medium">{campaign.interested_rate.toFixed(2)}%</p>
                             </div>
                           </div>
                         </div>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TimelineFilter } from "./TimelineFilter";
 
 interface Campaign {
   id: string;
@@ -14,6 +15,7 @@ interface Campaign {
   emails_sent: number;
   unique_replies: number;
   interested_count: number;
+  meetings_booked: number;
   reply_rate: number;
   interested_rate: number;
   synced_at: string;
@@ -23,12 +25,16 @@ interface CampaignPerformanceHistoryProps {
   onSync?: () => void;
   isSyncing?: boolean;
   benchmark?: number;
+  timelineDays: number;
+  onTimelineChange: (days: number) => void;
 }
 
 export function CampaignPerformanceHistory({ 
   onSync, 
   isSyncing,
-  benchmark = 1.2 
+  benchmark = 1.2,
+  timelineDays,
+  onTimelineChange,
 }: CampaignPerformanceHistoryProps) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,20 +44,28 @@ export function CampaignPerformanceHistory({
 
   useEffect(() => {
     fetchCampaigns();
-  }, []);
+  }, [timelineDays]);
 
   const fetchCampaigns = async () => {
+    setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - timelineDays);
 
     const { data, error } = await supabase
       .from('synced_campaigns')
       .select('*')
       .eq('user_id', session.user.id)
+      .gte('synced_at', cutoffDate.toISOString())
       .order('synced_at', { ascending: false });
 
     if (!error && data) {
-      setCampaigns(data);
+      setCampaigns(data.map(c => ({
+        ...c,
+        meetings_booked: c.meetings_booked || 0,
+      })));
     }
     setLoading(false);
   };
@@ -96,9 +110,12 @@ export function CampaignPerformanceHistory({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Campaign Performance History</CardTitle>
-          <Button variant="ghost" size="sm" onClick={onSync} disabled={isSyncing}>
-            <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <TimelineFilter value={timelineDays} onChange={onTimelineChange} />
+            <Button variant="ghost" size="sm" onClick={onSync} disabled={isSyncing}>
+              <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="text-center py-8">
           <p className="text-muted-foreground">
@@ -123,9 +140,12 @@ export function CampaignPerformanceHistory({
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={onSync} disabled={isSyncing}>
-          <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
-        </Button>
+        <div className="flex items-center gap-2">
+          <TimelineFilter value={timelineDays} onChange={onTimelineChange} />
+          <Button variant="ghost" size="sm" onClick={onSync} disabled={isSyncing}>
+            <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+          </Button>
+        </div>
       </CardHeader>
       
       {expanded && (
@@ -158,6 +178,9 @@ export function CampaignPerformanceHistory({
                   >
                     Sent {sortBy === 'emails_sent' && (sortDesc ? '↓' : '↑')}
                   </th>
+                  <th className="text-right py-2 px-2 font-medium text-muted-foreground">Replies</th>
+                  <th className="text-right py-2 px-2 font-medium text-muted-foreground">Interested</th>
+                  <th className="text-right py-2 px-2 font-medium text-muted-foreground">Meetings</th>
                   <th 
                     className="text-right py-2 px-2 font-medium text-muted-foreground cursor-pointer hover:text-foreground"
                     onClick={() => toggleSort('interested_rate')}
@@ -181,12 +204,21 @@ export function CampaignPerformanceHistory({
                   return (
                     <tr key={campaign.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2">
-                        <span className="font-medium truncate block max-w-[200px]" title={campaign.campaign_name}>
+                        <span className="font-medium truncate block max-w-[180px]" title={campaign.campaign_name}>
                           {campaign.campaign_name}
                         </span>
                       </td>
                       <td className="text-right py-2 px-2 tabular-nums">
                         {campaign.emails_sent.toLocaleString()}
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums">
+                        {campaign.unique_replies.toLocaleString()}
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums">
+                        {campaign.interested_count.toLocaleString()}
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums">
+                        {campaign.meetings_booked.toLocaleString()}
                       </td>
                       <td className={cn(
                         "text-right py-2 px-2 font-semibold tabular-nums",

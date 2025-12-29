@@ -66,10 +66,24 @@ export default function CommandCenter() {
   const [integration, setIntegration] = useState<Integration | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [assetCount, setAssetCount] = useState(0);
+  const [timelineDays, setTimelineDays] = useState(10);
 
   useEffect(() => {
     checkAuthAndFetch();
   }, []);
+
+  useEffect(() => {
+    const fetchMetricsForTimeline = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await fetchCampaignMetrics(session.user.id, timelineDays);
+      }
+    };
+    
+    if (!loading) {
+      fetchMetricsForTimeline();
+    }
+  }, [timelineDays, loading]);
 
   const checkAuthAndFetch = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -81,7 +95,7 @@ export default function CommandCenter() {
     await Promise.all([
       fetchGrowthSteps(),
       fetchUserProgress(session.user.id),
-      fetchCampaignMetrics(session.user.id),
+      fetchCampaignMetrics(session.user.id, timelineDays),
       fetchIntegration(session.user.id),
       fetchAssetCount(session.user.id),
     ]);
@@ -127,17 +141,40 @@ export default function CommandCenter() {
     }
   };
 
-  const fetchCampaignMetrics = async (userId: string) => {
-    const today = new Date().toISOString().split('T')[0];
+  const fetchCampaignMetrics = async (userId: string, days: number) => {
+    // Calculate date range for aggregation
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    // Fetch campaigns within the timeline and aggregate
     const { data, error } = await supabase
-      .from('daily_campaign_metrics')
-      .select('*')
+      .from('synced_campaigns')
+      .select('emails_sent, unique_opens, unique_replies, interested_count, meetings_booked')
       .eq('user_id', userId)
-      .eq('date', today)
-      .maybeSingle();
-    
-    if (!error && data) {
-      setCampaignMetrics(data);
+      .gte('synced_at', cutoffDate.toISOString());
+
+    if (!error && data && data.length > 0) {
+      // Aggregate metrics from all campaigns
+      const totals = data.reduce((acc, c) => ({
+        emails_sent: acc.emails_sent + (c.emails_sent || 0),
+        opens: acc.opens + (c.unique_opens || 0),
+        replies: acc.replies + (c.unique_replies || 0),
+        interested: acc.interested + (c.interested_count || 0),
+        meetings: acc.meetings + (c.meetings_booked || 0),
+      }), { emails_sent: 0, opens: 0, replies: 0, interested: 0, meetings: 0 });
+
+      setCampaignMetrics({
+        total_emails_sent: totals.emails_sent,
+        total_opens: totals.opens,
+        total_replies: totals.replies,
+        total_interested: totals.interested,
+        total_meetings: totals.meetings,
+        open_rate: totals.emails_sent > 0 ? (totals.opens / totals.emails_sent) * 100 : 0,
+        reply_rate: totals.emails_sent > 0 ? (totals.replies / totals.emails_sent) * 100 : 0,
+        interested_rate: totals.emails_sent > 0 ? (totals.interested / totals.emails_sent) * 100 : 0,
+      });
+    } else {
+      setCampaignMetrics(null);
     }
   };
 
@@ -178,7 +215,7 @@ export default function CommandCenter() {
       if (response.error) throw response.error;
       
       toast.success('Campaign data synced successfully');
-      await fetchCampaignMetrics(session.user.id);
+      await fetchCampaignMetrics(session.user.id, timelineDays);
       await fetchIntegration(session.user.id);
     } catch (error) {
       console.error('Sync error:', error);
@@ -361,6 +398,8 @@ export default function CommandCenter() {
           lastSyncAt={integration?.last_sync_at}
           onSync={handleSync}
           isSyncing={isSyncing}
+          timelineDays={timelineDays}
+          onTimelineChange={setTimelineDays}
         />
 
         {/* Main Content Grid - KPIs, Actions, and Copilot */}
@@ -401,6 +440,8 @@ export default function CommandCenter() {
               onSync={handleSync}
               isSyncing={isSyncing}
               benchmark={1.2}
+              timelineDays={timelineDays}
+              onTimelineChange={setTimelineDays}
             />
           </div>
 

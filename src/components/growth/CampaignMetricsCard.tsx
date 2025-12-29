@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Eye, MessageSquare, ThumbsUp, Calendar, RefreshCw } from "lucide-react";
+import { Mail, MessageSquare, ThumbsUp, Calendar, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TimelineFilter } from "./TimelineFilter";
 
 interface CampaignMetrics {
   total_emails_sent: number;
@@ -20,6 +21,8 @@ interface CampaignMetricsCardProps {
   lastSyncAt?: string | null;
   onSync?: () => void;
   isSyncing?: boolean;
+  timelineDays: number;
+  onTimelineChange: (days: number) => void;
 }
 
 export function CampaignMetricsCard({
@@ -28,6 +31,8 @@ export function CampaignMetricsCard({
   lastSyncAt,
   onSync,
   isSyncing,
+  timelineDays,
+  onTimelineChange,
 }: CampaignMetricsCardProps) {
   if (isLoading) {
     return (
@@ -50,8 +55,9 @@ export function CampaignMetricsCard({
   if (!metrics) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Campaign Performance</CardTitle>
+          <TimelineFilter value={timelineDays} onChange={onTimelineChange} />
         </CardHeader>
         <CardContent className="text-center py-8">
           <Mail className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -78,18 +84,19 @@ export function CampaignMetricsCard({
 
   const stats = [
     { label: 'Emails Sent', value: metrics.total_emails_sent.toLocaleString(), icon: Mail },
-    { label: 'Opens', value: `${metrics.open_rate.toFixed(1)}%`, icon: Eye },
-    { label: 'Replies', value: `${metrics.reply_rate.toFixed(2)}%`, icon: MessageSquare },
-    { label: 'Interested', value: `${metrics.interested_rate.toFixed(2)}%`, icon: ThumbsUp },
+    { label: 'Replies', value: metrics.total_replies.toLocaleString(), icon: MessageSquare },
+    { label: 'Interested', value: metrics.total_interested.toLocaleString(), icon: ThumbsUp },
+    { label: 'Meetings Booked', value: metrics.total_meetings.toLocaleString(), icon: Calendar },
   ];
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Campaign Performance</CardTitle>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <TimelineFilter value={timelineDays} onChange={onTimelineChange} />
           {lastSyncAt && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground hidden sm:inline">
               Last sync: {new Date(lastSyncAt).toLocaleTimeString()}
             </span>
           )}
