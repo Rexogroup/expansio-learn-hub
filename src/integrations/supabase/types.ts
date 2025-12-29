@@ -482,6 +482,60 @@ export type Database = {
           },
         ]
       }
+      email_account_health: {
+        Row: {
+          account_type: string | null
+          connection_status: string | null
+          created_at: string | null
+          daily_limit: number | null
+          email_address: string
+          emails_sent_today: number | null
+          id: string
+          last_checked_at: string | null
+          mx_records_valid: boolean | null
+          raw_data: Json | null
+          sender_email_id: string
+          updated_at: string | null
+          user_id: string
+          warmup_enabled: boolean | null
+          warmup_progress: number | null
+        }
+        Insert: {
+          account_type?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          daily_limit?: number | null
+          email_address: string
+          emails_sent_today?: number | null
+          id?: string
+          last_checked_at?: string | null
+          mx_records_valid?: boolean | null
+          raw_data?: Json | null
+          sender_email_id: string
+          updated_at?: string | null
+          user_id: string
+          warmup_enabled?: boolean | null
+          warmup_progress?: number | null
+        }
+        Update: {
+          account_type?: string | null
+          connection_status?: string | null
+          created_at?: string | null
+          daily_limit?: number | null
+          email_address?: string
+          emails_sent_today?: number | null
+          id?: string
+          last_checked_at?: string | null
+          mx_records_valid?: boolean | null
+          raw_data?: Json | null
+          sender_email_id?: string
+          updated_at?: string | null
+          user_id?: string
+          warmup_enabled?: boolean | null
+          warmup_progress?: number | null
+        }
+        Relationships: []
+      }
       generated_scripts: {
         Row: {
           content: string
