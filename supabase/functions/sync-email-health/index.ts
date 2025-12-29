@@ -26,7 +26,7 @@ interface WarmupEmail {
 async function fetchSenderEmails(apiKey: string): Promise<SenderEmail[]> {
   console.log('Fetching sender emails from EmailBison...');
   
-  const response = await fetch('https://app.emailbison.com/api/sender-emails', {
+  const response = await fetch('https://send.expansio.io/api/sender-emails', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -49,7 +49,7 @@ async function fetchWarmupStatus(apiKey: string): Promise<WarmupEmail[]> {
   console.log('Fetching warmup status from EmailBison...');
   
   try {
-    const response = await fetch('https://app.emailbison.com/api/warmup/sender-emails', {
+    const response = await fetch('https://send.expansio.io/api/warmup/sender-emails', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
