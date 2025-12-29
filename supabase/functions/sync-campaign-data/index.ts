@@ -173,10 +173,12 @@ async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[
   return campaigns;
 }
 
+// deno-lint-ignore no-explicit-any
 async function fetchEmailBisonCampaigns(
   apiKey: string, 
   meetingsTagId: string | null, 
-  days?: number
+  days?: number,
+  supabaseClient?: any
 ): Promise<CampaignMetrics[]> {
   const campaigns: CampaignMetrics[] = [];
   
@@ -212,64 +214,96 @@ async function fetchEmailBisonCampaigns(
     
     console.log(`Date range: ${startDateStr} to ${endDateStr} (days=${days || 'all-time'})`);
 
-    // Fetch meetings count if tag is configured
+    // Fetch meetings count - use local webhook events for timeline-filtered data
     let meetingsPerCampaign: Map<string, number> = new Map();
     if (meetingsTagId) {
       try {
-        // Build URL with optional date filter for timeline-specific meetings
-        let leadsUrl = `https://send.expansio.io/api/leads?filters[tag_ids][0]=${meetingsTagId}&per_page=1000`;
-        
-        if (days) {
-          // Add date filter to only get leads updated within the timeline period
-          // When a tag is added to a lead, the lead's updated_at timestamp is updated
-          leadsUrl += `&filters[updated_at][criteria]=>=&filters[updated_at][value]=${startDateStr}`;
-          console.log(`Fetching leads with meetings tag: ${meetingsTagId}, updated since: ${startDateStr}`);
+        if (days && supabaseClient) {
+          // For timeline-filtered data, query local meeting_tag_events table
+          // This uses webhook data for accurate "when tag was attached" timestamps
+          console.log(`Querying local meeting events for tag: ${meetingsTagId}, since: ${startDateStr}`);
+          
+          const { data: meetingEvents, error: eventsError } = await supabaseClient
+            .from('meeting_tag_events')
+            .select('campaign_id')
+            .eq('tag_id', meetingsTagId)
+            .gte('tagged_at', startDateStr);
+          
+          if (eventsError) {
+            console.error('Error querying meeting events:', eventsError);
+          } else if (meetingEvents && meetingEvents.length > 0) {
+            console.log(`Found ${meetingEvents.length} meeting events from webhooks (last ${days} days)`);
+            
+            let mappedCount = 0;
+            for (const event of meetingEvents as Array<{ campaign_id: string | null }>) {
+              if (event.campaign_id) {
+                meetingsPerCampaign.set(event.campaign_id, (meetingsPerCampaign.get(event.campaign_id) || 0) + 1);
+                mappedCount++;
+              }
+            }
+            
+            console.log(`Mapped ${mappedCount} meeting events to campaigns`);
+            
+            if (mappedCount === 0 && meetingEvents.length > 0) {
+              meetingsPerCampaign.set('__total__', meetingEvents.length);
+            }
+          } else {
+            console.log('No meeting events found in local database for this period - falling back to API');
+            // Fall back to API if no local events (webhook not set up yet)
+            await fetchMeetingsFromAPI();
+          }
         } else {
-          console.log(`Fetching leads with meetings tag: ${meetingsTagId} (all-time)`);
+          // For all-time data, use the API (cumulative count)
+          await fetchMeetingsFromAPI();
         }
         
-        const leadsResponse = await fetch(leadsUrl, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (leadsResponse.ok) {
-          const leadsData = await leadsResponse.json();
-          const leads: Lead[] = leadsData.data || leadsData || [];
-          console.log(`Found ${leads.length} leads with meetings tag`);
-
-          let mappedCount = 0;
-          for (const lead of leads) {
-            const leadCampaignData = lead.lead_campaign_data;
-            let campaignId: string | undefined;
-            
-            if (leadCampaignData && Array.isArray(leadCampaignData) && leadCampaignData.length > 0) {
-              campaignId = leadCampaignData[0].campaign_id?.toString();
-            }
-            
-            if (!campaignId) {
-              campaignId = 
-                lead.campaign_id?.toString() || 
-                lead.sequence_id?.toString() ||
-                (typeof lead.campaign === 'object' && lead.campaign !== null ? (lead.campaign as { id: string | number }).id?.toString() : lead.campaign?.toString());
-            }
-            
-            if (campaignId) {
-              meetingsPerCampaign.set(campaignId, (meetingsPerCampaign.get(campaignId) || 0) + 1);
-              mappedCount++;
-            }
-          }
+        async function fetchMeetingsFromAPI() {
+          const leadsUrl = `https://send.expansio.io/api/leads?filters[tag_ids][0]=${meetingsTagId}&per_page=1000`;
+          console.log(`Fetching leads with meetings tag from API: ${meetingsTagId}`);
           
-          console.log(`Mapped ${mappedCount} out of ${leads.length} leads to campaigns`);
-          
-          if (mappedCount === 0 && leads.length > 0) {
-            meetingsPerCampaign.set('__total__', leads.length);
+          const leadsResponse = await fetch(leadsUrl, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (leadsResponse.ok) {
+            const leadsData = await leadsResponse.json();
+            const leads: Lead[] = leadsData.data || leadsData || [];
+            console.log(`Found ${leads.length} leads with meetings tag from API`);
+
+            let mappedCount = 0;
+            for (const lead of leads) {
+              const leadCampaignData = lead.lead_campaign_data;
+              let campaignId: string | undefined;
+              
+              if (leadCampaignData && Array.isArray(leadCampaignData) && leadCampaignData.length > 0) {
+                campaignId = leadCampaignData[0].campaign_id?.toString();
+              }
+              
+              if (!campaignId) {
+                campaignId = 
+                  lead.campaign_id?.toString() || 
+                  lead.sequence_id?.toString() ||
+                  (typeof lead.campaign === 'object' && lead.campaign !== null ? (lead.campaign as { id: string | number }).id?.toString() : lead.campaign?.toString());
+              }
+              
+              if (campaignId) {
+                meetingsPerCampaign.set(campaignId, (meetingsPerCampaign.get(campaignId) || 0) + 1);
+                mappedCount++;
+              }
+            }
+            
+            console.log(`Mapped ${mappedCount} out of ${leads.length} leads to campaigns`);
+            
+            if (mappedCount === 0 && leads.length > 0) {
+              meetingsPerCampaign.set('__total__', leads.length);
+            }
           }
         }
       } catch (err) {
-        console.error('Error fetching leads with meetings tag:', err);
+        console.error('Error fetching meetings data:', err);
       }
     }
 
@@ -380,7 +414,7 @@ serve(async (req) => {
       if (integration.platform === 'instantly') {
         campaigns = await fetchInstantlyCampaigns(integration.api_key);
       } else {
-        campaigns = await fetchEmailBisonCampaigns(integration.api_key, integration.meetings_tag_id, days);
+        campaigns = await fetchEmailBisonCampaigns(integration.api_key, integration.meetings_tag_id, days, supabase);
       }
 
       console.log(`Syncing ${campaigns.length} campaigns for user ${user.id} (timeline_days=${days || 'null'})`);

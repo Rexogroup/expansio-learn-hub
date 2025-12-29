@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag } from "lucide-react";
+import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag, Webhook, Copy } from "lucide-react";
 
 type Platform = 'instantly' | 'emailbison';
 type SyncStatus = 'pending' | 'syncing' | 'success' | 'error';
@@ -475,6 +475,60 @@ export default function IntegrationSettings() {
                         Leads with this tag will be counted as "Meetings Booked" during sync.
                       </p>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Webhook Setup Instructions (EmailBison only) */}
+              {integration.platform === 'emailbison' && integration.meetings_tag_name && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <Webhook className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Real-Time Meetings Tracking</CardTitle>
+                        <CardDescription>
+                          Set up a webhook to track meetings with timeline accuracy
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        To accurately track when meetings are booked across different time periods, 
+                        set up a webhook in your EmailBison workspace:
+                      </p>
+                      <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
+                        <li>Go to EmailBison → Settings → Webhooks</li>
+                        <li>Create a new webhook with the URL below</li>
+                        <li>Subscribe to the <code className="bg-muted px-1 rounded">tag_attached</code> event</li>
+                        <li>Save and activate the webhook</li>
+                      </ol>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Webhook URL</Label>
+                        <div className="flex gap-2">
+                          <code className="flex-1 p-2 bg-background border rounded text-xs break-all">
+                            https://teelukblrpynzcdabtuu.supabase.co/functions/v1/handle-emailbison-webhook
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              navigator.clipboard.writeText('https://teelukblrpynzcdabtuu.supabase.co/functions/v1/handle-emailbison-webhook');
+                              toast.success("Copied to clipboard");
+                            }}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Once set up, meetings will be tracked in real-time and the timeline filter will show accurate data.
+                    </p>
                   </CardContent>
                 </Card>
               )}
