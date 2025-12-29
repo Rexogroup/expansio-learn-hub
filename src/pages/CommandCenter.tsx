@@ -7,6 +7,8 @@ import { KPIComparisonCard } from "@/components/growth/KPIComparisonCard";
 import { ValidationBadge } from "@/components/growth/ValidationBadge";
 import { RecommendedAction } from "@/components/growth/RecommendedAction";
 import { CampaignMetricsCard } from "@/components/growth/CampaignMetricsCard";
+import { CampaignPerformanceHistory } from "@/components/growth/CampaignPerformanceHistory";
+import { GrowthCopilotChat } from "@/components/growth/GrowthCopilotChat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -361,34 +363,53 @@ export default function CommandCenter() {
           isSyncing={isSyncing}
         />
 
-        {/* KPI Comparison & Recommended Action */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* KPI Comparison */}
-          {currentStep && currentStep.benchmark_kpi_name && (
-            <KPIComparisonCard
-              title={currentStep.benchmark_kpi_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              currentValue={
-                currentStep.benchmark_kpi_name === 'interested_rate' 
-                  ? (campaignMetrics?.interested_rate || 0)
-                  : currentStep.benchmark_kpi_name === 'reply_rate'
-                    ? (campaignMetrics?.reply_rate || 0)
-                    : (currentProgress?.current_kpi_value || 0)
-              }
-              benchmarkValue={Number(currentStep.benchmark_kpi_value)}
-              unit={currentStep.benchmark_kpi_unit}
-              description={`Target: ${currentStep.benchmark_kpi_value}${currentStep.benchmark_kpi_unit === 'percent' ? '%' : ''}`}
-            />
-          )}
+        {/* Main Content Grid - KPIs, Actions, and Copilot */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Left Column - KPIs and Actions */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* KPI Comparison */}
+              {currentStep && currentStep.benchmark_kpi_name && (
+                <KPIComparisonCard
+                  title={currentStep.benchmark_kpi_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  currentValue={
+                    currentStep.benchmark_kpi_name === 'interested_rate' 
+                      ? (campaignMetrics?.interested_rate || 0)
+                      : currentStep.benchmark_kpi_name === 'reply_rate'
+                        ? (campaignMetrics?.reply_rate || 0)
+                        : (currentProgress?.current_kpi_value || 0)
+                  }
+                  benchmarkValue={Number(currentStep.benchmark_kpi_value)}
+                  unit={currentStep.benchmark_kpi_unit}
+                  description={`Target: ${currentStep.benchmark_kpi_value}${currentStep.benchmark_kpi_unit === 'percent' ? '%' : ''}`}
+                />
+              )}
 
-          {/* Recommended Action */}
-          {recommendedAction && (
-            <RecommendedAction
-              title={recommendedAction.title}
-              description={recommendedAction.description}
-              actionLabel={recommendedAction.actionLabel}
-              actionPath={recommendedAction.actionPath}
+              {/* Recommended Action */}
+              {recommendedAction && (
+                <RecommendedAction
+                  title={recommendedAction.title}
+                  description={recommendedAction.description}
+                  actionLabel={recommendedAction.actionLabel}
+                  actionPath={recommendedAction.actionPath}
+                />
+              )}
+            </div>
+
+            {/* Campaign Performance History */}
+            <CampaignPerformanceHistory
+              onSync={handleSync}
+              isSyncing={isSyncing}
+              benchmark={1.2}
             />
-          )}
+          </div>
+
+          {/* Right Column - AI Copilot */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-4">
+              <GrowthCopilotChat />
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
