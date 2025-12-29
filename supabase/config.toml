@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.handle-emailbison-webhook]
 verify_jwt = false
+
+[functions.sync-email-health]
+verify_jwt = false

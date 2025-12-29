@@ -9,6 +9,7 @@ import { RecommendedAction } from "@/components/growth/RecommendedAction";
 import { CampaignMetricsCard } from "@/components/growth/CampaignMetricsCard";
 import { CampaignPerformanceHistory } from "@/components/growth/CampaignPerformanceHistory";
 import { GrowthCopilotChat } from "@/components/growth/GrowthCopilotChat";
+import { InfrastructureHealthCard } from "@/components/growth/InfrastructureHealthCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -432,6 +433,11 @@ export default function CommandCenter() {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - KPIs and Actions */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Infrastructure Health Card - Show for Step 1 */}
+            {currentStepNumber === 1 && (
+              <InfrastructureHealthCard />
+            )}
+            
             <div className="grid md:grid-cols-2 gap-6">
               {/* KPI Comparison */}
               {currentStep && currentStep.benchmark_kpi_name && (
