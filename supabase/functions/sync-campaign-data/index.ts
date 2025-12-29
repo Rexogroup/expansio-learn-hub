@@ -118,7 +118,7 @@ async function fetchEmailBisonCampaigns(apiKey: string): Promise<CampaignMetrics
   
   try {
     // Get campaigns from EmailBison
-    const response = await fetch('https://dedi.emailbison.com/api/campaigns', {
+    const response = await fetch('https://send.expansio.io/api/campaigns', {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ async function fetchEmailBisonCampaigns(apiKey: string): Promise<CampaignMetrics
       // Get campaign stats
       try {
         const statsResponse = await fetch(
-          `https://dedi.emailbison.com/api/campaigns/${campaign.id}/stats`,
+          `https://send.expansio.io/api/campaigns/${campaign.id}/stats`,
           {
             headers: {
               'Authorization': `Bearer ${apiKey}`,
