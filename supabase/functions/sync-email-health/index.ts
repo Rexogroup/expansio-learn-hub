@@ -26,30 +26,16 @@ interface WarmupEmail {
 async function fetchSenderEmails(apiKey: string): Promise<SenderEmail[]> {
   console.log('Fetching sender emails from EmailBison...');
   
-  const response = await fetch('https://send.expansio.io/api/sender-emails', {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Accept': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Failed to fetch sender emails:', response.status, errorText);
-    throw new Error(`Failed to fetch sender emails: ${response.status}`);
-  }
-
-  const data = await response.json();
-  console.log(`Fetched ${data.data?.length || 0} sender emails`);
-  return data.data || [];
-}
-
-async function fetchWarmupStatus(apiKey: string): Promise<WarmupEmail[]> {
-  console.log('Fetching warmup status from EmailBison...');
+  const allEmails: SenderEmail[] = [];
+  let page = 1;
+  const perPage = 100;
+  let hasMore = true;
   
-  try {
-    const response = await fetch('https://send.expansio.io/api/warmup/sender-emails', {
+  while (hasMore) {
+    const url = `https://send.expansio.io/api/sender-emails?page=${page}&per_page=${perPage}`;
+    console.log(`Fetching sender emails page ${page}...`);
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -58,16 +44,72 @@ async function fetchWarmupStatus(apiKey: string): Promise<WarmupEmail[]> {
     });
 
     if (!response.ok) {
-      console.log('Warmup endpoint not available or no data:', response.status);
-      return [];
+      const errorText = await response.text();
+      console.error('Failed to fetch sender emails:', response.status, errorText);
+      throw new Error(`Failed to fetch sender emails: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log(`Fetched warmup status for ${data.data?.length || 0} emails`);
-    return data.data || [];
+    const pageEmails = data.data || [];
+    allEmails.push(...pageEmails);
+    
+    console.log(`Page ${page}: fetched ${pageEmails.length} emails (total: ${allEmails.length})`);
+    
+    if (pageEmails.length < perPage || page >= 50) {
+      hasMore = false;
+    } else {
+      page++;
+    }
+  }
+  
+  console.log(`Total sender emails fetched: ${allEmails.length}`);
+  return allEmails;
+}
+
+async function fetchWarmupStatus(apiKey: string): Promise<WarmupEmail[]> {
+  console.log('Fetching warmup status from EmailBison...');
+  
+  const allWarmup: WarmupEmail[] = [];
+  let page = 1;
+  const perPage = 100;
+  let hasMore = true;
+  
+  try {
+    while (hasMore) {
+      const url = `https://send.expansio.io/api/warmup/sender-emails?page=${page}&per_page=${perPage}`;
+      console.log(`Fetching warmup status page ${page}...`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.log('Warmup endpoint not available or no data:', response.status);
+        return allWarmup;
+      }
+
+      const data = await response.json();
+      const pageWarmup = data.data || [];
+      allWarmup.push(...pageWarmup);
+      
+      console.log(`Page ${page}: fetched ${pageWarmup.length} warmup records (total: ${allWarmup.length})`);
+      
+      if (pageWarmup.length < perPage || page >= 50) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    }
+    
+    console.log(`Total warmup records fetched: ${allWarmup.length}`);
+    return allWarmup;
   } catch (error) {
     console.log('Error fetching warmup status:', error);
-    return [];
+    return allWarmup;
   }
 }
 
@@ -151,14 +193,21 @@ serve(async (req) => {
     const healthRecords = senderEmails.map((email) => {
       const warmup = warmupMap.get(email.id);
       
-      // Determine connection status
+      // Determine connection status (normalize to lowercase for consistent comparison)
       let connectionStatus = 'unknown';
       if (email.imap_connection_status === 'connected' && email.smtp_connection_status === 'connected') {
         connectionStatus = 'connected';
       } else if (email.imap_connection_status === 'failed' || email.smtp_connection_status === 'failed') {
         connectionStatus = 'error';
       } else if (email.status) {
-        connectionStatus = email.status;
+        const normalizedStatus = email.status.toLowerCase();
+        if (normalizedStatus === 'connected') {
+          connectionStatus = 'connected';
+        } else if (['disconnected', 'failed', 'error'].includes(normalizedStatus)) {
+          connectionStatus = 'error';
+        } else {
+          connectionStatus = normalizedStatus;
+        }
       }
 
       return {
