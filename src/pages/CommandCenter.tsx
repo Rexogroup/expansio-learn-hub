@@ -73,17 +73,32 @@ export default function CommandCenter() {
   }, []);
 
   useEffect(() => {
-    const fetchMetricsForTimeline = async () => {
+    const fetchOrSyncForTimeline = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (!session || loading) return;
+
+      // Check if we have cached data for this timeline
+      const { data: cachedData } = await supabase
+        .from('synced_campaigns')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('timeline_days', timelineDays)
+        .limit(1);
+
+      if (cachedData && cachedData.length > 0) {
+        // Use cached data
+        await fetchCampaignMetrics(session.user.id, timelineDays);
+      } else if (integration) {
+        // No cached data - auto-sync for this timeline
+        await handleSync();
+      } else {
+        // No integration, try fetching fallback data
         await fetchCampaignMetrics(session.user.id, timelineDays);
       }
     };
     
-    if (!loading) {
-      fetchMetricsForTimeline();
-    }
-  }, [timelineDays, loading]);
+    fetchOrSyncForTimeline();
+  }, [timelineDays]);
 
   const checkAuthAndFetch = async () => {
     const { data: { session } } = await supabase.auth.getSession();
