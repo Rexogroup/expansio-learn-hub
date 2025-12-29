@@ -529,6 +529,54 @@ export type Database = {
           },
         ]
       }
+      growth_steps: {
+        Row: {
+          benchmark_kpi_name: string | null
+          benchmark_kpi_unit: string | null
+          benchmark_kpi_value: number | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          help_content: string | null
+          id: string
+          name: string
+          order_index: number
+          required_asset_type: string | null
+          step_number: number
+          validation_logic: Json | null
+        }
+        Insert: {
+          benchmark_kpi_name?: string | null
+          benchmark_kpi_unit?: string | null
+          benchmark_kpi_value?: number | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          help_content?: string | null
+          id?: string
+          name: string
+          order_index?: number
+          required_asset_type?: string | null
+          step_number: number
+          validation_logic?: Json | null
+        }
+        Update: {
+          benchmark_kpi_name?: string | null
+          benchmark_kpi_unit?: string | null
+          benchmark_kpi_value?: number | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          help_content?: string | null
+          id?: string
+          name?: string
+          order_index?: number
+          required_asset_type?: string | null
+          step_number?: number
+          validation_logic?: Json | null
+        }
+        Relationships: []
+      }
       invites: {
         Row: {
           account_verified: boolean
@@ -1367,6 +1415,116 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "tool_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_assets: {
+        Row: {
+          asset_type: string
+          content: Json
+          created_at: string | null
+          id: string
+          parent_asset_id: string | null
+          performance_data: Json | null
+          status: string | null
+          step_id: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          version: number | null
+        }
+        Insert: {
+          asset_type: string
+          content?: Json
+          created_at?: string | null
+          id?: string
+          parent_asset_id?: string | null
+          performance_data?: Json | null
+          status?: string | null
+          step_id?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          version?: number | null
+        }
+        Update: {
+          asset_type?: string
+          content?: Json
+          created_at?: string | null
+          id?: string
+          parent_asset_id?: string | null
+          performance_data?: Json | null
+          status?: string | null
+          step_id?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_assets_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "user_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_assets_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "growth_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_growth_progress: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          current_kpi_value: number | null
+          id: string
+          notes: string | null
+          started_at: string | null
+          status: string
+          step_id: string
+          updated_at: string | null
+          user_id: string
+          validated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          current_kpi_value?: number | null
+          id?: string
+          notes?: string | null
+          started_at?: string | null
+          status?: string
+          step_id: string
+          updated_at?: string | null
+          user_id: string
+          validated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          current_kpi_value?: number | null
+          id?: string
+          notes?: string | null
+          started_at?: string | null
+          status?: string
+          step_id?: string
+          updated_at?: string | null
+          user_id?: string
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_growth_progress_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "growth_steps"
             referencedColumns: ["id"]
           },
         ]

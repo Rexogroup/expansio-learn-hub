@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home, Users } from "lucide-react";
+import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home, Users, Settings, Target } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -307,12 +307,12 @@ export const Navbar = () => {
   return (
     <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-xl font-bold">
-          <BookOpen className="w-6 h-6 text-primary" />
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            LearnHub
-          </span>
-        </Link>
+          <Link to="/" className="flex items-center gap-2 text-xl font-bold">
+            <Target className="w-6 h-6 text-primary" />
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Growth OS
+            </span>
+          </Link>
 
         <div className="flex items-center gap-4">
           {user ? (
@@ -320,38 +320,20 @@ export const Navbar = () => {
               <Link to="/dashboard" aria-current={isActiveRoute("/dashboard") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/dashboard") ? "default" : "ghost"}>
                   <Home className="w-4 h-4 mr-2" />
-                  Dashboard
+                  Command Center
                 </Button>
               </Link>
-              <Link to="/onboarding" aria-current={isActiveRoute("/onboarding") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/onboarding") ? "default" : "ghost"}>
-                  Onboarding
-                </Button>
+              <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
               </Link>
-              <Link to="/courses" aria-current={isActiveRoute("/courses") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/courses") ? "default" : "ghost"}>Courses</Button>
+              <Link to="/integrations" aria-current={isActiveRoute("/integrations") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/integrations") ? "default" : "ghost"}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Integrations
+                </Button>
               </Link>
               <Link to="/sales-vault" aria-current={isActiveRoute("/sales-vault") ? "page" : undefined}>
                 <Button variant={isActiveRoute("/sales-vault") ? "default" : "ghost"}>Sales Vault</Button>
-              </Link>
-              {isAdmin && (
-                <Link to="/network" aria-current={isActiveRoute("/network") ? "page" : undefined}>
-                  <Button variant={isActiveRoute("/network") ? "default" : "ghost"} className="relative">
-                    <Users className="w-4 h-4 mr-2" />
-                    Network
-                    {totalNotifications > 0 && (
-                      <Badge 
-                        variant="destructive" 
-                        className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                      >
-                        {totalNotifications > 9 ? "9+" : totalNotifications}
-                      </Badge>
-                    )}
-                  </Button>
-                </Link>
-              )}
-              <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
               </Link>
               {isAdmin && (
                 <Link to="/admin" aria-current={isActiveRoute("/admin") ? "page" : undefined}>
