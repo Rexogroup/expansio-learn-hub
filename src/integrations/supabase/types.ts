@@ -1278,6 +1278,7 @@ export type Database = {
           raw_data: Json | null
           reply_rate: number | null
           synced_at: string | null
+          timeline_days: number | null
           unique_opens: number | null
           unique_replies: number | null
           unsubscribes: number | null
@@ -1298,6 +1299,7 @@ export type Database = {
           raw_data?: Json | null
           reply_rate?: number | null
           synced_at?: string | null
+          timeline_days?: number | null
           unique_opens?: number | null
           unique_replies?: number | null
           unsubscribes?: number | null
@@ -1318,6 +1320,7 @@ export type Database = {
           raw_data?: Json | null
           reply_rate?: number | null
           synced_at?: string | null
+          timeline_days?: number | null
           unique_opens?: number | null
           unique_replies?: number | null
           unsubscribes?: number | null

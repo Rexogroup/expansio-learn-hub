@@ -141,13 +141,27 @@ export default function CommandCenter() {
     }
   };
 
-  const fetchCampaignMetrics = async (userId: string, _days: number) => {
-    // Fetch all campaigns - showing all-time cumulative data
-    // Timeline filtering will work properly once historical snapshots are collected
-    const { data, error } = await supabase
+  const fetchCampaignMetrics = async (userId: string, days: number) => {
+    // First try to fetch data for the specific timeline period
+    let query = supabase
       .from('synced_campaigns')
-      .select('emails_sent, unique_opens, unique_replies, interested_count, meetings_booked')
-      .eq('user_id', userId);
+      .select('emails_sent, unique_opens, unique_replies, interested_count, meetings_booked, timeline_days')
+      .eq('user_id', userId)
+      .eq('timeline_days', days);
+
+    let { data, error } = await query;
+
+    // If no data for this period, fall back to all-time data (timeline_days = null)
+    if ((!data || data.length === 0) && !error) {
+      const fallbackQuery = await supabase
+        .from('synced_campaigns')
+        .select('emails_sent, unique_opens, unique_replies, interested_count, meetings_booked, timeline_days')
+        .eq('user_id', userId)
+        .is('timeline_days', null);
+      
+      data = fallbackQuery.data;
+      error = fallbackQuery.error;
+    }
 
     if (!error && data && data.length > 0) {
       // Aggregate metrics from all campaigns
