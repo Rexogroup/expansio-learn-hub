@@ -7,20 +7,21 @@ const corsHeaders = {
 };
 
 interface WebhookPayload {
-  event: string;
-  tag?: {
-    id: number | string;
-    name: string;
+  event?: {
+    type: string;
+    name?: string;
+    workspace_id?: number | string;
   };
-  lead?: {
-    id: number | string;
-    email?: string;
-    lead_campaign_data?: Array<{
-      campaign_id: number;
-    }>;
+  data?: {
+    tag_id: number | string;
+    tag_name: string;
+    taggable_id: number | string;
+    taggable_type: string;
+    lead_id?: number | string;
+    lead_email?: string;
+    campaign_id?: number | string;
   };
   timestamp?: string;
-  workspace_id?: number | string;
 }
 
 serve(async (req) => {
@@ -39,25 +40,43 @@ serve(async (req) => {
     const payload: WebhookPayload = await req.json();
     console.log('Webhook payload:', JSON.stringify(payload));
 
-    // Only process tag_attached events
-    if (payload.event !== 'tag_attached') {
-      console.log(`Ignoring event type: ${payload.event}`);
+    // Determine event type from nested event object
+    const eventType = payload.event?.type || '';
+    
+    // Only process TAG_ATTACHED events
+    if (eventType !== 'TAG_ATTACHED') {
+      console.log(`Ignoring event type: ${eventType}`);
       return new Response(
-        JSON.stringify({ status: 'ignored', reason: 'not tag_attached event' }),
+        JSON.stringify({ status: 'ignored', reason: 'not TAG_ATTACHED event' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!payload.tag?.id || !payload.lead?.id) {
-      console.log('Missing tag or lead data');
+    // Check if this is a Lead tag (not Campaign or other)
+    if (payload.data?.taggable_type !== 'Lead') {
+      console.log(`Ignoring non-lead tag: taggable_type=${payload.data?.taggable_type}`);
+      return new Response(
+        JSON.stringify({ status: 'ignored', reason: 'not a lead tag' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Extract tag and lead info from data object
+    const tagId = payload.data?.tag_id?.toString();
+    const tagName = payload.data?.tag_name || null;
+    const leadId = payload.data?.taggable_id?.toString();
+    const campaignId = payload.data?.campaign_id?.toString() || null;
+    const leadEmail = payload.data?.lead_email || null;
+
+    if (!tagId || !leadId) {
+      console.log('Missing tag_id or lead_id in data');
       return new Response(
         JSON.stringify({ status: 'ignored', reason: 'missing tag or lead data' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const tagId = payload.tag.id.toString();
-    console.log(`Tag attached event: tag_id=${tagId}, tag_name=${payload.tag.name}`);
+    console.log(`Tag attached event: tag_id=${tagId}, tag_name=${tagName}, lead_id=${leadId}`);
 
     // Find all users who have this tag configured as their meetings tag
     const { data: integrations, error: integrationsError } = await supabase
@@ -85,23 +104,17 @@ serve(async (req) => {
 
     console.log(`Found ${integrations.length} user(s) with this meetings tag configured`);
 
-    // Extract campaign ID from lead data
-    let campaignId: string | null = null;
-    if (payload.lead.lead_campaign_data && payload.lead.lead_campaign_data.length > 0) {
-      campaignId = payload.lead.lead_campaign_data[0].campaign_id?.toString() || null;
-    }
-
     // Store the meeting event for each matching user
     const insertPromises = integrations.map(async (integration) => {
       const { error: insertError } = await supabase
         .from('meeting_tag_events')
         .insert({
           user_id: integration.user_id,
-          lead_id: payload.lead!.id.toString(),
-          lead_email: payload.lead!.email || null,
+          lead_id: leadId,
+          lead_email: leadEmail,
           campaign_id: campaignId,
           tag_id: tagId,
-          tag_name: payload.tag!.name,
+          tag_name: tagName,
           tagged_at: payload.timestamp || new Date().toISOString(),
           raw_payload: payload,
         });
@@ -124,7 +137,7 @@ serve(async (req) => {
       JSON.stringify({ 
         status: 'stored', 
         users_updated: successCount,
-        lead_id: payload.lead.id,
+        lead_id: leadId,
         tag_id: tagId,
         campaign_id: campaignId 
       }),
