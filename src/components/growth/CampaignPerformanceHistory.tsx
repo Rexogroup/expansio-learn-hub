@@ -19,6 +19,7 @@ interface Campaign {
   reply_rate: number;
   interested_rate: number;
   synced_at: string;
+  timeline_days: number | null;
 }
 
 interface CampaignPerformanceHistoryProps {
@@ -51,13 +52,28 @@ export function CampaignPerformanceHistory({
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Fetch all campaigns - showing all-time cumulative data
-    // Timeline filtering will work properly once historical snapshots are collected
-    const { data, error } = await supabase
+    // First try to fetch data for the specific timeline period
+    let query = supabase
       .from('synced_campaigns')
       .select('*')
       .eq('user_id', session.user.id)
+      .eq('timeline_days', timelineDays)
       .order('interested_rate', { ascending: false });
+
+    let { data, error } = await query;
+
+    // If no data for this period, fall back to all-time data (timeline_days = null)
+    if ((!data || data.length === 0) && !error) {
+      const fallbackQuery = await supabase
+        .from('synced_campaigns')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .is('timeline_days', null)
+        .order('interested_rate', { ascending: false });
+      
+      data = fallbackQuery.data;
+      error = fallbackQuery.error;
+    }
 
     if (!error && data) {
       setCampaigns(data.map(c => ({
@@ -247,7 +263,11 @@ export function CampaignPerformanceHistory({
 
           {/* Benchmark Legend */}
           <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground pt-2">
-            <span className="text-muted-foreground/70">Showing all-time cumulative data</span>
+            <span className="text-muted-foreground/70">
+              {campaigns.length > 0 && campaigns[0].timeline_days 
+                ? `Showing last ${campaigns[0].timeline_days} days` 
+                : 'Showing all-time cumulative data (sync to get period-specific data)'}
+            </span>
             <span>Benchmark: {benchmark}% interested rate</span>
           </div>
         </CardContent>

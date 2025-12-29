@@ -383,7 +383,7 @@ serve(async (req) => {
 
       console.log(`Syncing ${campaigns.length} campaigns for user ${user.id}`);
 
-      // Upsert campaigns into database
+      // Upsert campaigns into database with timeline_days
       for (const campaign of campaigns) {
         const { error: upsertError } = await supabase
           .from('synced_campaigns')
@@ -405,8 +405,9 @@ serve(async (req) => {
             interested_rate: campaign.interested_rate,
             raw_data: campaign.raw_data,
             synced_at: new Date().toISOString(),
+            timeline_days: days || null, // Store which time period this data is for
           }, {
-            onConflict: 'user_id,external_campaign_id,platform',
+            onConflict: 'user_id,external_campaign_id,timeline_days',
           });
 
         if (upsertError) {
