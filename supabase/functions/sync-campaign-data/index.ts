@@ -216,16 +216,24 @@ async function fetchEmailBisonCampaigns(
     let meetingsPerCampaign: Map<string, number> = new Map();
     if (meetingsTagId) {
       try {
-        console.log(`Fetching leads with meetings tag: ${meetingsTagId}`);
-        const leadsResponse = await fetch(
-          `https://send.expansio.io/api/leads?filters[tag_ids][0]=${meetingsTagId}&per_page=1000`,
-          {
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        // Build URL with optional date filter for timeline-specific meetings
+        let leadsUrl = `https://send.expansio.io/api/leads?filters[tag_ids][0]=${meetingsTagId}&per_page=1000`;
+        
+        if (days) {
+          // Add date filter to only get leads updated within the timeline period
+          // When a tag is added to a lead, the lead's updated_at timestamp is updated
+          leadsUrl += `&filters[updated_at][criteria]=>=&filters[updated_at][value]=${startDateStr}`;
+          console.log(`Fetching leads with meetings tag: ${meetingsTagId}, updated since: ${startDateStr}`);
+        } else {
+          console.log(`Fetching leads with meetings tag: ${meetingsTagId} (all-time)`);
+        }
+        
+        const leadsResponse = await fetch(leadsUrl, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
         if (leadsResponse.ok) {
           const leadsData = await leadsResponse.json();
