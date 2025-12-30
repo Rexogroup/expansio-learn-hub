@@ -338,12 +338,7 @@ export function CampaignPerformanceHistory({
               const campaignSteps = getVariantsForCampaign(campaign.external_campaign_id);
               const hasVariants = campaignSteps.length > 0;
               
-              // Calculate emails per interested lead
-              const emailsPerLead = campaign.interested_count > 0 
-                ? Math.round(campaign.emails_sent / campaign.interested_count)
-                : null;
-              const performanceBadge = getPerformanceBadge(emailsPerLead);
-              const recommendedAction = getRecommendedAction(emailsPerLead, campaign.emails_sent);
+              // Note: Performance badges shown only at variant level to avoid misleading campaign-level aggregation
 
               return (
                 <Collapsible
@@ -355,7 +350,7 @@ export function CampaignPerformanceHistory({
                     {/* Campaign Row */}
                     <CollapsibleTrigger className="w-full" disabled={!hasVariants}>
                       <div className={cn(
-                        "grid grid-cols-[1fr_repeat(8,_auto)_32px] gap-4 items-center px-4 py-3 text-sm",
+                        "grid grid-cols-[1fr_repeat(6,_auto)_32px] gap-4 items-center px-4 py-3 text-sm",
                         hasVariants && "hover:bg-muted/30 cursor-pointer"
                       )}>
                         <div className="text-left">
@@ -385,31 +380,6 @@ export function CampaignPerformanceHistory({
                         )}>
                           <div className="text-sm font-semibold">{formatRate(campaign.interested_rate)}</div>
                           <div className="text-xs text-muted-foreground">IR%</div>
-                        </div>
-                        {/* Emails per Lead with Performance Badge */}
-                        <div className="text-right tabular-nums min-w-[70px]">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className="text-sm font-medium">{emailsPerLead ?? '-'}</span>
-                            {performanceBadge && (
-                              <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", performanceBadge.color, performanceBadge.textColor)}>
-                                {performanceBadge.label}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground">Emails/Lead</div>
-                        </div>
-                        {/* Recommended Action Badge */}
-                        <div className="min-w-[70px]">
-                          <span 
-                            className={cn(
-                              "text-[10px] px-2 py-1 rounded font-bold tracking-wide",
-                              recommendedAction.color, 
-                              recommendedAction.textColor
-                            )}
-                            title={recommendedAction.description}
-                          >
-                            {recommendedAction.action}
-                          </span>
                         </div>
                         <Badge variant="outline" className={cn("text-xs capitalize", statusColor)}>
                           {campaign.campaign_status}
