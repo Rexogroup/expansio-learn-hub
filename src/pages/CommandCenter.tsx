@@ -8,7 +8,6 @@ import { AlertsBanner } from "@/components/growth/AlertsBanner";
 import { StatusPills } from "@/components/growth/StatusPills";
 import { PriorityActionsStack } from "@/components/growth/PriorityActionsStack";
 import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
-import { MinimalProgressIndicator } from "@/components/growth/MinimalProgressIndicator";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link, GraduationCap } from "lucide-react";
@@ -544,16 +543,6 @@ export default function CommandCenter() {
             <span className="text-sm">Sales Vault</span>
           </Button>
         </div>
-
-        {/* Minimal Progress Indicator */}
-        <MinimalProgressIndicator
-          currentStep={currentStepNumber}
-          totalSteps={steps.length || 7}
-          currentStepName={currentStep?.name || 'Unknown'}
-          steps={stepsWithProgress}
-          alertSteps={alertCount > 0 ? [1] : []}
-          onStepClick={(stepNum) => setCurrentStepNumber(stepNum)}
-        />
 
         {/* Floating Growth Copilot */}
         <GrowthCopilotSheet />
