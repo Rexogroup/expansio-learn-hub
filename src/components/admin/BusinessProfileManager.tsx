@@ -17,13 +17,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, FileText, Printer, Search, Eye } from "lucide-react";
+import { Download, FileText, Printer, Search, Eye, FileType } from "lucide-react";
 import { toast } from "sonner";
 import {
   BusinessProfile,
   downloadProfileAsHTML,
   openProfileForPrint,
   generateProfileHTML,
+  downloadProfileAsDocx,
 } from "@/lib/generate-profile-document";
 import {
   Dialog,
@@ -101,6 +102,16 @@ export function BusinessProfileManager() {
   const handlePrintPDF = (profile: BusinessProfile) => {
     openProfileForPrint(profile);
     toast.success("Print dialog opened - save as PDF");
+  };
+
+  const handleDownloadDocx = async (profile: BusinessProfile) => {
+    try {
+      await downloadProfileAsDocx(profile);
+      toast.success("Profile downloaded as DOCX");
+    } catch (error) {
+      console.error("Error generating DOCX:", error);
+      toast.error("Failed to generate DOCX file");
+    }
   };
 
   const handlePreview = (profile: BusinessProfile) => {
@@ -213,6 +224,10 @@ export function BusinessProfileManager() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleDownloadDocx(profile)}>
+                              <FileType className="h-4 w-4 mr-2" />
+                              Download as DOCX
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDownloadHTML(profile)}>
                               <FileText className="h-4 w-4 mr-2" />
                               Download as HTML
@@ -256,9 +271,13 @@ export function BusinessProfileManager() {
             </Button>
             {previewProfile && (
               <>
+                <Button variant="outline" onClick={() => handleDownloadDocx(previewProfile)}>
+                  <FileType className="h-4 w-4 mr-2" />
+                  DOCX
+                </Button>
                 <Button variant="outline" onClick={() => handleDownloadHTML(previewProfile)}>
                   <FileText className="h-4 w-4 mr-2" />
-                  Download HTML
+                  HTML
                 </Button>
                 <Button onClick={() => handlePrintPDF(previewProfile)}>
                   <Printer className="h-4 w-4 mr-2" />
