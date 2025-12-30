@@ -941,11 +941,40 @@ serve(async (req) => {
         })
         .eq('id', integration.id);
 
+      // Trigger script classification after successful sync
+      let scriptsClassified = 0;
+      try {
+        console.log(`Triggering script classification for user ${user.id}`);
+        const classifyResponse = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/classify-scripts`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            },
+            body: JSON.stringify({ user_id: user.id }),
+          }
+        );
+        
+        if (classifyResponse.ok) {
+          const classifyResult = await classifyResponse.json();
+          scriptsClassified = classifyResult.scripts_saved || 0;
+          console.log(`Script classification complete: ${scriptsClassified} scripts saved`);
+        } else {
+          console.error('Script classification failed:', await classifyResponse.text());
+        }
+      } catch (classifyError) {
+        console.error('Error calling classify-scripts:', classifyError);
+        // Don't fail the sync if classification fails
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
           campaigns_synced: campaigns.length,
           variants_synced: variantsSynced,
+          scripts_classified: scriptsClassified,
           timeline_days: days || null,
           totals 
         }),

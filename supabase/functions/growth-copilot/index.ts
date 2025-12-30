@@ -106,6 +106,73 @@ function buildKnowledgeBaseSection(docs: KnowledgeBaseDoc[]): string {
   return section;
 }
 
+interface UserScriptAsset {
+  title: string;
+  content: string;
+  performance_data: {
+    emails_sent: number;
+    interested_rate: number;
+    emails_per_lead: number | null;
+    classification: string;
+    classification_reason: string;
+  };
+  asset_type: 'winning_script' | 'losing_script';
+}
+
+function buildUserScriptsSection(assets: UserScriptAsset[]): string {
+  if (!assets || assets.length === 0) return '';
+
+  const winners = assets.filter(a => a.asset_type === 'winning_script');
+  const losers = assets.filter(a => a.asset_type === 'losing_script');
+
+  let section = '\n## YOUR PROVEN SCRIPTS (Personalized Learning)\n\n';
+  section += 'These are YOUR actual campaign scripts that have been automatically classified based on performance data.\n\n';
+
+  if (winners.length > 0) {
+    section += '### 🏆 Your Winning Scripts (SCALE these patterns)\n';
+    section += 'Use these as templates for new campaigns. They have proven to work for YOUR audience.\n\n';
+    for (const w of winners) {
+      const perf = w.performance_data;
+      let contentData: { subject_line?: string } = {};
+      try {
+        contentData = typeof w.content === 'string' ? JSON.parse(w.content) : w.content;
+      } catch {
+        contentData = {};
+      }
+      section += `- **${w.title}**\n`;
+      section += `  - IR: ${perf.interested_rate?.toFixed(1) || 'N/A'}% | Emails/Lead: ${perf.emails_per_lead || 'N/A'} | Sent: ${perf.emails_sent?.toLocaleString() || 0}\n`;
+      if (contentData.subject_line) {
+        section += `  - Subject: "${contentData.subject_line}"\n`;
+      }
+      section += `  - Why it works: ${perf.classification_reason}\n\n`;
+    }
+  }
+
+  if (losers.length > 0) {
+    section += '### ⚠️ Scripts That Didn\'t Work (Avoid these patterns)\n';
+    section += 'Learn from these failures. Do NOT replicate these approaches.\n\n';
+    for (const l of losers) {
+      const perf = l.performance_data;
+      let contentData: { subject_line?: string } = {};
+      try {
+        contentData = typeof l.content === 'string' ? JSON.parse(l.content) : l.content;
+      } catch {
+        contentData = {};
+      }
+      section += `- **${l.title}**\n`;
+      section += `  - IR: ${perf.interested_rate?.toFixed(1) || 'N/A'}% | Emails/Lead: ${perf.emails_per_lead || 'N/A'} | Sent: ${perf.emails_sent?.toLocaleString() || 0}\n`;
+      if (contentData.subject_line) {
+        section += `  - Subject: "${contentData.subject_line}"\n`;
+      }
+      section += `  - Why it failed: ${perf.classification_reason}\n\n`;
+    }
+  }
+
+  section += '**IMPORTANT**: When recommending scripts or iterations, always consider what has worked and NOT worked for this specific user. Personalize recommendations based on their proven patterns.\n';
+
+  return section;
+}
+
 function buildSystemPrompt(
   growthSteps: GrowthStep[],
   currentStep: GrowthStep | null,
@@ -113,7 +180,8 @@ function buildSystemPrompt(
   campaigns: CampaignData[],
   totalMetrics: { emails_sent: number; replies: number; interested: number; reply_rate: number; interested_rate: number },
   infrastructureAlerts: InfrastructureAlert[],
-  knowledgeBaseContent: string
+  knowledgeBaseContent: string,
+  userScriptsContent: string
 ): string {
   const topCampaigns = [...campaigns]
     .filter(c => c.emails_sent >= 1000)
@@ -253,15 +321,23 @@ When analyzing A/B variants:
 
 ${knowledgeBaseContent}
 
+${userScriptsContent}
+
 ## YOUR ROLE
 1. ${infrastructureAlerts.length > 0 ? 'FIRST: Address any infrastructure alerts - these are the highest priority' : 'Check infrastructure health is stable'}
 2. Diagnose where the user is struggling based on their data
 3. Compare their metrics to benchmarks and identify gaps
 4. **Analyze variants** and recommend which to SCALE, ITERATE, or KILL based on IR%
-5. **Reference the Knowledge Base** to provide specific script examples and frameworks
-6. When suggesting improvements, cite specific examples from the knowledge base
+5. **Reference the Knowledge Base AND the user's proven scripts** to provide specific recommendations
+6. When suggesting improvements, cite examples from their winning scripts or warn against patterns from losing scripts
 7. Provide ONE clear, actionable next step with a concrete example
 8. Guide them to the next step in the framework when ready
+
+## HOW TO USE PERSONALIZED SCRIPTS
+- FIRST check if the user has any winning_script assets - these are PROVEN to work for THEIR audience
+- When recommending new scripts, suggest patterns similar to their winning scripts
+- When the user has losing_script assets, explicitly warn against those patterns
+- Personalize ALL recommendations based on what has worked and not worked for THIS user
 
 ## HOW TO USE KNOWLEDGE BASE
 - Reference specific winning script examples when recommending iterations
@@ -318,21 +394,23 @@ serve(async (req) => {
 
     console.log(`Growth Copilot request: type=${type}, user=${user.id}`);
 
-    // Fetch all context data in parallel (including infrastructure alerts and knowledge base)
+    // Fetch all context data in parallel (including infrastructure alerts, knowledge base, and user scripts)
     const [
       { data: growthSteps },
       { data: userProgress },
       { data: campaigns },
       { data: dailyMetrics },
       { data: infrastructureAlerts },
-      { data: knowledgeBaseDocs }
+      { data: knowledgeBaseDocs },
+      { data: userScriptAssets }
     ] = await Promise.all([
       supabase.from('growth_steps').select('*').order('step_number'),
       supabase.from('user_growth_progress').select('*').eq('user_id', user.id),
       supabase.from('synced_campaigns').select('*').eq('user_id', user.id),
       supabase.from('daily_campaign_metrics').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1),
       supabase.from('email_account_alerts').select('email_address, alert_type, severity, current_value, threshold_value, recommended_action').eq('user_id', user.id).eq('status', 'active'),
-      supabase.from('knowledge_base_documents').select('title, category, extracted_content').eq('document_type', 'admin').eq('is_active', true)
+      supabase.from('knowledge_base_documents').select('title, category, extracted_content').eq('document_type', 'admin').eq('is_active', true),
+      supabase.from('user_assets').select('title, content, performance_data, asset_type').eq('user_id', user.id).in('asset_type', ['winning_script', 'losing_script']).order('created_at', { ascending: false }).limit(20)
     ]);
 
     // Determine current step
@@ -405,6 +483,17 @@ serve(async (req) => {
     );
 
     console.log(`Knowledge base loaded: ${knowledgeBaseDocs?.length || 0} documents`);
+    console.log(`User scripts loaded: ${userScriptAssets?.length || 0} assets`);
+
+    // Build user scripts section (personalized learning)
+    const userScriptsContent = buildUserScriptsSection(
+      (userScriptAssets || []).map(asset => ({
+        title: asset.title,
+        content: asset.content,
+        performance_data: asset.performance_data as UserScriptAsset['performance_data'],
+        asset_type: asset.asset_type as 'winning_script' | 'losing_script'
+      }))
+    );
 
     // Build system prompt with full context
     const systemPrompt = buildSystemPrompt(
@@ -414,7 +503,8 @@ serve(async (req) => {
       campaignData,
       totalMetrics,
       alertData,
-      knowledgeBaseContent
+      knowledgeBaseContent,
+      userScriptsContent
     );
 
     // Build user message based on type

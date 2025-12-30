@@ -1661,6 +1661,8 @@ export type Database = {
           id: string
           parent_asset_id: string | null
           performance_data: Json | null
+          source_timeline_days: number | null
+          source_variant_id: string | null
           status: string | null
           step_id: string | null
           title: string
@@ -1675,6 +1677,8 @@ export type Database = {
           id?: string
           parent_asset_id?: string | null
           performance_data?: Json | null
+          source_timeline_days?: number | null
+          source_variant_id?: string | null
           status?: string | null
           step_id?: string | null
           title: string
@@ -1689,6 +1693,8 @@ export type Database = {
           id?: string
           parent_asset_id?: string | null
           performance_data?: Json | null
+          source_timeline_days?: number | null
+          source_variant_id?: string | null
           status?: string | null
           step_id?: string | null
           title?: string
