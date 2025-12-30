@@ -9,10 +9,11 @@ import { RecommendedAction } from "@/components/growth/RecommendedAction";
 import { CampaignPerformanceHistory } from "@/components/growth/CampaignPerformanceHistory";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { InfrastructureHealthCard } from "@/components/growth/InfrastructureHealthCard";
+import { ICPDocumentCard } from "@/components/growth/ICPDocumentCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Target, Briefcase, Settings, FolderOpen } from "lucide-react";
+import { Target, Briefcase, Settings, FolderOpen, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface GrowthStep {
@@ -56,6 +57,24 @@ interface Integration {
   sync_status: string;
 }
 
+interface ICPAsset {
+  id: string;
+  content: {
+    company_name?: string;
+    company_description?: string;
+    services_offered?: string;
+    target_industries?: string;
+    icp_revenue_range?: string;
+    icp_employee_count?: string;
+    icp_location?: string;
+    icp_tech_stack?: string;
+    icp_additional_details?: string;
+    pain_points?: { problem: string; solution: string }[];
+    custom_notes?: string;
+  };
+  created_at: string;
+}
+
 export default function CommandCenter() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -69,6 +88,7 @@ export default function CommandCenter() {
   const [timelineDays, setTimelineDays] = useState(10);
   const [variantRefreshKey, setVariantRefreshKey] = useState(0);
   const [stepAlerts, setStepAlerts] = useState<number[]>([]);
+  const [icpAsset, setIcpAsset] = useState<ICPAsset | null>(null);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -116,8 +136,26 @@ export default function CommandCenter() {
       fetchIntegration(session.user.id),
       fetchAssetCount(session.user.id),
       fetchInfrastructureAlerts(session.user.id),
+      fetchICPAsset(session.user.id),
     ]);
     setLoading(false);
+  };
+
+  const fetchICPAsset = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_assets')
+      .select('id, content, created_at')
+      .eq('user_id', userId)
+      .eq('asset_type', 'icp_document')
+      .maybeSingle();
+    
+    if (!error && data) {
+      setIcpAsset({
+        id: data.id,
+        content: data.content as ICPAsset['content'],
+        created_at: data.created_at,
+      });
+    }
   };
 
   const fetchInfrastructureAlerts = async (userId: string) => {
@@ -321,11 +359,19 @@ export default function CommandCenter() {
           actionPath: '/onboarding',
         };
       case 2:
+        if (icpAsset) {
+          return {
+            title: 'Refine Your ICP Document',
+            description: 'Your ICP Document is complete. Update it as you learn more about your ideal customers.',
+            actionLabel: 'Edit Profile',
+            actionPath: '/onboarding/step/2',
+          };
+        }
         return {
-          title: 'Define Your ICP & Offer',
-          description: 'Create a detailed ideal customer profile and compelling offer.',
-          actionLabel: 'Open Script Builder',
-          actionPath: '/script-builder',
+          title: 'Complete Your ICP Document',
+          description: 'Define your ideal customer profile to personalize your outreach.',
+          actionLabel: 'Create ICP Document',
+          actionPath: '/onboarding/step/2',
         };
       case 3:
         return {
@@ -461,6 +507,31 @@ export default function CommandCenter() {
           {/* Infrastructure Health Card - Show for Step 1 */}
           {currentStepNumber === 1 && (
             <InfrastructureHealthCard />
+          )}
+
+          {/* ICP Document Card - Show for Step 2 */}
+          {currentStepNumber === 2 && icpAsset && (
+            <ICPDocumentCard
+              profileData={icpAsset.content}
+              assetId={icpAsset.id}
+              createdAt={icpAsset.created_at}
+            />
+          )}
+
+          {/* Step 2 CTA when no ICP asset exists */}
+          {currentStepNumber === 2 && !icpAsset && (
+            <Card className="border-dashed border-2">
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <FileText className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Create Your ICP Document</h3>
+                <p className="text-muted-foreground text-center mb-4 max-w-md">
+                  Define your ideal customer profile to unlock personalized lead magnets and scripts.
+                </p>
+                <Button onClick={() => navigate('/onboarding/step/2')}>
+                  Start ICP Form
+                </Button>
+              </CardContent>
+            </Card>
           )}
           
           <div className="grid md:grid-cols-2 gap-6">

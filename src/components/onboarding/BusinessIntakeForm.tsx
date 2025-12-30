@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, X, Save, Building2, Target, Users, Lightbulb, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Json } from "@/integrations/supabase/types";
 
 interface PainPoint {
   problem: string;
@@ -172,6 +173,87 @@ export function BusinessIntakeForm({ onComplete }: BusinessIntakeFormProps) {
       }
 
       if (error) throw error;
+
+      // Step 2 ID for ICP & Offer Creation
+      const STEP_2_ID = 'e8bf9783-fe72-4a1a-80c3-8245371d0b5d';
+
+      // Create/update ICP Document asset in user_assets
+      const icpAssetContent = {
+        company_name: profile.company_name,
+        company_description: profile.company_description,
+        services_offered: profile.services_offered,
+        target_industries: profile.target_industries,
+        icp_revenue_range: profile.icp_revenue_range,
+        icp_employee_count: profile.icp_employee_count,
+        icp_location: profile.icp_location,
+        icp_tech_stack: profile.icp_tech_stack,
+        icp_additional_details: profile.icp_additional_details,
+        pain_points: profile.pain_points as unknown as Json,
+        custom_notes: profile.custom_notes,
+      } as Json;
+
+      // Check if ICP asset already exists
+      const { data: existingAsset } = await supabase
+        .from('user_assets')
+        .select('id, version')
+        .eq('user_id', user.id)
+        .eq('asset_type', 'icp_document')
+        .maybeSingle();
+
+      if (existingAsset) {
+        // Update existing asset with new version
+        await supabase
+          .from('user_assets')
+          .update({
+            title: `${profile.company_name || 'My Business'} ICP Document`,
+            content: icpAssetContent,
+            status: 'published',
+            version: (existingAsset.version || 1) + 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingAsset.id);
+      } else {
+        // Create new ICP Document asset
+        await supabase
+          .from('user_assets')
+          .insert([{
+            user_id: user.id,
+            asset_type: 'icp_document',
+            title: `${profile.company_name || 'My Business'} ICP Document`,
+            content: icpAssetContent,
+            status: 'published',
+            step_id: STEP_2_ID,
+            version: 1,
+          }]);
+      }
+
+      // Auto-validate Step 2
+      const { data: existingProgress } = await supabase
+        .from('user_growth_progress')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('step_id', STEP_2_ID)
+        .maybeSingle();
+
+      if (existingProgress) {
+        await supabase
+          .from('user_growth_progress')
+          .update({
+            status: 'validated',
+            validated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingProgress.id);
+      } else {
+        await supabase
+          .from('user_growth_progress')
+          .insert({
+            user_id: user.id,
+            step_id: STEP_2_ID,
+            status: 'validated',
+            validated_at: new Date().toISOString(),
+          });
+      }
 
       toast.success("Profile saved! Generating your personalized lead magnets...");
       
