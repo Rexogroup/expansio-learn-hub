@@ -63,6 +63,26 @@ const getPerformanceBadge = (emailsPerLead: number | null) => {
   }
 };
 
+// Get recommended action based on emails per lead and email volume
+const getRecommendedAction = (emailsPerLead: number | null, emailsSent: number) => {
+  // Need minimum emails to make a recommendation
+  if (emailsSent < 700) {
+    return { action: "TESTING", color: "bg-muted", textColor: "text-muted-foreground", description: "Collect more data" };
+  }
+  
+  if (!emailsPerLead || emailsPerLead === 0) {
+    return { action: "KILL", color: "bg-destructive", textColor: "text-white", description: "No interested leads" };
+  }
+  
+  if (emailsPerLead < 500) {
+    return { action: "SCALE", color: "bg-emerald-500", textColor: "text-white", description: "Increase volume" };
+  } else if (emailsPerLead <= 700) {
+    return { action: "ITERATE", color: "bg-amber-500", textColor: "text-white", description: "Improve messaging" };
+  } else {
+    return { action: "KILL", color: "bg-destructive", textColor: "text-white", description: "Rewrite or stop" };
+  }
+};
+
 interface GroupedStep {
   step_number: number;
   variants: CampaignVariant[];
@@ -323,6 +343,7 @@ export function CampaignPerformanceHistory({
                 ? Math.round(campaign.emails_sent / campaign.interested_count)
                 : null;
               const performanceBadge = getPerformanceBadge(emailsPerLead);
+              const recommendedAction = getRecommendedAction(emailsPerLead, campaign.emails_sent);
 
               return (
                 <Collapsible
@@ -334,7 +355,7 @@ export function CampaignPerformanceHistory({
                     {/* Campaign Row */}
                     <CollapsibleTrigger className="w-full" disabled={!hasVariants}>
                       <div className={cn(
-                        "grid grid-cols-[1fr_repeat(7,_auto)_32px] gap-4 items-center px-4 py-3 text-sm",
+                        "grid grid-cols-[1fr_repeat(8,_auto)_32px] gap-4 items-center px-4 py-3 text-sm",
                         hasVariants && "hover:bg-muted/30 cursor-pointer"
                       )}>
                         <div className="text-left">
@@ -376,6 +397,19 @@ export function CampaignPerformanceHistory({
                             )}
                           </div>
                           <div className="text-xs text-muted-foreground">Emails/Lead</div>
+                        </div>
+                        {/* Recommended Action Badge */}
+                        <div className="min-w-[70px]">
+                          <span 
+                            className={cn(
+                              "text-[10px] px-2 py-1 rounded font-bold tracking-wide",
+                              recommendedAction.color, 
+                              recommendedAction.textColor
+                            )}
+                            title={recommendedAction.description}
+                          >
+                            {recommendedAction.action}
+                          </span>
                         </div>
                         <Badge variant="outline" className={cn("text-xs capitalize", statusColor)}>
                           {campaign.campaign_status}
