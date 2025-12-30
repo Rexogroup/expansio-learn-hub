@@ -11,7 +11,8 @@ import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
 import { AssetVaultScripts } from "@/components/growth/AssetVaultScripts";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link, GraduationCap } from "lucide-react";
+import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link, GraduationCap, TrendingUp, XCircle, Pause, RefreshCw } from "lucide-react";
+import { useVariantRecommendations } from "@/hooks/useVariantRecommendations";
 import { toast } from "sonner";
 
 interface GrowthStep {
@@ -99,6 +100,9 @@ export default function CommandCenter() {
   const [icpAsset, setIcpAsset] = useState<ICPAsset | null>(null);
   const [leadMagnetsCount, setLeadMagnetsCount] = useState(0);
   const [scriptsCount, setScriptsCount] = useState(0);
+
+  // Variant recommendations hook
+  const { recommendations: variantRecs, winningScripts, recentVolume } = useVariantRecommendations();
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -332,7 +336,7 @@ export default function CommandCenter() {
   const getPriorityActions = (): PriorityAction[] => {
     const actions: PriorityAction[] = [];
 
-    // Critical: Infrastructure alerts
+    // Critical: Infrastructure alerts (always first)
     if (alertCount > 0) {
       actions.push({
         id: 'infrastructure-alert',
@@ -342,6 +346,72 @@ export default function CommandCenter() {
         actionPath: '/integrations',
         priority: 'critical',
         icon: <AlertTriangle className="w-5 h-5" />,
+      });
+    }
+
+    // VARIANT-LEVEL SOP RECOMMENDATIONS
+    // KILL actions (critical priority)
+    const killVariants = variantRecs.filter(v => v.action === 'KILL');
+    if (killVariants.length > 0) {
+      const topKill = killVariants[0];
+      const winningPattern = winningScripts.length > 0 
+        ? ` Rewrite using your winning pattern.`
+        : '';
+      actions.push({
+        id: `kill-${topKill.id}`,
+        title: `KILL: Step ${topKill.stepNumber} - Variant ${topKill.variantLabel}`,
+        description: `${topKill.reason}${winningPattern}`,
+        actionLabel: 'Rewrite',
+        actionPath: '/script-builder',
+        priority: 'critical',
+        icon: <XCircle className="w-5 h-5" />,
+      });
+    }
+
+    // SCALE actions (high priority)
+    const scaleVariants = variantRecs.filter(v => v.action === 'SCALE');
+    if (scaleVariants.length > 0) {
+      const topScale = scaleVariants[0];
+      actions.push({
+        id: `scale-${topScale.id}`,
+        title: `SCALE: Step ${topScale.stepNumber} - Variant ${topScale.variantLabel}`,
+        description: `${topScale.reason}. Add more sending domains to increase volume on this winner!`,
+        actionLabel: 'Add Domains',
+        actionPath: '/integrations',
+        priority: 'high',
+        icon: <TrendingUp className="w-5 h-5" />,
+      });
+    }
+
+    // ITERATE actions (normal priority)
+    const iterateVariants = variantRecs.filter(v => v.action === 'ITERATE');
+    if (iterateVariants.length > 0) {
+      const topIterate = iterateVariants[0];
+      const winningRef = winningScripts.length > 0
+        ? ` Try elements from your winning scripts.`
+        : '';
+      actions.push({
+        id: `iterate-${topIterate.id}`,
+        title: `ITERATE: Step ${topIterate.stepNumber} - Variant ${topIterate.variantLabel}`,
+        description: `${topIterate.reason}${winningRef}`,
+        actionLabel: 'Create Variant',
+        actionPath: '/script-builder',
+        priority: 'normal',
+        icon: <RefreshCw className="w-5 h-5" />,
+      });
+    }
+
+    // Low volume detection - campaigns may be paused
+    const avgDailyVolume = recentVolume / 10; // 10-day window
+    if (integration && avgDailyVolume < 300 && currentStepNumber >= 4) {
+      actions.push({
+        id: 'low-volume',
+        title: 'Sending Volume is Low',
+        description: `Averaging only ${Math.round(avgDailyVolume)} emails/day. Resume campaigns to maintain momentum.`,
+        actionLabel: 'Check Campaigns',
+        actionPath: '/integrations',
+        priority: 'high',
+        icon: <Pause className="w-5 h-5" />,
       });
     }
 
@@ -371,9 +441,9 @@ export default function CommandCenter() {
       });
     }
 
-    // Normal: Step-based recommendations
+    // Step-based recommendations (only if no variant-specific actions)
     const step = getCurrentStep();
-    if (step) {
+    if (step && variantRecs.length === 0) {
       switch (step.step_number) {
         case 1:
           if (alertCount === 0) {
@@ -397,18 +467,6 @@ export default function CommandCenter() {
             actionPath: '/script-builder',
             priority: 'normal',
           });
-          break;
-        case 4:
-          if (campaignMetrics && campaignMetrics.interested_rate < 1.2) {
-            actions.push({
-              id: 'improve-ir',
-              title: 'Improve Your Interested Rate',
-              description: 'Your interested rate is below benchmark. Test new offer variants.',
-              actionLabel: 'Create Variant',
-              actionPath: '/script-builder',
-              priority: 'high',
-            });
-          }
           break;
         case 5:
         case 6:
