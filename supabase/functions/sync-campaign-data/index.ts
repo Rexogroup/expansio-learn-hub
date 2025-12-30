@@ -206,66 +206,69 @@ async function fetchEmailBisonSequenceSteps(
   }
 }
 
-// Fetch stats for a specific sequence step using /api/campaign-events/stats with step filter
-async function fetchEmailBisonStepStats(
+// Fetch campaign stats with step-level breakdown using POST /api/campaigns/{campaign_id}/stats
+async function fetchCampaignStatsWithStepBreakdown(
   apiKey: string,
   campaignId: string,
-  stepId: string,
   startDate: string,
   endDate: string
-): Promise<CampaignEventStats> {
-  const result: CampaignEventStats = { sent: 0, opened: 0, replied: 0, interested: 0, bounced: 0, unsubscribed: 0 };
+): Promise<Map<string, CampaignEventStats>> {
+  const stepStatsMap = new Map<string, CampaignEventStats>();
   
   try {
-    // Use the /api/campaign-events/stats endpoint with sequence_step_ids filter
-    // This endpoint aggregates stats and supports step-level filtering
-    const url = `https://send.expansio.io/api/campaign-events/stats?` +
-      `campaign_ids[0]=${campaignId}` +
-      `&sequence_step_ids[0]=${stepId}` +
-      `&start_date=${startDate}` +
-      `&end_date=${endDate}`;
-    
-    console.log(`Fetching step stats: ${url}`);
+    const url = `https://send.expansio.io/api/campaigns/${campaignId}/stats`;
+    console.log(`Fetching campaign stats with step breakdown: POST ${url}`);
     
     const response = await fetch(url, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
+      body: JSON.stringify({
+        start_date: startDate,
+        end_date: endDate
+      })
     });
-
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.log(`Step stats fetch failed for step ${stepId}: ${response.status} - ${errorText}`);
-      return result;
-    }
-
-    const data = await response.json();
-    console.log(`Step stats response for step ${stepId}: ${JSON.stringify(data)}`);
-    
-    // Parse the response - it returns arrays of [date, count] per event type
-    // Example: { data: [{ label: 'Sent', dates: [['2024-01-01', 10], ['2024-01-02', 5]] }] }
-    const eventGroups = data.data || data || [];
-    
-    for (const eventGroup of eventGroups) {
-      const dates = eventGroup.dates || [];
-      const totalForEvent = dates.reduce((sum: number, item: [string, number]) => sum + (item[1] || 0), 0);
-      
-      const label = (eventGroup.label || '').toLowerCase();
-      if (label.includes('sent')) result.sent = totalForEvent;
-      else if (label.includes('unique opens') || label === 'opened') result.opened = totalForEvent;
-      else if (label.includes('replied') || label.includes('reply') || label.includes('unique replies')) result.replied = totalForEvent;
-      else if (label.includes('interested')) result.interested = totalForEvent;
-      else if (label.includes('bounced') || label.includes('bounce')) result.bounced = totalForEvent;
-      else if (label.includes('unsubscribed') || label.includes('unsubscribe')) result.unsubscribed = totalForEvent;
+      console.error(`Campaign stats POST failed: ${response.status} - ${errorText}`);
+      return stepStatsMap;
     }
     
-    console.log(`Parsed step stats for ${stepId}: sent=${result.sent}, replied=${result.replied}, interested=${result.interested}`);
+    const responseData = await response.json();
+    console.log(`Campaign stats response for ${campaignId}: ${JSON.stringify(responseData)}`);
+    
+    // Parse sequence_step_stats array from response
+    const data = responseData.data || responseData;
+    const stepStats = data.sequence_step_stats || [];
+    
+    console.log(`Found ${stepStats.length} step stats in response`);
+    
+    for (const stat of stepStats) {
+      // Use sequence_step_id or id as the key
+      const stepId = (stat.sequence_step_id || stat.id)?.toString();
+      if (stepId) {
+        stepStatsMap.set(stepId, {
+          sent: stat.emails_sent || 0,
+          opened: stat.unique_opens || 0,
+          replied: stat.unique_replies_per_contact || stat.unique_replies || 0,
+          interested: stat.interested || 0,
+          bounced: stat.bounced || 0,
+          unsubscribed: stat.unsubscribed || 0,
+        });
+        console.log(`Step ${stepId}: sent=${stat.emails_sent}, replied=${stat.unique_replies_per_contact || stat.unique_replies}, interested=${stat.interested}`);
+      }
+    }
+    
+    console.log(`Parsed ${stepStatsMap.size} step stats from campaign ${campaignId}`);
   } catch (err) {
-    console.error(`Error fetching step stats for ${stepId}:`, err);
+    console.error(`Error fetching campaign stats with step breakdown: ${err}`);
   }
   
-  return result;
+  return stepStatsMap;
 }
 
 // Helper to extract step number from variants that belong to the same parent step
@@ -388,6 +391,7 @@ async function processEmailBisonVariants(
 ): Promise<CampaignVariantMetrics[]> {
   const variants: CampaignVariantMetrics[] = [];
   
+  // Fetch sequence step definitions (for labels/grouping)
   const sequenceSteps = await fetchEmailBisonSequenceSteps(apiKey, campaignId);
   
   if (sequenceSteps.length === 0) {
@@ -397,7 +401,15 @@ async function processEmailBisonVariants(
   
   console.log(`Processing ${sequenceSteps.length} sequence steps for campaign ${campaignId}`);
   
-  // Parse steps to identify A/B variants (multiple steps sharing the same step_number)
+  // Fetch ALL step stats in one call using the POST endpoint
+  const stepStatsMap = await fetchCampaignStatsWithStepBreakdown(
+    apiKey, 
+    campaignId, 
+    startDate, 
+    endDate
+  );
+  
+  // Parse steps to identify A/B variants
   const parsedSteps = parseSequenceSteps(sequenceSteps);
   
   console.log(`Parsed into ${parsedSteps.length} entries: ${parsedSteps.map(p => `Step ${p.stepNumber}${p.variantLabel ? ` Var ${p.variantLabel}` : ''}`).join(', ')}`);
@@ -406,19 +418,16 @@ async function processEmailBisonVariants(
     const step = parsed.originalStep;
     const stepId = step.id.toString();
     
-    // Fetch stats for this step
-    let stats: CampaignEventStats;
-    if (step.sent_count !== undefined) {
-      stats = {
-        sent: step.sent_count || 0,
-        opened: step.opened_count || 0,
-        replied: step.replied_count || 0,
-        interested: step.interested_count || 0,
-        bounced: step.bounced_count || 0,
-        unsubscribed: 0,
-      };
+    // Look up stats from the map (fetched in single API call)
+    const stats = stepStatsMap.get(stepId) || {
+      sent: 0, opened: 0, replied: 0, interested: 0, bounced: 0, unsubscribed: 0
+    };
+    
+    // Log when stats are found vs not found
+    if (stepStatsMap.has(stepId)) {
+      console.log(`Stats found for step ${stepId}: sent=${stats.sent}, replied=${stats.replied}, interested=${stats.interested}`);
     } else {
-      stats = await fetchEmailBisonStepStats(apiKey, campaignId, stepId, startDate, endDate);
+      console.log(`No stats found for step ${stepId} in stats map`);
     }
     
     // Create the label
