@@ -432,14 +432,14 @@ serve(async (req) => {
     ];
 
     // Call Lovable AI Gateway
-    const aiResponse = await fetch('https://ai-gateway.lovable.dev/chat/completions', {
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${lovableApiKey}`,
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5-mini',
+        model: 'google/gemini-2.5-flash',
         messages: messages,
         max_tokens: 1000,
         temperature: 0.7,
@@ -447,6 +447,20 @@ serve(async (req) => {
     });
 
     if (!aiResponse.ok) {
+      if (aiResponse.status === 429) {
+        console.error('AI Gateway rate limit exceeded');
+        return new Response(
+          JSON.stringify({ error: 'Rate limits exceeded, please try again later.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (aiResponse.status === 402) {
+        console.error('AI Gateway payment required');
+        return new Response(
+          JSON.stringify({ error: 'AI credits depleted. Please add credits to continue.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       const errorText = await aiResponse.text();
       console.error('AI Gateway error:', errorText);
       throw new Error(`AI Gateway error: ${aiResponse.status}`);
