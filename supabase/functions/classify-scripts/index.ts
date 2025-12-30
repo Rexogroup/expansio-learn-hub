@@ -37,6 +37,18 @@ const WINNING_EPL_THRESHOLD = 500; // emails_per_lead < 500 = efficient
 const LOSING_IR_THRESHOLD = 5; // IR% < 5% = losing
 const LOSING_EPL_THRESHOLD = 1000; // emails_per_lead > 1000 = inefficient
 
+// Smart calculation of emails_per_lead when NULL
+function calculateEPL(variant: CampaignVariant): number {
+  if (variant.emails_per_lead !== null && variant.emails_per_lead !== undefined) {
+    return variant.emails_per_lead;
+  }
+  // Calculate from interested_count if available
+  if (variant.interested_count > 0) {
+    return Math.round(variant.emails_sent / variant.interested_count);
+  }
+  return Infinity;
+}
+
 function classifyVariant(variant: CampaignVariant): ClassificationResult | null {
   // Not enough data to classify
   if (variant.emails_sent < MIN_EMAILS_FOR_CLASSIFICATION) {
@@ -44,7 +56,9 @@ function classifyVariant(variant: CampaignVariant): ClassificationResult | null 
   }
 
   const ir = variant.interested_rate ?? 0;
-  const epl = variant.emails_per_lead ?? Infinity;
+  const epl = calculateEPL(variant); // Smart EPL calculation
+
+  console.log(`Classifying ${variant.variant_label || variant.variant_id}: IR=${ir.toFixed(1)}%, EPL=${epl} (raw EPL=${variant.emails_per_lead})`);
 
   // WINNING (SCALE): IR >= 15% AND emails_per_lead < 500
   if (ir >= WINNING_IR_THRESHOLD && epl < WINNING_EPL_THRESHOLD) {
@@ -76,6 +90,47 @@ function classifyVariant(variant: CampaignVariant): ClassificationResult | null 
   };
 }
 
+// Select the best timeline variant for classification (prefer 30 days if available with sufficient data)
+function selectBestVariantForClassification(variants: CampaignVariant[]): CampaignVariant | null {
+  // Group by variant_id
+  const byVariantId = new Map<string, CampaignVariant[]>();
+  for (const v of variants) {
+    const existing = byVariantId.get(v.variant_id) || [];
+    existing.push(v);
+    byVariantId.set(v.variant_id, existing);
+  }
+
+  // For each unique variant, pick the best timeline
+  const bestVariants: CampaignVariant[] = [];
+  
+  for (const [variantId, timelineVariants] of byVariantId) {
+    // Sort by timeline_days ascending (30, 60, 120)
+    timelineVariants.sort((a, b) => (a.timeline_days || 999) - (b.timeline_days || 999));
+    
+    // Prefer 30-day data if it has enough volume
+    const thirtyDay = timelineVariants.find(v => v.timeline_days === 30 && v.emails_sent >= MIN_EMAILS_FOR_CLASSIFICATION);
+    if (thirtyDay) {
+      bestVariants.push(thirtyDay);
+      continue;
+    }
+    
+    // Fall back to 60-day
+    const sixtyDay = timelineVariants.find(v => v.timeline_days === 60 && v.emails_sent >= MIN_EMAILS_FOR_CLASSIFICATION);
+    if (sixtyDay) {
+      bestVariants.push(sixtyDay);
+      continue;
+    }
+    
+    // Last resort: any timeline with sufficient data
+    const anyValid = timelineVariants.find(v => v.emails_sent >= MIN_EMAILS_FOR_CLASSIFICATION);
+    if (anyValid) {
+      bestVariants.push(anyValid);
+    }
+  }
+
+  return bestVariants.length > 0 ? bestVariants[0] : null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -99,18 +154,20 @@ serve(async (req) => {
     console.log(`Classifying scripts for user: ${user_id}`);
 
     // Fetch all variants with 1000+ emails for this user
-    const { data: variants, error: variantsError } = await supabase
+    // Order by timeline_days to prefer shorter time windows (more recent data)
+    const { data: allVariants, error: variantsError } = await supabase
       .from('campaign_variants')
       .select('*')
       .eq('user_id', user_id)
-      .gte('emails_sent', MIN_EMAILS_FOR_CLASSIFICATION);
+      .gte('emails_sent', MIN_EMAILS_FOR_CLASSIFICATION)
+      .order('timeline_days', { ascending: true });
 
     if (variantsError) {
       console.error('Error fetching variants:', variantsError);
       throw variantsError;
     }
 
-    if (!variants || variants.length === 0) {
+    if (!allVariants || allVariants.length === 0) {
       console.log('No variants with sufficient data found');
       return new Response(
         JSON.stringify({ success: true, message: 'No variants with sufficient data', saved: 0 }),
@@ -118,7 +175,20 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${variants.length} variants with 1000+ emails`);
+    console.log(`Found ${allVariants.length} variant records with 1000+ emails`);
+
+    // Group variants by variant_id and select best timeline for each
+    const variantMap = new Map<string, CampaignVariant>();
+    for (const v of allVariants as CampaignVariant[]) {
+      const existing = variantMap.get(v.variant_id);
+      // Prefer shorter timeline (30 > 60 > 120) as it's more recent
+      if (!existing || (v.timeline_days || 999) < (existing.timeline_days || 999)) {
+        variantMap.set(v.variant_id, v);
+      }
+    }
+    
+    const variants = Array.from(variantMap.values());
+    console.log(`Selected ${variants.length} unique variants for classification (best timeline per variant)`);
 
     // Fetch existing captured assets to avoid duplicates
     const { data: existingAssets } = await supabase
@@ -173,7 +243,8 @@ serve(async (req) => {
               meetings_booked: variant.meetings_booked,
               reply_rate: variant.reply_rate,
               interested_rate: variant.interested_rate,
-              emails_per_lead: variant.emails_per_lead,
+              emails_per_lead: calculateEPL(variant), // Use calculated EPL
+              emails_per_lead_raw: variant.emails_per_lead, // Store original for reference
               classification: classification.action,
               classification_reason: classification.reason,
               captured_at: new Date().toISOString(),
