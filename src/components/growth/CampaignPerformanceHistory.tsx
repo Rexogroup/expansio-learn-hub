@@ -441,6 +441,12 @@ export function CampaignPerformanceHistory({
                                 ? (variant.unique_replies / variant.emails_sent) * 100 
                                 : 0;
                               
+                              // Calculate emails per lead and action for variant
+                              const variantEmailsPerLead = variant.interested_count > 0 
+                                ? Math.round(variant.emails_sent / variant.interested_count)
+                                : null;
+                              const variantAction = getRecommendedAction(variantEmailsPerLead, variant.emails_sent);
+                              
                               return (
                                 <div
                                   key={variant.id}
@@ -454,13 +460,24 @@ export function CampaignPerformanceHistory({
                                         : `STEP ${variant.step_number}`
                                       }
                                     </span>
-                                  {isBest && (
+                                    {isBest && (
                                       <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
                                     )}
+                                    {/* Variant Action Badge */}
+                                    <span 
+                                      className={cn(
+                                        "text-[10px] px-2 py-0.5 rounded font-bold tracking-wide ml-auto",
+                                        variantAction.color, 
+                                        variantAction.textColor
+                                      )}
+                                      title={variantAction.description}
+                                    >
+                                      {variantAction.action}
+                                    </span>
                                   </div>
                                   
                                   {/* Stats Grid */}
-                                  <div className="grid grid-cols-6 gap-4">
+                                  <div className="grid grid-cols-7 gap-4">
                                     <div>
                                       <div className="text-sm font-medium">{formatNumber(variant.emails_sent)}</div>
                                       <div className="text-xs text-muted-foreground">Sent</div>
@@ -485,6 +502,10 @@ export function CampaignPerformanceHistory({
                                         {formatRate(variant.interested_rate)}
                                       </div>
                                       <div className="text-xs text-muted-foreground">IR%</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-medium">{variantEmailsPerLead ?? '-'}</div>
+                                      <div className="text-xs text-muted-foreground">Emails/Lead</div>
                                     </div>
                                     <div>
                                       <div className="text-sm font-medium">{formatNumber(variant.meetings_booked)}</div>
