@@ -155,7 +155,6 @@ async function fetchEmailBisonCampaignEventsStats(
   
   return result;
 }
-
 // Fetch sequence steps and A/B variants for a campaign
 async function fetchEmailBisonSequenceSteps(
   apiKey: string,
@@ -190,15 +189,15 @@ async function fetchEmailBisonSequenceSteps(
       }
 
       const fallbackData = await fallbackResponse.json();
-      console.log(`Sequence steps v1.0 response for ${campaignId}: ${JSON.stringify(fallbackData).substring(0, 500)}`);
-      // Response format: { data: { sequence_id, sequence_steps: [...] } }
+      // Log full structure for debugging
+      console.log(`Sequence steps v1.0 FULL response for ${campaignId}: ${JSON.stringify(fallbackData)}`);
       const innerData = fallbackData.data || fallbackData;
       return innerData.sequence_steps || innerData || [];
     }
 
     const data = await response.json();
-    console.log(`Sequence steps v1.1 response for ${campaignId}: ${JSON.stringify(data).substring(0, 500)}`);
-    // Response format: { data: { sequence_id, sequence_steps: [...] } }
+    // Log full structure for debugging
+    console.log(`Sequence steps v1.1 FULL response for ${campaignId}: ${JSON.stringify(data)}`);
     const innerData = data.data || data;
     return innerData.sequence_steps || innerData || [];
   } catch (err) {
@@ -258,6 +257,84 @@ async function fetchEmailBisonStepStats(
   return result;
 }
 
+// Helper to extract step number from variants that belong to the same parent step
+interface ParsedStep {
+  stepNumber: number;
+  variantLabel: string | null; // null for steps without variants, "A"/"B" for variant steps
+  originalStep: SequenceStep;
+}
+
+function parseSequenceSteps(steps: SequenceStep[]): ParsedStep[] {
+  const parsed: ParsedStep[] = [];
+  
+  // Log the first step fully to understand the structure
+  if (steps.length > 0) {
+    console.log(`DEBUG: First step full structure: ${JSON.stringify(steps[0])}`);
+    console.log(`DEBUG: All step keys: ${steps.map(s => Object.keys(s)).join(' | ')}`);
+  }
+  
+  // Group steps by their actual step_number to detect A/B variants
+  // In EmailBison, multiple steps can share the same step_number if they're A/B variants
+  const stepsByNumber: Map<number, SequenceStep[]> = new Map();
+  
+  for (const step of steps) {
+    // Extract step number - could be in different fields
+    const stepNum = step.step_number || step.order || 0;
+    
+    // Log any variant-related fields we find
+    const stepAsRecord = step as unknown as Record<string, unknown>;
+    const variantFields = Object.keys(stepAsRecord).filter(k => 
+      k.toLowerCase().includes('variant') || 
+      k.toLowerCase().includes('parent') ||
+      k.toLowerCase().includes('ab') ||
+      k.toLowerCase().includes('a_b') ||
+      k.toLowerCase().includes('version')
+    );
+    if (variantFields.length > 0) {
+      console.log(`DEBUG: Step ${stepNum} has variant-related fields: ${variantFields.join(', ')} = ${variantFields.map(f => JSON.stringify(stepAsRecord[f])).join(', ')}`);
+    }
+    
+    if (!stepsByNumber.has(stepNum)) {
+      stepsByNumber.set(stepNum, []);
+    }
+    stepsByNumber.get(stepNum)!.push(step);
+  }
+  
+  console.log(`DEBUG: Step distribution: ${Array.from(stepsByNumber.entries()).map(([num, arr]) => `Step ${num}: ${arr.length} variants`).join(', ')}`);
+  
+  // Now process each group
+  for (const [stepNum, stepsInGroup] of stepsByNumber.entries()) {
+    if (stepsInGroup.length > 1) {
+      // Multiple steps share the same step_number = A/B variants
+      console.log(`DEBUG: Step ${stepNum} has ${stepsInGroup.length} A/B variants`);
+      for (let i = 0; i < stepsInGroup.length; i++) {
+        parsed.push({
+          stepNumber: stepNum,
+          variantLabel: String.fromCharCode(65 + i), // A, B, C...
+          originalStep: stepsInGroup[i],
+        });
+      }
+    } else {
+      // Single step - no variants
+      parsed.push({
+        stepNumber: stepNum,
+        variantLabel: null,
+        originalStep: stepsInGroup[0],
+      });
+    }
+  }
+  
+  // Sort by step number then by variant label
+  parsed.sort((a, b) => {
+    if (a.stepNumber !== b.stepNumber) return a.stepNumber - b.stepNumber;
+    if (!a.variantLabel) return -1;
+    if (!b.variantLabel) return 1;
+    return a.variantLabel.localeCompare(b.variantLabel);
+  });
+  
+  return parsed;
+}
+
 // Process variants for a campaign and return metrics
 async function processEmailBisonVariants(
   apiKey: string,
@@ -277,85 +354,54 @@ async function processEmailBisonVariants(
   
   console.log(`Processing ${sequenceSteps.length} sequence steps for campaign ${campaignId}`);
   
-  for (let i = 0; i < sequenceSteps.length; i++) {
-    const step = sequenceSteps[i];
-    const stepNumber = step.step_number || step.order || (i + 1);
+  // Parse steps to identify A/B variants (multiple steps sharing the same step_number)
+  const parsedSteps = parseSequenceSteps(sequenceSteps);
+  
+  console.log(`Parsed into ${parsedSteps.length} entries: ${parsedSteps.map(p => `Step ${p.stepNumber}${p.variantLabel ? ` Var ${p.variantLabel}` : ''}`).join(', ')}`);
+  
+  for (const parsed of parsedSteps) {
+    const step = parsed.originalStep;
     const stepId = step.id.toString();
     
-    // Check if this step has A/B variants
-    if (step.variants && step.variants.length > 0) {
-      // Process each variant
-      for (let v = 0; v < step.variants.length; v++) {
-        const variant = step.variants[v];
-        const variantId = variant.id.toString();
-        const variantLabel = String.fromCharCode(65 + v); // A, B, C...
-        
-        // Use variant stats if available, otherwise fetch
-        let stats: CampaignEventStats;
-        if (variant.sent_count !== undefined) {
-          stats = {
-            sent: variant.sent_count || 0,
-            opened: variant.opened_count || 0,
-            replied: variant.replied_count || 0,
-            interested: variant.interested_count || 0,
-            bounced: variant.bounced_count || 0,
-            unsubscribed: 0,
-          };
-        } else {
-          // Try to fetch stats for this specific variant
-          stats = await fetchEmailBisonStepStats(apiKey, campaignId, variantId, startDate, endDate);
-        }
-        
-        variants.push({
-          campaign_id: campaignId,
-          campaign_name: campaignName,
-          step_number: stepNumber,
-          variant_id: variantId,
-          variant_label: `Step ${stepNumber} - Variant ${variantLabel}`,
-          subject_line: variant.email_subject || variant.subject || step.email_subject || step.subject || '',
-          is_active: variant.is_active !== false,
-          emails_sent: stats.sent,
-          unique_replies: stats.replied,
-          interested_count: stats.interested,
-          meetings_booked: 0, // Will be handled separately if needed
-          reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
-          interested_rate: stats.sent > 0 ? (stats.interested / stats.sent) * 100 : 0,
-          raw_data: { step, variant, stats },
-        });
-      }
+    // Fetch stats for this step
+    let stats: CampaignEventStats;
+    if (step.sent_count !== undefined) {
+      stats = {
+        sent: step.sent_count || 0,
+        opened: step.opened_count || 0,
+        replied: step.replied_count || 0,
+        interested: step.interested_count || 0,
+        bounced: step.bounced_count || 0,
+        unsubscribed: 0,
+      };
     } else {
-      // No A/B variants - treat the step itself as a single variant
-      let stats: CampaignEventStats;
-      if (step.sent_count !== undefined) {
-        stats = {
-          sent: step.sent_count || 0,
-          opened: step.opened_count || 0,
-          replied: step.replied_count || 0,
-          interested: step.interested_count || 0,
-          bounced: step.bounced_count || 0,
-          unsubscribed: 0,
-        };
-      } else {
-        stats = await fetchEmailBisonStepStats(apiKey, campaignId, stepId, startDate, endDate);
-      }
-      
-      variants.push({
-        campaign_id: campaignId,
-        campaign_name: campaignName,
-        step_number: stepNumber,
-        variant_id: stepId,
-        variant_label: `Step ${stepNumber}`,
-        subject_line: step.email_subject || step.subject || '',
-        is_active: step.is_active !== false,
-        emails_sent: stats.sent,
-        unique_replies: stats.replied,
-        interested_count: stats.interested,
-        meetings_booked: 0,
-        reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
-        interested_rate: stats.sent > 0 ? (stats.interested / stats.sent) * 100 : 0,
-        raw_data: { step, stats },
-      });
+      stats = await fetchEmailBisonStepStats(apiKey, campaignId, stepId, startDate, endDate);
     }
+    
+    // Create the label
+    let variantLabel: string;
+    if (parsed.variantLabel) {
+      variantLabel = `Step ${parsed.stepNumber} - Variant ${parsed.variantLabel}`;
+    } else {
+      variantLabel = `Step ${parsed.stepNumber}`;
+    }
+    
+    variants.push({
+      campaign_id: campaignId,
+      campaign_name: campaignName,
+      step_number: parsed.stepNumber,
+      variant_id: stepId,
+      variant_label: variantLabel,
+      subject_line: step.email_subject || step.subject || '',
+      is_active: step.is_active !== false,
+      emails_sent: stats.sent,
+      unique_replies: stats.replied,
+      interested_count: stats.interested,
+      meetings_booked: 0,
+      reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
+      interested_rate: stats.sent > 0 ? (stats.interested / stats.sent) * 100 : 0,
+      raw_data: { step, stats, parsed_info: { stepNumber: parsed.stepNumber, variantLabel: parsed.variantLabel } },
+    });
   }
   
   console.log(`Processed ${variants.length} variants for campaign ${campaignId}`);
