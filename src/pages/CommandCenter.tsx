@@ -8,6 +8,7 @@ import { AlertsBanner } from "@/components/growth/AlertsBanner";
 import { StatusPills } from "@/components/growth/StatusPills";
 import { PriorityActionsStack } from "@/components/growth/PriorityActionsStack";
 import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
+import { AssetVaultScripts } from "@/components/growth/AssetVaultScripts";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link, GraduationCap } from "lucide-react";
@@ -486,12 +487,13 @@ export default function CommandCenter() {
           <div className="md:col-span-2">
             <PriorityActionsStack actions={priorityActions} maxVisible={3} />
           </div>
-          <div>
+          <div className="space-y-4">
             <AssetSummaryCard
               hasIcpDocument={!!icpAsset}
               leadMagnetsCount={leadMagnetsCount}
               scriptsCount={scriptsCount}
             />
+            <AssetVaultScripts />
           </div>
         </div>
 
