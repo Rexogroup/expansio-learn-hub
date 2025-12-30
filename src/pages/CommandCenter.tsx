@@ -2,18 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
-import { StepProgressBar } from "@/components/growth/StepProgressBar";
-import { KPIComparisonCard } from "@/components/growth/KPIComparisonCard";
-import { ValidationBadge } from "@/components/growth/ValidationBadge";
-import { RecommendedAction } from "@/components/growth/RecommendedAction";
 import { CampaignPerformanceHistory } from "@/components/growth/CampaignPerformanceHistory";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
-import { InfrastructureHealthCard } from "@/components/growth/InfrastructureHealthCard";
-import { ICPDocumentCard } from "@/components/growth/ICPDocumentCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertsBanner } from "@/components/growth/AlertsBanner";
+import { StatusPills } from "@/components/growth/StatusPills";
+import { PriorityActionsStack } from "@/components/growth/PriorityActionsStack";
+import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
+import { MinimalProgressIndicator } from "@/components/growth/MinimalProgressIndicator";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Target, Briefcase, Settings, FolderOpen, FileText } from "lucide-react";
+import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link } from "lucide-react";
 import { toast } from "sonner";
 
 interface GrowthStep {
@@ -75,6 +73,17 @@ interface ICPAsset {
   created_at: string;
 }
 
+interface PriorityAction {
+  id: string;
+  title: string;
+  description: string;
+  actionLabel: string;
+  actionPath?: string;
+  onAction?: () => void;
+  priority: 'critical' | 'high' | 'normal';
+  icon?: React.ReactNode;
+}
+
 export default function CommandCenter() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -84,11 +93,12 @@ export default function CommandCenter() {
   const [campaignMetrics, setCampaignMetrics] = useState<CampaignMetrics | null>(null);
   const [integration, setIntegration] = useState<Integration | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [assetCount, setAssetCount] = useState(0);
   const [timelineDays, setTimelineDays] = useState(10);
   const [variantRefreshKey, setVariantRefreshKey] = useState(0);
-  const [stepAlerts, setStepAlerts] = useState<number[]>([]);
+  const [alertCount, setAlertCount] = useState(0);
   const [icpAsset, setIcpAsset] = useState<ICPAsset | null>(null);
+  const [leadMagnetsCount, setLeadMagnetsCount] = useState(0);
+  const [scriptsCount, setScriptsCount] = useState(0);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -99,7 +109,6 @@ export default function CommandCenter() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session || loading) return;
 
-      // Check if we have cached data for this timeline
       const { data: cachedData } = await supabase
         .from('synced_campaigns')
         .select('id')
@@ -108,13 +117,10 @@ export default function CommandCenter() {
         .limit(1);
 
       if (cachedData && cachedData.length > 0) {
-        // Use cached data
         await fetchCampaignMetrics(session.user.id, timelineDays);
       } else if (integration) {
-        // No cached data - auto-sync for this timeline
         await handleSync();
       } else {
-        // No integration, try fetching fallback data
         await fetchCampaignMetrics(session.user.id, timelineDays);
       }
     };
@@ -134,9 +140,9 @@ export default function CommandCenter() {
       fetchUserProgress(session.user.id),
       fetchCampaignMetrics(session.user.id, timelineDays),
       fetchIntegration(session.user.id),
-      fetchAssetCount(session.user.id),
-      fetchInfrastructureAlerts(session.user.id),
+      fetchAlertCount(session.user.id),
       fetchICPAsset(session.user.id),
+      fetchAssetCounts(session.user.id),
     ]);
     setLoading(false);
   };
@@ -158,26 +164,35 @@ export default function CommandCenter() {
     }
   };
 
-  const fetchInfrastructureAlerts = async (userId: string) => {
-    // Check for active infrastructure alerts
+  const fetchAlertCount = async (userId: string) => {
     const { count } = await supabase
       .from('email_account_alerts')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('status', 'active');
     
-    // Also check for at-risk accounts
     const { count: atRiskCount } = await supabase
       .from('email_account_health')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('is_at_risk', true);
     
-    if ((count && count > 0) || (atRiskCount && atRiskCount > 0)) {
-      setStepAlerts([1]); // Step 1 has infrastructure issues
-    } else {
-      setStepAlerts([]);
-    }
+    setAlertCount((count || 0) + (atRiskCount || 0));
+  };
+
+  const fetchAssetCounts = async (userId: string) => {
+    const { count: leadMagnets } = await supabase
+      .from('saved_lead_magnets')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    const { count: scripts } = await supabase
+      .from('generated_scripts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    setLeadMagnetsCount(leadMagnets || 0);
+    setScriptsCount(scripts || 0);
   };
 
   const fetchGrowthSteps = async () => {
@@ -203,7 +218,6 @@ export default function CommandCenter() {
         status: p.status as ProgressStatus,
       })));
       
-      // Determine current step (first non-validated step)
       const progressMap = new Map(data.map(p => [p.step_id, p]));
       const stepsData = await supabase.from('growth_steps').select('*').order('step_number');
       
@@ -220,7 +234,6 @@ export default function CommandCenter() {
   };
 
   const fetchCampaignMetrics = async (userId: string, days: number) => {
-    // First try to fetch data for the specific timeline period
     let query = supabase
       .from('synced_campaigns')
       .select('emails_sent, unique_opens, unique_replies, interested_count, meetings_booked, timeline_days')
@@ -229,7 +242,6 @@ export default function CommandCenter() {
 
     let { data, error } = await query;
 
-    // If no data for this period, fall back to all-time data (timeline_days = null)
     if ((!data || data.length === 0) && !error) {
       const fallbackQuery = await supabase
         .from('synced_campaigns')
@@ -242,7 +254,6 @@ export default function CommandCenter() {
     }
 
     if (!error && data && data.length > 0) {
-      // Aggregate metrics from all campaigns
       const totals = data.reduce((acc, c) => ({
         emails_sent: acc.emails_sent + (c.emails_sent || 0),
         opens: acc.opens + (c.unique_opens || 0),
@@ -279,15 +290,6 @@ export default function CommandCenter() {
     }
   };
 
-  const fetchAssetCount = async (userId: string) => {
-    const { count } = await supabase
-      .from('user_assets')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    
-    setAssetCount(count || 0);
-  };
-
   const handleSync = async () => {
     setIsSyncing(true);
     try {
@@ -316,12 +318,6 @@ export default function CommandCenter() {
   };
 
   const getCurrentStep = () => steps.find(s => s.step_number === currentStepNumber);
-  
-  const getCurrentProgress = () => {
-    const step = getCurrentStep();
-    if (!step) return null;
-    return userProgress.find(p => p.step_id === step.id);
-  };
 
   const getStepsWithProgress = () => {
     return steps.map(step => {
@@ -333,103 +329,115 @@ export default function CommandCenter() {
     });
   };
 
-  const getRecommendedAction = () => {
-    const step = getCurrentStep();
-    const progress = getCurrentProgress();
-    
-    if (!step) return null;
+  const getPriorityActions = (): PriorityAction[] => {
+    const actions: PriorityAction[] = [];
 
-    // Check if integration is connected for step 4+
-    if (currentStepNumber >= 4 && !integration) {
-      return {
+    // Critical: Infrastructure alerts
+    if (alertCount > 0) {
+      actions.push({
+        id: 'infrastructure-alert',
+        title: 'Infrastructure Issues Detected',
+        description: `${alertCount} email account${alertCount > 1 ? 's' : ''} require${alertCount === 1 ? 's' : ''} attention. High bounce rates or low health scores can damage your sender reputation.`,
+        actionLabel: 'View Issues',
+        actionPath: '/integrations',
+        priority: 'critical',
+        icon: <AlertTriangle className="w-5 h-5" />,
+      });
+    }
+
+    // High: No integration connected
+    if (!integration && currentStepNumber >= 4) {
+      actions.push({
+        id: 'connect-integration',
         title: 'Connect Your Outbound Platform',
         description: 'Link your email sending platform to sync campaign data and track your performance.',
-        actionLabel: 'Connect Integration',
+        actionLabel: 'Connect',
         actionPath: '/integrations',
-      };
+        priority: 'high',
+        icon: <Link className="w-5 h-5" />,
+      });
     }
 
-    // Step-specific recommendations
-    switch (step.step_number) {
-      case 1:
-        return {
-          title: 'Complete Infrastructure Setup',
-          description: 'Verify your DNS records, warm-up status, and sending reputation.',
-          actionLabel: 'Start Checklist',
-          actionPath: '/onboarding',
-        };
-      case 2:
-        if (icpAsset) {
-          return {
-            title: 'Refine Your ICP Document',
-            description: 'Your ICP Document is complete. Update it as you learn more about your ideal customers.',
-            actionLabel: 'Edit Profile',
-            actionPath: '/onboarding/step/2',
-          };
-        }
-        return {
-          title: 'Complete Your ICP Document',
-          description: 'Define your ideal customer profile to personalize your outreach.',
-          actionLabel: 'Create ICP Document',
-          actionPath: '/onboarding/step/2',
-        };
-      case 3:
-        return {
-          title: 'Create Lead Magnets',
-          description: 'Build at least 3 lead magnet variants to test different angles.',
-          actionLabel: 'Create Lead Magnet',
-          actionPath: '/script-builder',
-        };
-      case 4:
-        if (campaignMetrics && campaignMetrics.interested_rate < 1.2) {
-          return {
-            title: 'Improve Your Interested Rate',
-            description: 'Your interested rate is below benchmark. Test new offer variants to improve resonance.',
-            actionLabel: 'Create New Offer Variant',
-            actionPath: '/script-builder',
-          };
-        }
-        return {
-          title: 'Analyze Campaign Performance',
-          description: 'Review your metrics and identify areas for improvement.',
-          actionLabel: 'View Campaigns',
-          actionPath: '/integrations',
-        };
-      case 5:
-        return {
-          title: 'Optimize Appointment Setting',
-          description: 'Focus on quick follow-up and value-driven booking scripts.',
-          actionLabel: 'Review Sales Scripts',
-          actionPath: '/sales-vault',
-        };
-      case 6:
-        return {
-          title: 'Scale Your Outreach',
-          description: 'Increase volume while maintaining your validated metrics.',
-          actionLabel: 'View Scaling Playbook',
-          actionPath: '/courses',
-        };
-      case 7:
-        return {
-          title: 'Optimize Close Rates',
-          description: 'Analyze objections and improve your sales process.',
-          actionLabel: 'Review Sales Calls',
-          actionPath: '/sales-vault',
-        };
-      default:
-        return null;
+    // High: No ICP document
+    if (!icpAsset) {
+      actions.push({
+        id: 'create-icp',
+        title: 'Complete Your ICP Document',
+        description: 'Define your ideal customer profile to personalize your outreach and unlock lead magnets.',
+        actionLabel: 'Create ICP',
+        actionPath: '/onboarding/step/2',
+        priority: 'high',
+        icon: <FileText className="w-5 h-5" />,
+      });
     }
+
+    // Normal: Step-based recommendations
+    const step = getCurrentStep();
+    if (step) {
+      switch (step.step_number) {
+        case 1:
+          if (alertCount === 0) {
+            actions.push({
+              id: 'infrastructure-check',
+              title: 'Verify Infrastructure Setup',
+              description: 'Confirm DNS records, warm-up status, and sending reputation are properly configured.',
+              actionLabel: 'Start Checklist',
+              actionPath: '/onboarding',
+              priority: 'normal',
+              icon: <Zap className="w-5 h-5" />,
+            });
+          }
+          break;
+        case 3:
+          actions.push({
+            id: 'create-lead-magnets',
+            title: 'Create Lead Magnets',
+            description: 'Build at least 3 lead magnet variants to test different angles.',
+            actionLabel: 'Create',
+            actionPath: '/script-builder',
+            priority: 'normal',
+          });
+          break;
+        case 4:
+          if (campaignMetrics && campaignMetrics.interested_rate < 1.2) {
+            actions.push({
+              id: 'improve-ir',
+              title: 'Improve Your Interested Rate',
+              description: 'Your interested rate is below benchmark. Test new offer variants.',
+              actionLabel: 'Create Variant',
+              actionPath: '/script-builder',
+              priority: 'high',
+            });
+          }
+          break;
+        case 5:
+        case 6:
+        case 7:
+          actions.push({
+            id: 'review-sales',
+            title: 'Review Sales Performance',
+            description: 'Analyze objections and improve your sales process.',
+            actionLabel: 'Sales Vault',
+            actionPath: '/sales-vault',
+            priority: 'normal',
+          });
+          break;
+      }
+    }
+
+    return actions;
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <main className="container mx-auto px-4 py-8 space-y-8">
+        <main className="container mx-auto px-4 py-8 space-y-6">
           <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-24 w-full" />
-          <div className="grid md:grid-cols-2 gap-6">
-            <Skeleton className="h-48" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-[400px] w-full" />
+          <div className="grid md:grid-cols-3 gap-6">
+            <Skeleton className="h-48 md:col-span-2" />
             <Skeleton className="h-48" />
           </div>
         </main>
@@ -438,134 +446,55 @@ export default function CommandCenter() {
   }
 
   const currentStep = getCurrentStep();
-  const currentProgress = getCurrentProgress();
-  const recommendedAction = getRecommendedAction();
+  const stepsWithProgress = getStepsWithProgress();
+  const priorityActions = getPriorityActions();
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <main className="container mx-auto px-4 py-8 space-y-6">
+        {/* Header with Status Pills */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Command Center</h1>
             <p className="text-muted-foreground mt-1">
-              Track your growth journey and next actions
+              Campaign performance and priority actions
             </p>
           </div>
-          <ValidationBadge status={currentProgress?.status || 'not_started'} />
+          <StatusPills
+            infrastructureHealthy={alertCount === 0}
+            alertCount={alertCount}
+            emailsSent={campaignMetrics?.total_emails_sent || 0}
+            meetingsBooked={campaignMetrics?.total_meetings || 0}
+          />
         </div>
 
-        {/* Step Progress Bar */}
-        <Card>
-          <CardContent className="py-6">
-            <StepProgressBar
-              steps={getStepsWithProgress()}
-              currentStep={currentStepNumber}
-              onStepClick={(stepNum) => setCurrentStepNumber(stepNum)}
-              alertSteps={stepAlerts}
+        {/* Alerts Banner */}
+        <AlertsBanner />
+
+        {/* Campaign Performance - Always Visible */}
+        <CampaignPerformanceHistory
+          onSync={handleSync}
+          isSyncing={isSyncing}
+          benchmark={15}
+          timelineDays={timelineDays}
+          onTimelineChange={setTimelineDays}
+          refreshKey={variantRefreshKey}
+        />
+
+        {/* Priority Actions + Asset Summary Grid */}
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <PriorityActionsStack actions={priorityActions} maxVisible={3} />
+          </div>
+          <div>
+            <AssetSummaryCard
+              hasIcpDocument={!!icpAsset}
+              leadMagnetsCount={leadMagnetsCount}
+              scriptsCount={scriptsCount}
             />
-          </CardContent>
-        </Card>
-
-        {/* Current Step Info */}
-        {currentStep && (
-          <Card className="border-primary/20">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Target className="w-6 h-6 text-primary" />
-                <div>
-                  <CardTitle>{currentStep.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {currentStep.description}
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                💡 {currentStep.help_content}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Campaign Performance - Only show for steps 4+ (Testing, Validation, Scaling) */}
-        {currentStepNumber >= 4 && (
-          <CampaignPerformanceHistory
-            onSync={handleSync}
-            isSyncing={isSyncing}
-            benchmark={15}
-            timelineDays={timelineDays}
-            onTimelineChange={setTimelineDays}
-            refreshKey={variantRefreshKey}
-          />
-        )}
-
-        {/* Main Content Grid - KPIs and Actions */}
-        <div className="space-y-6">
-          {/* Infrastructure Health Card - Show for Step 1 */}
-          {currentStepNumber === 1 && (
-            <InfrastructureHealthCard />
-          )}
-
-          {/* ICP Document Card - Show for Step 2 */}
-          {currentStepNumber === 2 && icpAsset && (
-            <ICPDocumentCard
-              profileData={icpAsset.content}
-              assetId={icpAsset.id}
-              createdAt={icpAsset.created_at}
-            />
-          )}
-
-          {/* Step 2 CTA when no ICP asset exists */}
-          {currentStepNumber === 2 && !icpAsset && (
-            <Card className="border-dashed border-2">
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Create Your ICP Document</h3>
-                <p className="text-muted-foreground text-center mb-4 max-w-md">
-                  Define your ideal customer profile to unlock personalized lead magnets and scripts.
-                </p>
-                <Button onClick={() => navigate('/onboarding/step/2')}>
-                  Start ICP Form
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* KPI Comparison - Hide for Step 1 since InfrastructureHealthCard already shows health */}
-            {currentStep && currentStep.benchmark_kpi_name && currentStepNumber !== 1 && (
-              <KPIComparisonCard
-                title={currentStep.benchmark_kpi_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                currentValue={
-                  currentStep.benchmark_kpi_name === 'interested_rate' 
-                    ? (campaignMetrics?.interested_rate || 0)
-                    : currentStep.benchmark_kpi_name === 'reply_rate'
-                      ? (campaignMetrics?.reply_rate || 0)
-                      : (currentProgress?.current_kpi_value || 0)
-                }
-                benchmarkValue={Number(currentStep.benchmark_kpi_value)}
-                unit={currentStep.benchmark_kpi_unit}
-                description={`Target: ${currentStep.benchmark_kpi_value}${currentStep.benchmark_kpi_unit === 'percent' ? '%' : ''}`}
-              />
-            )}
-
-            {/* Recommended Action */}
-            {recommendedAction && (
-              <RecommendedAction
-                title={recommendedAction.title}
-                description={recommendedAction.description}
-                actionLabel={recommendedAction.actionLabel}
-                actionPath={recommendedAction.actionPath}
-              />
-            )}
           </div>
         </div>
-
-        {/* Floating Growth Copilot */}
-        <GrowthCopilotSheet />
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -584,9 +513,9 @@ export default function CommandCenter() {
           >
             <FolderOpen className="w-5 h-5" />
             <span className="text-sm">Asset Vault</span>
-            {assetCount > 0 && (
+            {(leadMagnetsCount + scriptsCount) > 0 && (
               <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {assetCount}
+                {leadMagnetsCount + scriptsCount}
               </span>
             )}
           </Button>
@@ -607,6 +536,19 @@ export default function CommandCenter() {
             <span className="text-sm">Sales Vault</span>
           </Button>
         </div>
+
+        {/* Minimal Progress Indicator */}
+        <MinimalProgressIndicator
+          currentStep={currentStepNumber}
+          totalSteps={steps.length || 7}
+          currentStepName={currentStep?.name || 'Unknown'}
+          steps={stepsWithProgress}
+          alertSteps={alertCount > 0 ? [1] : []}
+          onStepClick={(stepNum) => setCurrentStepNumber(stepNum)}
+        />
+
+        {/* Floating Growth Copilot */}
+        <GrowthCopilotSheet />
       </main>
     </div>
   );
