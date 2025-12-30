@@ -11,7 +11,7 @@ import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
 import { AssetVaultScripts } from "@/components/growth/AssetVaultScripts";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link, GraduationCap, TrendingUp, XCircle, Pause, RefreshCw } from "lucide-react";
+import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link, GraduationCap, TrendingUp, XCircle, Pause, RefreshCw, Clock } from "lucide-react";
 import { useVariantRecommendations } from "@/hooks/useVariantRecommendations";
 import { toast } from "sonner";
 
@@ -397,6 +397,22 @@ export default function CommandCenter() {
         icon: <RefreshCw className="w-5 h-5" />,
       });
     });
+
+    // Interested → Meeting Rate tracking (SOP target: 20-30%)
+    if (campaignMetrics && campaignMetrics.total_interested > 0) {
+      const interestedToMeetingRate = (campaignMetrics.total_meetings / campaignMetrics.total_interested) * 100;
+      if (interestedToMeetingRate < 20) {
+        actions.push({
+          id: 'low-meeting-rate',
+          title: 'Low Interested → Meeting Conversion',
+          description: `Only ${interestedToMeetingRate.toFixed(1)}% of interested leads are booking meetings (target: 20-30%). Speed up follow-up cadence and personalize booking links.`,
+          actionLabel: 'Improve Follow-Up',
+          actionPath: '/script-builder',
+          priority: 'high',
+          icon: <Clock className="w-5 h-5" />,
+        });
+      }
+    }
 
     // Low volume detection - campaigns may be paused
     const avgDailyVolume = recentVolume / 10; // 10-day window
