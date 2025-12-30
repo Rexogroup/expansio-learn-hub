@@ -1,9 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ArrowRight, Zap, TrendingUp, XCircle, RefreshCw } from "lucide-react";
-
+import { AlertTriangle, ArrowRight, Zap, TrendingUp, XCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 interface PriorityAction {
   id: string;
   title: string;
@@ -22,7 +22,8 @@ interface PriorityActionsStackProps {
 
 export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityActionsStackProps) {
   const navigate = useNavigate();
-  const visibleActions = actions.slice(0, maxVisible);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const displayedActions = isExpanded ? actions : actions.slice(0, maxVisible);
 
   if (actions.length === 0) return null;
 
@@ -100,7 +101,7 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
       </h3>
       
       <div className="space-y-2">
-        {visibleActions.map((action) => (
+        {displayedActions.map((action) => (
           <Card 
             key={action.id} 
             className={`transition-all hover:shadow-md ${getPriorityStyles(action.priority, action.id)}`}
@@ -142,9 +143,24 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
       </div>
 
       {actions.length > maxVisible && (
-        <p className="text-xs text-muted-foreground text-center">
-          +{actions.length - maxVisible} more actions
-        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full text-muted-foreground hover:text-foreground"
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp className="w-4 h-4 mr-1" />
+              Show less
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-4 h-4 mr-1" />
+              +{actions.length - maxVisible} more actions
+            </>
+          )}
+        </Button>
       )}
     </div>
   );
