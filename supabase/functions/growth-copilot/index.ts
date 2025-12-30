@@ -133,7 +133,7 @@ function buildUserScriptsSection(assets: UserScriptAsset[]): string {
     section += 'Use these as templates for new campaigns. They have proven to work for YOUR audience.\n\n';
     for (const w of winners) {
       const perf = w.performance_data;
-      let contentData: { subject_line?: string } = {};
+      let contentData: { subject_line?: string; email_body?: string } = {};
       try {
         contentData = typeof w.content === 'string' ? JSON.parse(w.content) : w.content;
       } catch {
@@ -144,6 +144,9 @@ function buildUserScriptsSection(assets: UserScriptAsset[]): string {
       if (contentData.subject_line) {
         section += `  - Subject: "${contentData.subject_line}"\n`;
       }
+      if (contentData.email_body) {
+        section += `  - Offer/Body: "${contentData.email_body.substring(0, 300)}${contentData.email_body.length > 300 ? '...' : ''}"\n`;
+      }
       section += `  - Why it works: ${perf.classification_reason}\n\n`;
     }
   }
@@ -153,7 +156,7 @@ function buildUserScriptsSection(assets: UserScriptAsset[]): string {
     section += 'Learn from these failures. Do NOT replicate these approaches.\n\n';
     for (const l of losers) {
       const perf = l.performance_data;
-      let contentData: { subject_line?: string } = {};
+      let contentData: { subject_line?: string; email_body?: string } = {};
       try {
         contentData = typeof l.content === 'string' ? JSON.parse(l.content) : l.content;
       } catch {
@@ -163,6 +166,9 @@ function buildUserScriptsSection(assets: UserScriptAsset[]): string {
       section += `  - IR: ${perf.interested_rate?.toFixed(1) || 'N/A'}% | Emails/Lead: ${perf.emails_per_lead || 'N/A'} | Sent: ${perf.emails_sent?.toLocaleString() || 0}\n`;
       if (contentData.subject_line) {
         section += `  - Subject: "${contentData.subject_line}"\n`;
+      }
+      if (contentData.email_body) {
+        section += `  - Offer/Body: "${contentData.email_body.substring(0, 300)}${contentData.email_body.length > 300 ? '...' : ''}"\n`;
       }
       section += `  - Why it failed: ${perf.classification_reason}\n\n`;
     }
