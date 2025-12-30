@@ -14,6 +14,7 @@ import { ToolCategoryManager } from "@/components/admin/ToolCategoryManager";
 import { ToolManager } from "@/components/admin/ToolManager";
 import KnowledgeBaseManager from "@/components/admin/KnowledgeBaseManager";
 import { ServiceCategoryManager } from "@/components/admin/ServiceCategoryManager";
+import { BusinessProfileManager } from "@/components/admin/BusinessProfileManager";
 import { toast } from "sonner";
 
 export default function Admin() {
@@ -85,7 +86,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="courses" className="w-full">
-          <TabsList className="grid w-full max-w-7xl grid-cols-11">
+          <TabsList className="grid w-full max-w-7xl grid-cols-12">
             <TabsTrigger value="courses">Courses</TabsTrigger>
             <TabsTrigger value="sections">Sections</TabsTrigger>
             <TabsTrigger value="lessons">Lessons</TabsTrigger>
@@ -93,6 +94,7 @@ export default function Admin() {
             <TabsTrigger value="sales-calls">Sales Calls</TabsTrigger>
             <TabsTrigger value="invites">Invites</TabsTrigger>
             <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+            <TabsTrigger value="business-profiles">ICP Profiles</TabsTrigger>
             <TabsTrigger value="tool-categories">Tool Categories</TabsTrigger>
             <TabsTrigger value="tools">Tools</TabsTrigger>
             <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
@@ -118,6 +120,9 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="onboarding" className="mt-6">
             <OnboardingManager />
+          </TabsContent>
+          <TabsContent value="business-profiles" className="mt-6">
+            <BusinessProfileManager />
           </TabsContent>
           <TabsContent value="tool-categories" className="mt-6">
             <ToolCategoryManager />
