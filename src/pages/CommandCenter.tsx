@@ -11,7 +11,7 @@ import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
 import { MinimalProgressIndicator } from "@/components/growth/MinimalProgressIndicator";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link } from "lucide-react";
+import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
 interface GrowthStep {
@@ -497,7 +497,7 @@ export default function CommandCenter() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2"
@@ -518,6 +518,14 @@ export default function CommandCenter() {
                 {leadMagnetsCount + scriptsCount}
               </span>
             )}
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center gap-2"
+            onClick={() => navigate('/courses')}
+          >
+            <GraduationCap className="w-5 h-5" />
+            <span className="text-sm">Courses</span>
           </Button>
           <Button
             variant="outline"
