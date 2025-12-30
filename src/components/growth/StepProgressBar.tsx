@@ -1,4 +1,4 @@
-import { Check, Circle, AlertCircle, Loader2 } from "lucide-react";
+import { Check, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Step {
@@ -31,16 +31,6 @@ export function StepProgressBar({ steps, currentStep, onStepClick, alertSteps = 
 
   const getStepStyles = (step: Step) => {
     const isActive = step.step_number === currentStep;
-    const hasAlert = alertSteps.includes(step.step_number) && step.status !== 'validated';
-    
-    // Alert state takes visual priority for non-validated steps
-    if (hasAlert) {
-      return cn(
-        "bg-amber-500/10 text-amber-600 border-amber-500",
-        "ring-2 ring-amber-400/50 ring-offset-1 ring-offset-background",
-        isActive && "ring-amber-500/70"
-      );
-    }
     
     switch (step.status) {
       case 'validated':
@@ -80,30 +70,39 @@ export function StepProgressBar({ steps, currentStep, onStepClick, alertSteps = 
     <div className="w-full">
       {/* Step indicators */}
       <div className="flex items-center justify-between">
-        {steps.map((step, index) => (
-          <div key={step.id} className="flex items-center flex-1">
-            {/* Step circle */}
-            <button
-              onClick={() => onStepClick?.(step.step_number)}
-              className={cn(
-                "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300",
-                "hover:scale-110 cursor-pointer",
-                getStepStyles(step)
+        {steps.map((step, index) => {
+          const hasAlert = alertSteps.includes(step.step_number) && step.status !== 'validated';
+          return (
+            <div key={step.id} className="flex items-center flex-1">
+              {/* Step circle with optional alert dot */}
+              <div className="relative">
+                <button
+                  onClick={() => onStepClick?.(step.step_number)}
+                  className={cn(
+                    "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+                    "hover:scale-110 cursor-pointer",
+                    getStepStyles(step)
+                  )}
+                  title={step.name}
+                >
+                  {getStepIcon(step)}
+                </button>
+                {/* Amber dot indicator for alerts */}
+                {hasAlert && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-background" />
+                )}
+              </div>
+              
+              {/* Connecting line */}
+              {index < steps.length - 1 && (
+                <div className={cn(
+                  "flex-1 h-1 mx-2 rounded-full transition-colors duration-300",
+                  getLineStyles(index)
+                )} />
               )}
-              title={step.name}
-            >
-              {getStepIcon(step)}
-            </button>
-            
-            {/* Connecting line */}
-            {index < steps.length - 1 && (
-              <div className={cn(
-                "flex-1 h-1 mx-2 rounded-full transition-colors duration-300",
-                getLineStyles(index)
-              )} />
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
       
       {/* Step labels (only show current) */}
