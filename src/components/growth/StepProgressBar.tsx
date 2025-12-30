@@ -36,9 +36,9 @@ export function StepProgressBar({ steps, currentStep, onStepClick, alertSteps = 
     // Alert state takes visual priority for non-validated steps
     if (hasAlert) {
       return cn(
-        "bg-amber-500/20 text-amber-600 border-amber-500",
-        "ring-2 ring-amber-500 ring-offset-2 ring-offset-background animate-pulse",
-        isActive && "ring-4"
+        "bg-amber-500/10 text-amber-600 border-amber-500",
+        "ring-2 ring-amber-400/50 ring-offset-1 ring-offset-background",
+        isActive && "ring-amber-500/70"
       );
     }
     
