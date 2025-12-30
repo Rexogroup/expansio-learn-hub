@@ -34,6 +34,15 @@ interface UserProgress {
   attempts: number;
 }
 
+interface InfrastructureAlert {
+  email_address: string;
+  alert_type: string;
+  severity: string;
+  current_value: number;
+  threshold_value: number;
+  recommended_action: string;
+}
+
 interface RequestBody {
   type: 'diagnose' | 'recommend' | 'chat';
   message?: string;
@@ -49,7 +58,8 @@ function buildSystemPrompt(
   currentStep: GrowthStep | null,
   userProgress: UserProgress | null,
   campaigns: CampaignData[],
-  totalMetrics: { emails_sent: number; replies: number; interested: number; reply_rate: number; interested_rate: number }
+  totalMetrics: { emails_sent: number; replies: number; interested: number; reply_rate: number; interested_rate: number },
+  infrastructureAlerts: InfrastructureAlert[]
 ): string {
   const topCampaigns = [...campaigns]
     .filter(c => c.emails_sent > 100)
@@ -60,6 +70,27 @@ function buildSystemPrompt(
     .filter(c => c.emails_sent > 1000 && c.interested_rate < 1.0)
     .sort((a, b) => a.interested_rate - b.interested_rate)
     .slice(0, 3);
+
+  // Build infrastructure alerts section
+  const criticalAlerts = infrastructureAlerts.filter(a => a.severity === 'critical');
+  const warningAlerts = infrastructureAlerts.filter(a => a.severity === 'warning');
+
+  let infrastructureSection = '';
+  if (infrastructureAlerts.length > 0) {
+    infrastructureSection = `
+### ⚠️ CURRENT INFRASTRUCTURE ALERTS (PRIORITY)
+${criticalAlerts.length > 0 ? `
+**CRITICAL ALERTS (${criticalAlerts.length}):**
+${criticalAlerts.map(a => `- ${a.email_address}: ${a.alert_type === 'high_bounce_rate' ? `Bounce Rate ${a.current_value.toFixed(2)}%` : `Health Score ${a.current_value.toFixed(0)}%`} (threshold: ${a.threshold_value}${a.alert_type === 'high_bounce_rate' ? '%' : ''})`).join('\n')}
+` : ''}
+${warningAlerts.length > 0 ? `
+**WARNING ALERTS (${warningAlerts.length}):**
+${warningAlerts.map(a => `- ${a.email_address}: ${a.alert_type === 'high_bounce_rate' ? `Bounce Rate ${a.current_value.toFixed(2)}%` : `Health Score ${a.current_value.toFixed(0)}%`} (threshold: ${a.threshold_value}${a.alert_type === 'high_bounce_rate' ? '%' : ''})`).join('\n')}
+` : ''}
+
+**IMPORTANT**: When the user asks about performance or what to do next, ALWAYS mention these infrastructure alerts FIRST. Infrastructure health impacts all campaign performance and must be addressed before other optimizations.
+`;
+  }
 
   return `You are the Growth OS Copilot, an expert AI advisor for B2B cold outbound agencies. You help users optimize their outbound campaigns and progress through the 7-step growth framework.
 
@@ -87,6 +118,42 @@ ${topCampaigns.length > 0 ? topCampaigns.map(c => `- ${c.campaign_name}: ${c.int
 
 ### Underperforming Campaigns (Consider Pausing)
 ${lowCampaigns.length > 0 ? lowCampaigns.map(c => `- ${c.campaign_name}: ${c.interested_rate.toFixed(2)}% IR (${c.emails_sent.toLocaleString()} sent) - Below benchmark`).join('\n') : 'No underperformers identified'}
+${infrastructureSection}
+
+## EMAIL INFRASTRUCTURE HEALTH RULES
+
+### Bounce Rate Diagnostics
+- < 1%: Excellent deliverability - safe to scale sending volume
+- 1% - 2%: Warning zone - monitor closely, consider reducing volume
+- > 2%: CRITICAL - pause account immediately for 14 days minimum
+
+### Health Score Diagnostics
+- 90% - 100%: Healthy - can send at full capacity
+- 70% - 90%: Needs attention - reduce sending volume by 50%
+- < 70%: Critical - pause from campaigns, warmup only mode
+
+### Recovery Protocol for At-Risk Email Accounts
+1. **Immediate Action**: Remove the account from all active campaigns immediately
+2. **Enable Warmup**: Keep warmup enabled (or re-enable if disabled) to maintain sender reputation
+3. **Wait Period**: Wait 14 days minimum without any campaign sending from this account
+4. **Monitor Daily**: Check health score and bounce rate daily until both return to healthy levels
+5. **Gradual Resume**: When health returns to 100%, resume campaigns at 25% of normal volume
+6. **Scale Carefully**: Increase volume by 20-30% per week only if metrics stay healthy
+
+### Common Causes of High Bounce Rates
+- Poor quality lead lists with invalid/outdated email addresses
+- Sending to purchased email lists
+- Domain reputation issues from previous spam reports
+- Hitting spam traps (recycled or typo domains)
+- Technical issues with email authentication (SPF, DKIM, DMARC)
+
+### Prevention Best Practices
+- Always verify email lists before importing (use email verification services)
+- Remove bounced addresses immediately after each campaign
+- Maintain active warmup for ALL sending accounts
+- Don't exceed 15-20 emails/day per account during warmup
+- Use domain health monitoring tools
+- Keep bounce rate under 1% at all times
 
 ## DIAGNOSTIC RULES
 
@@ -109,11 +176,12 @@ ${lowCampaigns.length > 0 ? lowCampaigns.map(c => `- ${c.campaign_name}: ${c.int
 - Increase volume by 20-30% per week when scaling
 
 ## YOUR ROLE
-1. Diagnose where the user is struggling based on their data
-2. Compare their metrics to benchmarks and identify gaps
-3. Recommend specific campaigns to scale vs. pause
-4. Provide ONE clear, actionable next step
-5. Guide them to the next step in the framework when ready
+1. ${infrastructureAlerts.length > 0 ? 'FIRST: Address any infrastructure alerts - these are the highest priority' : 'Check infrastructure health is stable'}
+2. Diagnose where the user is struggling based on their data
+3. Compare their metrics to benchmarks and identify gaps
+4. Recommend specific campaigns to scale vs. pause
+5. Provide ONE clear, actionable next step
+6. Guide them to the next step in the framework when ready
 
 ## RESPONSE STYLE
 - Be direct, concise, and data-driven
@@ -121,7 +189,8 @@ ${lowCampaigns.length > 0 ? lowCampaigns.map(c => `- ${c.campaign_name}: ${c.int
 - Prioritize ONE clear action over multiple suggestions
 - Explain WHY based on the data
 - Use bullet points for clarity
-- Keep responses under 200 words unless asked for detail`;
+- Keep responses under 200 words unless asked for detail
+${infrastructureAlerts.length > 0 ? '- ALWAYS lead with infrastructure health concerns when they exist' : ''}`;
 }
 
 serve(async (req) => {
@@ -162,17 +231,19 @@ serve(async (req) => {
 
     console.log(`Growth Copilot request: type=${type}, user=${user.id}`);
 
-    // Fetch all context data in parallel
+    // Fetch all context data in parallel (including infrastructure alerts)
     const [
       { data: growthSteps },
       { data: userProgress },
       { data: campaigns },
-      { data: dailyMetrics }
+      { data: dailyMetrics },
+      { data: infrastructureAlerts }
     ] = await Promise.all([
       supabase.from('growth_steps').select('*').order('step_number'),
       supabase.from('user_growth_progress').select('*').eq('user_id', user.id),
       supabase.from('synced_campaigns').select('*').eq('user_id', user.id),
-      supabase.from('daily_campaign_metrics').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1)
+      supabase.from('daily_campaign_metrics').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1),
+      supabase.from('email_account_alerts').select('email_address, alert_type, severity, current_value, threshold_value, recommended_action').eq('user_id', user.id).eq('status', 'active')
     ]);
 
     // Determine current step
@@ -223,13 +294,24 @@ serve(async (req) => {
       campaign_status: c.campaign_status || 'unknown',
     }));
 
+    // Map infrastructure alerts
+    const alertData: InfrastructureAlert[] = (infrastructureAlerts || []).map(a => ({
+      email_address: a.email_address,
+      alert_type: a.alert_type,
+      severity: a.severity,
+      current_value: a.current_value,
+      threshold_value: a.threshold_value,
+      recommended_action: a.recommended_action,
+    }));
+
     // Build system prompt with full context
     const systemPrompt = buildSystemPrompt(
       growthSteps || [],
       currentStep,
       currentProgress,
       campaignData,
-      totalMetrics
+      totalMetrics,
+      alertData
     );
 
     // Build user message based on type
@@ -283,6 +365,7 @@ serve(async (req) => {
           totalEmailsSent: totalMetrics.emails_sent,
           interestedRate: totalMetrics.interested_rate,
           campaignCount: campaigns?.length || 0,
+          infrastructureAlerts: alertData.length,
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

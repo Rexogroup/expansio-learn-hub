@@ -482,15 +482,68 @@ export type Database = {
           },
         ]
       }
+      email_account_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          current_value: number | null
+          email_address: string
+          id: string
+          recommended_action: string | null
+          resolved_at: string | null
+          sender_email_id: string
+          severity: string
+          status: string | null
+          threshold_value: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          current_value?: number | null
+          email_address: string
+          id?: string
+          recommended_action?: string | null
+          resolved_at?: string | null
+          sender_email_id: string
+          severity: string
+          status?: string | null
+          threshold_value?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          current_value?: number | null
+          email_address?: string
+          id?: string
+          recommended_action?: string | null
+          resolved_at?: string | null
+          sender_email_id?: string
+          severity?: string
+          status?: string | null
+          threshold_value?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_account_health: {
         Row: {
           account_type: string | null
+          bounce_rate: number | null
+          bounced_count: number | null
           connection_status: string | null
           created_at: string | null
           daily_limit: number | null
           email_address: string
+          emails_sent_count: number | null
           emails_sent_today: number | null
+          health_score: number | null
           id: string
+          is_at_risk: boolean | null
           last_checked_at: string | null
           mx_records_valid: boolean | null
           raw_data: Json | null
@@ -502,12 +555,17 @@ export type Database = {
         }
         Insert: {
           account_type?: string | null
+          bounce_rate?: number | null
+          bounced_count?: number | null
           connection_status?: string | null
           created_at?: string | null
           daily_limit?: number | null
           email_address: string
+          emails_sent_count?: number | null
           emails_sent_today?: number | null
+          health_score?: number | null
           id?: string
+          is_at_risk?: boolean | null
           last_checked_at?: string | null
           mx_records_valid?: boolean | null
           raw_data?: Json | null
@@ -519,12 +577,17 @@ export type Database = {
         }
         Update: {
           account_type?: string | null
+          bounce_rate?: number | null
+          bounced_count?: number | null
           connection_status?: string | null
           created_at?: string | null
           daily_limit?: number | null
           email_address?: string
+          emails_sent_count?: number | null
           emails_sent_today?: number | null
+          health_score?: number | null
           id?: string
+          is_at_risk?: boolean | null
           last_checked_at?: string | null
           mx_records_valid?: boolean | null
           raw_data?: Json | null

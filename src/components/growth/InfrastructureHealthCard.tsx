@@ -12,7 +12,9 @@ import {
   XCircle, 
   AlertCircle,
   Flame,
-  Send
+  Send,
+  AlertTriangle,
+  ShieldAlert
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,9 @@ interface EmailHealth {
   daily_limit: number;
   emails_sent_today: number;
   last_checked_at: string;
+  bounce_rate?: number;
+  health_score?: number;
+  is_at_risk?: boolean;
 }
 
 interface HealthSummary {
@@ -38,6 +43,20 @@ interface HealthSummary {
   total_daily_limit: number;
   total_emails_sent_today: number;
   average_warmup_progress: number | null;
+  at_risk_accounts: number;
+}
+
+interface EmailAlert {
+  id: string;
+  sender_email_id: string;
+  email_address: string;
+  alert_type: string;
+  severity: string;
+  current_value: number;
+  threshold_value: number;
+  recommended_action: string;
+  status: string;
+  created_at: string;
 }
 
 export function InfrastructureHealthCard() {
@@ -46,6 +65,7 @@ export function InfrastructureHealthCard() {
   const [healthData, setHealthData] = useState<EmailHealth[]>([]);
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<EmailAlert[]>([]);
 
   useEffect(() => {
     fetchHealthData();
@@ -56,14 +76,24 @@ export function InfrastructureHealthCard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data, error } = await supabase
-        .from('email_account_health')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('email_address');
+      // Fetch health data and alerts in parallel
+      const [healthResponse, alertsResponse] = await Promise.all([
+        supabase
+          .from('email_account_health')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('email_address'),
+        supabase
+          .from('email_account_alerts')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('status', 'active')
+          .order('severity', { ascending: true })
+      ]);
 
-      if (error) throw error;
+      if (healthResponse.error) throw healthResponse.error;
 
+      const data = healthResponse.data;
       if (data && data.length > 0) {
         setHealthData(data);
         setLastSyncAt(data[0].last_checked_at);
@@ -77,6 +107,7 @@ export function InfrastructureHealthCard() {
           total_daily_limit: data.reduce((acc, d) => acc + (d.daily_limit || 0), 0),
           total_emails_sent_today: data.reduce((acc, d) => acc + (d.emails_sent_today || 0), 0),
           average_warmup_progress: null,
+          at_risk_accounts: data.filter(d => d.is_at_risk).length,
         };
         
         const warmupAccounts = data.filter(d => d.warmup_progress !== null);
@@ -85,6 +116,10 @@ export function InfrastructureHealthCard() {
         }
         
         setSummary(sum);
+      }
+
+      if (alertsResponse.data) {
+        setAlerts(alertsResponse.data);
       }
     } catch (error) {
       console.error('Error fetching health data:', error);
@@ -124,6 +159,23 @@ export function InfrastructureHealthCard() {
     }
   };
 
+  const handleAcknowledgeAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase
+        .from('email_account_alerts')
+        .update({ status: 'acknowledged' })
+        .eq('id', alertId);
+
+      if (error) throw error;
+      
+      toast.success('Alert acknowledged');
+      setAlerts(prev => prev.filter(a => a.id !== alertId));
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
+      toast.error('Failed to acknowledge alert');
+    }
+  };
+
   const getHealthScore = () => {
     if (!summary || summary.total_accounts === 0) return 0;
     return Math.round((summary.connected_accounts / summary.total_accounts) * 100);
@@ -133,6 +185,13 @@ export function InfrastructureHealthCard() {
     if (score >= 90) return 'text-emerald-500';
     if (score >= 70) return 'text-amber-500';
     return 'text-destructive';
+  };
+
+  const getAccountStatusColor = (account: EmailHealth) => {
+    if (account.is_at_risk) return 'border-destructive/50 bg-destructive/5';
+    if (account.connection_status === 'error') return 'border-destructive/50 bg-destructive/5';
+    if ((account.health_score ?? 100) < 90) return 'border-amber-500/50 bg-amber-500/5';
+    return 'bg-muted/50';
   };
 
   const formatLastSync = (dateString: string | null) => {
@@ -148,6 +207,9 @@ export function InfrastructureHealthCard() {
     if (diffHours < 24) return `${diffHours}h ago`;
     return date.toLocaleDateString();
   };
+
+  const criticalAlerts = alerts.filter(a => a.severity === 'critical');
+  const warningAlerts = alerts.filter(a => a.severity === 'warning');
 
   if (loading) {
     return (
@@ -192,6 +254,36 @@ export function InfrastructureHealthCard() {
           </div>
         ) : (
           <>
+            {/* Critical Alerts Banner */}
+            {criticalAlerts.length > 0 && (
+              <div className="flex items-start gap-3 p-4 bg-destructive/10 rounded-lg border border-destructive/30">
+                <ShieldAlert className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-destructive">
+                    {criticalAlerts.length} account{criticalAlerts.length > 1 ? 's need' : ' needs'} immediate attention
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    High bounce rate or low health score detected. Pause these accounts from campaigns to prevent damage.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Warning Alerts Banner */}
+            {warningAlerts.length > 0 && criticalAlerts.length === 0 && (
+              <div className="flex items-start gap-3 p-4 bg-amber-500/10 rounded-lg border border-amber-500/30">
+                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                    {warningAlerts.length} account{warningAlerts.length > 1 ? 's have' : ' has'} warnings
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Monitor these accounts closely and consider reducing sending volume.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Health Score */}
             <div className="flex items-center justify-between">
               <div>
@@ -207,7 +299,7 @@ export function InfrastructureHealthCard() {
             </div>
 
             {/* Account Status Summary */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 <div>
@@ -227,6 +319,13 @@ export function InfrastructureHealthCard() {
                 <div>
                   <p className="text-lg font-semibold">{summary.warmup_enabled_accounts}</p>
                   <p className="text-xs text-muted-foreground">Warming</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className={cn("w-5 h-5", summary.at_risk_accounts > 0 ? "text-destructive" : "text-muted-foreground")} />
+                <div>
+                  <p className={cn("text-lg font-semibold", summary.at_risk_accounts > 0 && "text-destructive")}>{summary.at_risk_accounts}</p>
+                  <p className="text-xs text-muted-foreground">At Risk</p>
                 </div>
               </div>
             </div>
@@ -254,8 +353,65 @@ export function InfrastructureHealthCard() {
               </p>
             </div>
 
-            {/* Error Accounts Warning */}
-            {summary.error_accounts > 0 && (
+            {/* Active Alerts List */}
+            {alerts.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                  Active Alerts ({alerts.length})
+                </p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {alerts.map((alert) => (
+                    <div 
+                      key={alert.id}
+                      className={cn(
+                        "p-3 rounded-lg border",
+                        alert.severity === 'critical' 
+                          ? "bg-destructive/5 border-destructive/30" 
+                          : "bg-amber-500/5 border-amber-500/30"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant={alert.severity === 'critical' ? 'destructive' : 'outline'}
+                              className={cn(
+                                "text-xs",
+                                alert.severity === 'warning' && "border-amber-500 text-amber-600 dark:text-amber-400"
+                              )}
+                            >
+                              {alert.severity}
+                            </Badge>
+                            <span className="text-sm font-medium truncate">{alert.email_address}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {alert.alert_type === 'high_bounce_rate' 
+                              ? `Bounce Rate: ${alert.current_value.toFixed(2)}% (threshold: ${alert.threshold_value}%)`
+                              : `Health Score: ${alert.current_value.toFixed(0)}% (threshold: ${alert.threshold_value}%)`
+                            }
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                            {alert.recommended_action}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleAcknowledgeAlert(alert.id)}
+                          className="text-xs flex-shrink-0"
+                        >
+                          Acknowledge
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Error Accounts Warning (legacy, keep for non-alert errors) */}
+            {summary.error_accounts > 0 && alerts.length === 0 && (
               <div className="flex items-start gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
                 <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div>
@@ -277,10 +433,15 @@ export function InfrastructureHealthCard() {
                   {healthData.slice(0, 5).map((account) => (
                     <div 
                       key={account.id}
-                      className="flex items-center justify-between p-2 bg-muted/50 rounded-lg"
+                      className={cn(
+                        "flex items-center justify-between p-2 rounded-lg border",
+                        getAccountStatusColor(account)
+                      )}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        {account.connection_status === 'connected' ? (
+                        {account.is_at_risk ? (
+                          <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
+                        ) : account.connection_status === 'connected' ? (
                           <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         ) : (
                           <XCircle className="w-4 h-4 text-destructive flex-shrink-0" />
@@ -288,6 +449,19 @@ export function InfrastructureHealthCard() {
                         <span className="text-sm truncate">{account.email_address}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
+                        {account.bounce_rate !== undefined && account.bounce_rate > 0 && (
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "text-xs",
+                              account.bounce_rate >= 2 ? "border-destructive text-destructive" :
+                              account.bounce_rate >= 1 ? "border-amber-500 text-amber-600" :
+                              "border-muted"
+                            )}
+                          >
+                            {account.bounce_rate.toFixed(1)}% bounce
+                          </Badge>
+                        )}
                         {account.warmup_enabled && (
                           <Badge variant="outline" className="text-xs">
                             <Flame className="w-3 h-3 mr-1" />
