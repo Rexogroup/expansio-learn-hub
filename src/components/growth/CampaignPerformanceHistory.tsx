@@ -65,9 +65,9 @@ const getPerformanceBadge = (emailsPerLead: number | null) => {
 
 // Get recommended action based on emails per lead and email volume
 const getRecommendedAction = (emailsPerLead: number | null, emailsSent: number) => {
-  // Need minimum emails to make a recommendation
-  if (emailsSent < 700) {
-    return { action: "TESTING", color: "bg-muted", textColor: "text-muted-foreground", description: "Collect more data" };
+  // Need minimum 1000 emails per variant to make a recommendation (SOP requirement)
+  if (emailsSent < 1000) {
+    return { action: "TESTING", color: "bg-muted", textColor: "text-muted-foreground", description: "Need 1,000+ emails" };
   }
   
   if (!emailsPerLead || emailsPerLead === 0) {
@@ -199,9 +199,9 @@ export function CampaignPerformanceHistory({
       stepMap.get(variant.step_number)!.variants.push(variant);
     });
 
-    // Determine best variant per step
+    // Determine best variant per step (requires 1000+ emails for statistical significance)
     stepMap.forEach(step => {
-      const eligibleVariants = step.variants.filter(v => v.emails_sent >= 50);
+      const eligibleVariants = step.variants.filter(v => v.emails_sent >= 1000);
       if (eligibleVariants.length > 1) {
         const best = eligibleVariants.reduce((a, b) =>
           a.interested_rate > b.interested_rate ? a : b
@@ -219,8 +219,8 @@ export function CampaignPerformanceHistory({
     return sortDesc ? bVal - aVal : aVal - bVal;
   });
 
-  const topPerformer = sortedCampaigns.find(c => c.emails_sent > 100 && c.interested_rate >= benchmark);
-  const underperformers = sortedCampaigns.filter(c => c.emails_sent > 1000 && c.interested_rate < benchmark * 0.5);
+  const topPerformer = sortedCampaigns.find(c => c.emails_sent >= 1000 && c.interested_rate >= benchmark);
+  const underperformers = sortedCampaigns.filter(c => c.emails_sent >= 1000 && c.interested_rate < benchmark * 0.5);
 
   const toggleSort = (column: 'interested_rate' | 'emails_sent') => {
     if (sortBy === column) {
@@ -491,7 +491,7 @@ export function CampaignPerformanceHistory({
                         {campaignSteps.some(s => s.best_variant_id) && (
                           <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1.5">
                             <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                            Best performing variant (min 50 emails sent)
+                            Best performing variant (min 1,000 emails sent)
                           </p>
                         )}
                       </div>

@@ -116,7 +116,7 @@ function buildSystemPrompt(
   knowledgeBaseContent: string
 ): string {
   const topCampaigns = [...campaigns]
-    .filter(c => c.emails_sent > 100)
+    .filter(c => c.emails_sent >= 1000)
     .sort((a, b) => b.interested_rate - a.interested_rate)
     .slice(0, 3);
 
@@ -238,14 +238,15 @@ Benchmark: 20-30% of interested leads should convert to meetings.
 
 ### Variant Analysis Rules
 When analyzing A/B variants:
-- **WINNER**: Variant with highest IR% AND at least 50+ replies (statistical significance)
-- **SCALE**: IR% > 15% of replies AND emails_per_lead < 500 - recommend increasing volume immediately
-- **ITERATE**: IR% between 10-15% OR emails_per_lead between 500-700 - suggest specific tweaks
-- **KILL**: IR% < 5% after 50+ replies OR emails_per_lead > 1000 - recommend pausing and replacing
+- **MINIMUM SAMPLE**: Do NOT evaluate or recommend actions for variants with < 1000 emails sent. Tell users to wait for more data.
+- **WINNER**: Variant with highest IR% AND at least 1000 emails sent (statistical significance)
+- **SCALE**: IR% > 15% AND emails_per_lead < 500 after 1000+ emails - recommend increasing volume immediately
+- **ITERATE**: IR% between 10-15% OR emails_per_lead between 500-700 after 1000+ emails - suggest specific tweaks
+- **KILL**: IR% < 5% after 1000 emails OR emails_per_lead > 1000 after 1000 emails - recommend pausing and replacing
 
 ### Campaign Scaling Rules (From SOP)
-- **Minimum sample size**: 700-1000 emails before making decisions
-- **Scale criteria**: IR% > 15% AND emails_per_lead < 500
+- **Minimum sample size**: 1000 emails per variant before making ANY decisions
+- **Scale criteria**: IR% > 15% AND emails_per_lead < 500 (requires 1000+ emails)
 - **Pause criteria**: IR% < 5% after 1000 sends OR 0 interested after 1000 sends
 - **Test methodology**: Always run 2-3 variants before declaring a winner
 - **Volume scaling**: Increase by 20-30% per week when metrics are healthy
