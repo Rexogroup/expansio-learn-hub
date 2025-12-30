@@ -350,56 +350,53 @@ export default function CommandCenter() {
     }
 
     // VARIANT-LEVEL SOP RECOMMENDATIONS
-    // KILL actions (critical priority)
+    // KILL actions (critical priority) - show ALL
     const killVariants = variantRecs.filter(v => v.action === 'KILL');
-    if (killVariants.length > 0) {
-      const topKill = killVariants[0];
+    killVariants.forEach(killVar => {
       const winningPattern = winningScripts.length > 0 
         ? ` Rewrite using your winning pattern.`
         : '';
       actions.push({
-        id: `kill-${topKill.id}`,
-        title: `KILL: Step ${topKill.stepNumber} - Variant ${topKill.variantLabel}`,
-        description: `${topKill.reason}${winningPattern}`,
+        id: `kill-${killVar.id}`,
+        title: `KILL: Step ${killVar.stepNumber} - Variant ${killVar.variantLabel}`,
+        description: `${killVar.reason}${winningPattern}`,
         actionLabel: 'Rewrite',
         actionPath: '/script-builder',
         priority: 'critical',
         icon: <XCircle className="w-5 h-5" />,
       });
-    }
+    });
 
-    // SCALE actions (high priority)
+    // SCALE actions (high priority) - show ALL
     const scaleVariants = variantRecs.filter(v => v.action === 'SCALE');
-    if (scaleVariants.length > 0) {
-      const topScale = scaleVariants[0];
+    scaleVariants.forEach(scaleVar => {
       actions.push({
-        id: `scale-${topScale.id}`,
-        title: `SCALE: Step ${topScale.stepNumber} - Variant ${topScale.variantLabel}`,
-        description: `${topScale.reason}. Add more sending domains to increase volume on this winner!`,
+        id: `scale-${scaleVar.id}`,
+        title: `SCALE: Step ${scaleVar.stepNumber} - Variant ${scaleVar.variantLabel}`,
+        description: `${scaleVar.reason}. Add more sending domains to increase volume on this winner!`,
         actionLabel: 'Add Domains',
         actionPath: '/integrations',
         priority: 'high',
         icon: <TrendingUp className="w-5 h-5" />,
       });
-    }
+    });
 
-    // ITERATE actions (normal priority)
+    // ITERATE actions (normal priority) - show ALL
     const iterateVariants = variantRecs.filter(v => v.action === 'ITERATE');
-    if (iterateVariants.length > 0) {
-      const topIterate = iterateVariants[0];
+    iterateVariants.forEach(iterVar => {
       const winningRef = winningScripts.length > 0
         ? ` Try elements from your winning scripts.`
         : '';
       actions.push({
-        id: `iterate-${topIterate.id}`,
-        title: `ITERATE: Step ${topIterate.stepNumber} - Variant ${topIterate.variantLabel}`,
-        description: `${topIterate.reason}${winningRef}`,
+        id: `iterate-${iterVar.id}`,
+        title: `ITERATE: Step ${iterVar.stepNumber} - Variant ${iterVar.variantLabel}`,
+        description: `${iterVar.reason}${winningRef}`,
         actionLabel: 'Create Variant',
         actionPath: '/script-builder',
         priority: 'normal',
         icon: <RefreshCw className="w-5 h-5" />,
       });
-    }
+    });
 
     // Low volume detection - campaigns may be paused
     const avgDailyVolume = recentVolume / 10; // 10-day window
