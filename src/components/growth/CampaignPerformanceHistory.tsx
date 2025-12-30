@@ -26,6 +26,8 @@ interface Campaign {
   interested_rate: number;
   synced_at: string;
   timeline_days: number | null;
+  emails_per_lead?: number;
+  interested_to_meeting_rate?: number;
 }
 
 interface CampaignVariant {
@@ -43,7 +45,23 @@ interface CampaignVariant {
   meetings_booked: number;
   interested_rate: number;
   reply_rate?: number;
+  emails_per_lead?: number;
 }
+
+// Performance badge based on emails per interested lead (from SOP)
+const getPerformanceBadge = (emailsPerLead: number | null) => {
+  if (!emailsPerLead || emailsPerLead === 0) return null;
+  
+  if (emailsPerLead < 250) {
+    return { label: "ELITE", color: "bg-emerald-500", textColor: "text-white", action: "Scale heavily" };
+  } else if (emailsPerLead <= 500) {
+    return { label: "STRONG", color: "bg-blue-500", textColor: "text-white", action: "Scale + iterate" };
+  } else if (emailsPerLead <= 700) {
+    return { label: "GOOD", color: "bg-amber-500", textColor: "text-white", action: "Improve offer" };
+  } else {
+    return { label: "POOR", color: "bg-destructive", textColor: "text-white", action: "Kill or rewrite" };
+  }
+};
 
 interface GroupedStep {
   step_number: number;
@@ -299,6 +317,12 @@ export function CampaignPerformanceHistory({
               const isExpanded = expandedCampaigns.has(campaign.external_campaign_id);
               const campaignSteps = getVariantsForCampaign(campaign.external_campaign_id);
               const hasVariants = campaignSteps.length > 0;
+              
+              // Calculate emails per interested lead
+              const emailsPerLead = campaign.interested_count > 0 
+                ? Math.round(campaign.emails_sent / campaign.interested_count)
+                : null;
+              const performanceBadge = getPerformanceBadge(emailsPerLead);
 
               return (
                 <Collapsible
@@ -310,36 +334,48 @@ export function CampaignPerformanceHistory({
                     {/* Campaign Row */}
                     <CollapsibleTrigger className="w-full" disabled={!hasVariants}>
                       <div className={cn(
-                        "grid grid-cols-[1fr_repeat(6,_auto)_32px] gap-4 items-center px-4 py-3 text-sm",
+                        "grid grid-cols-[1fr_repeat(7,_auto)_32px] gap-4 items-center px-4 py-3 text-sm",
                         hasVariants && "hover:bg-muted/30 cursor-pointer"
                       )}>
                         <div className="text-left">
-                          <span className="font-medium truncate block max-w-[200px]" title={campaign.campaign_name}>
+                          <span className="font-medium truncate block max-w-[180px]" title={campaign.campaign_name}>
                             {campaign.campaign_name}
                           </span>
                         </div>
-                        <div className="text-right tabular-nums min-w-[70px]">
+                        <div className="text-right tabular-nums min-w-[60px]">
                           <div className="text-sm font-medium">{formatNumber(campaign.emails_sent)}</div>
                           <div className="text-xs text-muted-foreground">Sent</div>
                         </div>
-                        <div className="text-right tabular-nums min-w-[80px]">
+                        <div className="text-right tabular-nums min-w-[60px]">
                           <div className="text-sm font-medium">{formatNumber(campaign.unique_replies)}</div>
                           <div className="text-xs text-muted-foreground">Replies</div>
                         </div>
-                        <div className="text-right tabular-nums min-w-[80px]">
+                        <div className="text-right tabular-nums min-w-[60px]">
                           <div className="text-sm font-medium">{formatNumber(campaign.interested_count)}</div>
                           <div className="text-xs text-muted-foreground">Interested</div>
                         </div>
-                        <div className="text-right tabular-nums min-w-[70px]">
+                        <div className="text-right tabular-nums min-w-[60px]">
                           <div className="text-sm font-medium">{formatNumber(campaign.meetings_booked)}</div>
                           <div className="text-xs text-muted-foreground">Meetings</div>
                         </div>
                         <div className={cn(
-                          "text-right tabular-nums min-w-[60px]",
+                          "text-right tabular-nums min-w-[50px]",
                           isAbove ? "text-emerald-600" : campaign.interested_rate < benchmark * 0.5 ? "text-destructive" : "text-amber-600"
                         )}>
                           <div className="text-sm font-semibold">{formatRate(campaign.interested_rate)}</div>
                           <div className="text-xs text-muted-foreground">IR%</div>
+                        </div>
+                        {/* Emails per Lead with Performance Badge */}
+                        <div className="text-right tabular-nums min-w-[70px]">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className="text-sm font-medium">{emailsPerLead ?? '-'}</span>
+                            {performanceBadge && (
+                              <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", performanceBadge.color, performanceBadge.textColor)}>
+                                {performanceBadge.label}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">Emails/Lead</div>
                         </div>
                         <Badge variant="outline" className={cn("text-xs capitalize", statusColor)}>
                           {campaign.campaign_status}
@@ -448,7 +484,7 @@ export function CampaignPerformanceHistory({
                 ? `Showing last ${campaigns[0].timeline_days} days` 
                 : 'Showing all-time cumulative data (sync to get period-specific data)'}
             </span>
-            <span>Benchmark: {benchmark}% interested rate</span>
+            <span>Benchmark: {benchmark}% Positive Reply Rate (Interested / Replies)</span>
           </div>
         </CardContent>
       )}

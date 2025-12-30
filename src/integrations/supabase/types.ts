@@ -174,6 +174,7 @@ export type Database = {
           campaign_id: string
           campaign_name: string | null
           created_at: string | null
+          emails_per_lead: number | null
           emails_sent: number | null
           id: string
           interested_count: number | null
@@ -195,6 +196,7 @@ export type Database = {
           campaign_id: string
           campaign_name?: string | null
           created_at?: string | null
+          emails_per_lead?: number | null
           emails_sent?: number | null
           id?: string
           interested_count?: number | null
@@ -216,6 +218,7 @@ export type Database = {
           campaign_id?: string
           campaign_name?: string | null
           created_at?: string | null
+          emails_per_lead?: number | null
           emails_sent?: number | null
           id?: string
           interested_count?: number | null
@@ -1489,11 +1492,13 @@ export type Database = {
           bounces: number | null
           campaign_name: string | null
           campaign_status: string | null
+          emails_per_lead: number | null
           emails_sent: number | null
           external_campaign_id: string
           id: string
           interested_count: number | null
           interested_rate: number | null
+          interested_to_meeting_rate: number | null
           meetings_booked: number | null
           open_rate: number | null
           platform: string
@@ -1510,11 +1515,13 @@ export type Database = {
           bounces?: number | null
           campaign_name?: string | null
           campaign_status?: string | null
+          emails_per_lead?: number | null
           emails_sent?: number | null
           external_campaign_id: string
           id?: string
           interested_count?: number | null
           interested_rate?: number | null
+          interested_to_meeting_rate?: number | null
           meetings_booked?: number | null
           open_rate?: number | null
           platform: string
@@ -1531,11 +1538,13 @@ export type Database = {
           bounces?: number | null
           campaign_name?: string | null
           campaign_status?: string | null
+          emails_per_lead?: number | null
           emails_sent?: number | null
           external_campaign_id?: string
           id?: string
           interested_count?: number | null
           interested_rate?: number | null
+          interested_to_meeting_rate?: number | null
           meetings_booked?: number | null
           open_rate?: number | null
           platform?: string
