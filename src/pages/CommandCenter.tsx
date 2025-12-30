@@ -439,8 +439,8 @@ export default function CommandCenter() {
             )}
             
             <div className="grid md:grid-cols-2 gap-6">
-              {/* KPI Comparison */}
-              {currentStep && currentStep.benchmark_kpi_name && (
+              {/* KPI Comparison - Hide for Step 1 since InfrastructureHealthCard already shows health */}
+              {currentStep && currentStep.benchmark_kpi_name && currentStepNumber !== 1 && (
                 <KPIComparisonCard
                   title={currentStep.benchmark_kpi_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   currentValue={
