@@ -68,6 +68,7 @@ export default function CommandCenter() {
   const [assetCount, setAssetCount] = useState(0);
   const [timelineDays, setTimelineDays] = useState(10);
   const [variantRefreshKey, setVariantRefreshKey] = useState(0);
+  const [stepAlerts, setStepAlerts] = useState<number[]>([]);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -114,8 +115,31 @@ export default function CommandCenter() {
       fetchCampaignMetrics(session.user.id, timelineDays),
       fetchIntegration(session.user.id),
       fetchAssetCount(session.user.id),
+      fetchInfrastructureAlerts(session.user.id),
     ]);
     setLoading(false);
+  };
+
+  const fetchInfrastructureAlerts = async (userId: string) => {
+    // Check for active infrastructure alerts
+    const { count } = await supabase
+      .from('email_account_alerts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'active');
+    
+    // Also check for at-risk accounts
+    const { count: atRiskCount } = await supabase
+      .from('email_account_health')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_at_risk', true);
+    
+    if ((count && count > 0) || (atRiskCount && atRiskCount > 0)) {
+      setStepAlerts([1]); // Step 1 has infrastructure issues
+    } else {
+      setStepAlerts([]);
+    }
   };
 
   const fetchGrowthSteps = async () => {
@@ -393,6 +417,7 @@ export default function CommandCenter() {
               steps={getStepsWithProgress()}
               currentStep={currentStepNumber}
               onStepClick={(stepNum) => setCurrentStepNumber(stepNum)}
+              alertSteps={stepAlerts}
             />
           </CardContent>
         </Card>
@@ -419,15 +444,17 @@ export default function CommandCenter() {
           </Card>
         )}
 
-        {/* Campaign Performance */}
-        <CampaignPerformanceHistory
-          onSync={handleSync}
-          isSyncing={isSyncing}
-          benchmark={15}
-          timelineDays={timelineDays}
-          onTimelineChange={setTimelineDays}
-          refreshKey={variantRefreshKey}
-        />
+        {/* Campaign Performance - Only show for steps 4+ (Testing, Validation, Scaling) */}
+        {currentStepNumber >= 4 && (
+          <CampaignPerformanceHistory
+            onSync={handleSync}
+            isSyncing={isSyncing}
+            benchmark={15}
+            timelineDays={timelineDays}
+            onTimelineChange={setTimelineDays}
+            refreshKey={variantRefreshKey}
+          />
+        )}
 
         {/* Main Content Grid - KPIs and Actions */}
         <div className="space-y-6">
