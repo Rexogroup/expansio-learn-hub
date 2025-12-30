@@ -251,15 +251,20 @@ async function fetchCampaignStatsWithStepBreakdown(
       // Use sequence_step_id or id as the key
       const stepId = (stat.sequence_step_id || stat.id)?.toString();
       if (stepId) {
+        // API returns 'sent' not 'emails_sent' for step-level stats
+        const sentCount = stat.sent ?? stat.emails_sent ?? 0;
+        const repliedCount = stat.unique_replies_per_contact ?? stat.unique_replies ?? 0;
+        const interestedCount = stat.interested ?? 0;
+        
         stepStatsMap.set(stepId, {
-          sent: stat.emails_sent || 0,
+          sent: sentCount,
           opened: stat.unique_opens || 0,
-          replied: stat.unique_replies_per_contact || stat.unique_replies || 0,
-          interested: stat.interested || 0,
+          replied: repliedCount,
+          interested: interestedCount,
           bounced: stat.bounced || 0,
           unsubscribed: stat.unsubscribed || 0,
         });
-        console.log(`Step ${stepId}: sent=${stat.emails_sent}, replied=${stat.unique_replies_per_contact || stat.unique_replies}, interested=${stat.interested}`);
+        console.log(`Step ${stepId}: sent=${sentCount}, replied=${repliedCount}, interested=${interestedCount} (raw: ${JSON.stringify(stat)})`);
       }
     }
     
@@ -340,8 +345,14 @@ function parseSequenceSteps(steps: SequenceStep[]): ParsedStep[] {
   
   console.log(`DEBUG: Step distribution after grouping: ${Array.from(stepsByNumber.entries()).map(([num, g]) => `Step ${num}: parent=${g.parent ? 'yes' : 'no'}, variants=${g.variants.length}`).join(', ')}`);
   
-  // Step 3: Create parsed output
+  // Step 3: Create parsed output - SKIP Step 0 (invalid entries)
   for (const [stepNum, group] of stepsByNumber.entries()) {
+    // Skip Step 0 - these are orphaned variants or misconfigured steps
+    if (stepNum === 0) {
+      console.log(`DEBUG: Skipping Step 0 - contains ${group.variants.length} orphaned variants`);
+      continue;
+    }
+    
     if (group.variants.length > 0) {
       // Has variants - parent is Variant A, other variants are B, C, etc.
       if (group.parent) {
