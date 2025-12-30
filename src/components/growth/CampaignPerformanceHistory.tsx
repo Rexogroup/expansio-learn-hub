@@ -384,14 +384,10 @@ export function CampaignPerformanceHistory({
                                         : `STEP ${variant.step_number}`
                                       }
                                     </span>
-                                    {isBest && (
+                                  {isBest && (
                                       <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
                                     )}
                                   </div>
-                                  <p className="text-sm mb-3">
-                                    <span className="text-muted-foreground">Subject: </span>
-                                    <span className="font-medium">{variant.subject_line || "(no subject)"}</span>
-                                  </p>
                                   
                                   {/* Stats Grid */}
                                   <div className="grid grid-cols-6 gap-4">

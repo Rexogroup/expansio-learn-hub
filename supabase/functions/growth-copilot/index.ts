@@ -280,7 +280,9 @@ serve(async (req) => {
     
     if (totalMetrics.emails_sent > 0) {
       totalMetrics.reply_rate = (totalMetrics.replies / totalMetrics.emails_sent) * 100;
-      totalMetrics.interested_rate = (totalMetrics.interested / totalMetrics.emails_sent) * 100;
+    }
+    if (totalMetrics.replies > 0) {
+      totalMetrics.interested_rate = (totalMetrics.interested / totalMetrics.replies) * 100;
     }
 
     // Map campaigns for the prompt
