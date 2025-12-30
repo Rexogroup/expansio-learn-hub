@@ -1,3 +1,18 @@
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+  HeadingLevel,
+  AlignmentType,
+} from "docx";
+import { saveAs } from "file-saver";
+
 export interface BusinessProfile {
   id: string;
   company_name: string | null;
@@ -16,30 +31,35 @@ export interface BusinessProfile {
   user_name?: string;
 }
 
+const formatDate = (dateStr: string | null) => {
+  if (!dateStr) return "N/A";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
 export function generateProfileHTML(profile: BusinessProfile): string {
-  const painPointsRows = profile.pain_points?.map((pp, i) => `
+  const painPointsRows = profile.pain_points
+    ?.map(
+      (pp, i) => `
     <tr>
       <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${i + 1}</td>
-      <td style="border: 1px solid #ddd; padding: 8px;">${pp.problem || '-'}</td>
-      <td style="border: 1px solid #ddd; padding: 8px;">${pp.solution || '-'}</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">${pp.problem || "-"}</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">${pp.solution || "-"}</td>
     </tr>
-  `).join('') || '<tr><td colspan="3" style="border: 1px solid #ddd; padding: 8px; text-align: center;">No pain points recorded</td></tr>';
-
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  `
+    )
+    .join("") ||
+    '<tr><td colspan="3" style="border: 1px solid #ddd; padding: 8px; text-align: center;">No pain points recorded</td></tr>';
 
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Business Profile - ${profile.company_name || 'Unknown Company'}</title>
+  <title>Business Profile - ${profile.company_name || "Unknown Company"}</title>
   <style>
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -119,56 +139,64 @@ export function generateProfileHTML(profile: BusinessProfile): string {
 <body>
   <div class="header">
     <h1>📊 Business Profile</h1>
-    <div class="subtitle">${profile.company_name || 'Unknown Company'} | Generated: ${formatDate(new Date().toISOString())}</div>
+    <div class="subtitle">${profile.company_name || "Unknown Company"} | Generated: ${formatDate(new Date().toISOString())}</div>
   </div>
 
   <div class="section">
     <h2>🏢 Company Information</h2>
     <div class="field">
       <span class="field-label">Company Name:</span>
-      <span class="field-value">${profile.company_name || 'Not provided'}</span>
+      <span class="field-value">${profile.company_name || "Not provided"}</span>
     </div>
     <div class="field">
       <span class="field-label">Target Industries:</span>
-      <span class="field-value">${profile.target_industries || 'Not provided'}</span>
+      <span class="field-value">${profile.target_industries || "Not provided"}</span>
     </div>
-    ${profile.company_description ? `
+    ${
+      profile.company_description
+        ? `
     <div class="field">
       <span class="field-label">Description:</span>
       <div class="text-block">${profile.company_description}</div>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
   </div>
 
   <div class="section">
     <h2>💼 Services Offered</h2>
-    <div class="text-block">${profile.services_offered || 'Not provided'}</div>
+    <div class="text-block">${profile.services_offered || "Not provided"}</div>
   </div>
 
   <div class="section">
     <h2>🎯 Ideal Client Profile (ICP)</h2>
     <div class="field">
       <span class="field-label">Revenue Range:</span>
-      <span class="field-value">${profile.icp_revenue_range || 'Not specified'}</span>
+      <span class="field-value">${profile.icp_revenue_range || "Not specified"}</span>
     </div>
     <div class="field">
       <span class="field-label">Employee Count:</span>
-      <span class="field-value">${profile.icp_employee_count || 'Not specified'}</span>
+      <span class="field-value">${profile.icp_employee_count || "Not specified"}</span>
     </div>
     <div class="field">
       <span class="field-label">Location:</span>
-      <span class="field-value">${profile.icp_location || 'Not specified'}</span>
+      <span class="field-value">${profile.icp_location || "Not specified"}</span>
     </div>
     <div class="field">
       <span class="field-label">Tech Stack:</span>
-      <span class="field-value">${profile.icp_tech_stack || 'Not specified'}</span>
+      <span class="field-value">${profile.icp_tech_stack || "Not specified"}</span>
     </div>
-    ${profile.icp_additional_details ? `
+    ${
+      profile.icp_additional_details
+        ? `
     <div class="field">
       <span class="field-label">Additional Details:</span>
       <div class="text-block">${profile.icp_additional_details}</div>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
   </div>
 
   <div class="section">
@@ -187,15 +215,19 @@ export function generateProfileHTML(profile: BusinessProfile): string {
     </table>
   </div>
 
-  ${profile.custom_notes ? `
+  ${
+    profile.custom_notes
+      ? `
   <div class="section">
     <h2>📝 Additional Notes</h2>
     <div class="text-block">${profile.custom_notes}</div>
   </div>
-  ` : ''}
+  `
+      : ""
+  }
 
   <div class="footer">
-    <div><strong>User:</strong> ${profile.user_name || 'Unknown'} (${profile.user_email || 'No email'})</div>
+    <div><strong>User:</strong> ${profile.user_name || "Unknown"} (${profile.user_email || "No email"})</div>
     <div><strong>Profile Created:</strong> ${formatDate(profile.created_at)}</div>
     <div><strong>Profile ID:</strong> ${profile.id}</div>
   </div>
@@ -206,11 +238,11 @@ export function generateProfileHTML(profile: BusinessProfile): string {
 
 export function downloadProfileAsHTML(profile: BusinessProfile): void {
   const html = generateProfileHTML(profile);
-  const blob = new Blob([html], { type: 'text/html' });
+  const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = `business-profile-${profile.company_name?.replace(/\s+/g, '-').toLowerCase() || profile.id}.html`;
+  a.download = `business-profile-${profile.company_name?.replace(/\s+/g, "-").toLowerCase() || profile.id}.html`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -219,7 +251,7 @@ export function downloadProfileAsHTML(profile: BusinessProfile): void {
 
 export function openProfileForPrint(profile: BusinessProfile): void {
   const html = generateProfileHTML(profile);
-  const printWindow = window.open('', '_blank');
+  const printWindow = window.open("", "_blank");
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
@@ -227,4 +259,152 @@ export function openProfileForPrint(profile: BusinessProfile): void {
       printWindow.print();
     }, 250);
   }
+}
+
+export async function downloadProfileAsDocx(profile: BusinessProfile): Promise<void> {
+  const createSectionHeading = (text: string) =>
+    new Paragraph({
+      text,
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 400, after: 200 },
+    });
+
+  const createFieldParagraph = (label: string, value: string) =>
+    new Paragraph({
+      children: [
+        new TextRun({ text: `${label}: `, bold: true }),
+        new TextRun({ text: value }),
+      ],
+      spacing: { after: 100 },
+    });
+
+  const painPointsTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 10, type: WidthType.PERCENTAGE },
+            children: [new Paragraph({ text: "#", alignment: AlignmentType.CENTER })],
+            shading: { fill: "E5E7EB" },
+          }),
+          new TableCell({
+            width: { size: 45, type: WidthType.PERCENTAGE },
+            children: [new Paragraph({ text: "Problem" })],
+            shading: { fill: "E5E7EB" },
+          }),
+          new TableCell({
+            width: { size: 45, type: WidthType.PERCENTAGE },
+            children: [new Paragraph({ text: "Solution" })],
+            shading: { fill: "E5E7EB" },
+          }),
+        ],
+      }),
+      ...(profile.pain_points?.map(
+        (pp, i) =>
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph({ text: String(i + 1), alignment: AlignmentType.CENTER })],
+              }),
+              new TableCell({
+                children: [new Paragraph({ text: pp.problem || "-" })],
+              }),
+              new TableCell({
+                children: [new Paragraph({ text: pp.solution || "-" })],
+              }),
+            ],
+          })
+      ) || [
+        new TableRow({
+          children: [
+            new TableCell({
+              columnSpan: 3,
+              children: [new Paragraph({ text: "No pain points recorded", alignment: AlignmentType.CENTER })],
+            }),
+          ],
+        }),
+      ]),
+    ],
+  });
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        children: [
+          new Paragraph({
+            text: "Business Profile",
+            heading: HeadingLevel.TITLE,
+            spacing: { after: 100 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: profile.company_name || "Unknown Company", bold: true }),
+              new TextRun({ text: ` | Generated: ${formatDate(new Date().toISOString())}` }),
+            ],
+            spacing: { after: 400 },
+          }),
+
+          createSectionHeading("Company Information"),
+          createFieldParagraph("Company Name", profile.company_name || "Not provided"),
+          createFieldParagraph("Target Industries", profile.target_industries || "Not provided"),
+          ...(profile.company_description
+            ? [createFieldParagraph("Description", profile.company_description)]
+            : []),
+
+          createSectionHeading("Services Offered"),
+          new Paragraph({
+            text: profile.services_offered || "Not provided",
+            spacing: { after: 200 },
+          }),
+
+          createSectionHeading("Ideal Client Profile (ICP)"),
+          createFieldParagraph("Revenue Range", profile.icp_revenue_range || "Not specified"),
+          createFieldParagraph("Employee Count", profile.icp_employee_count || "Not specified"),
+          createFieldParagraph("Location", profile.icp_location || "Not specified"),
+          createFieldParagraph("Tech Stack", profile.icp_tech_stack || "Not specified"),
+          ...(profile.icp_additional_details
+            ? [createFieldParagraph("Additional Details", profile.icp_additional_details)]
+            : []),
+
+          createSectionHeading("Pain Points & Solutions"),
+          painPointsTable,
+
+          ...(profile.custom_notes
+            ? [
+                createSectionHeading("Additional Notes"),
+                new Paragraph({
+                  text: profile.custom_notes,
+                  spacing: { after: 200 },
+                }),
+              ]
+            : []),
+
+          new Paragraph({ text: "", spacing: { before: 400 } }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "User: ", bold: true }),
+              new TextRun({ text: `${profile.user_name || "Unknown"} (${profile.user_email || "No email"})` }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Profile Created: ", bold: true }),
+              new TextRun({ text: formatDate(profile.created_at) }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Profile ID: ", bold: true }),
+              new TextRun({ text: profile.id }),
+            ],
+          }),
+        ],
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  saveAs(blob, `business-profile-${profile.company_name?.replace(/\s+/g, "-").toLowerCase() || profile.id}.docx`);
 }
