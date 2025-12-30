@@ -6,7 +6,6 @@ import { StepProgressBar } from "@/components/growth/StepProgressBar";
 import { KPIComparisonCard } from "@/components/growth/KPIComparisonCard";
 import { ValidationBadge } from "@/components/growth/ValidationBadge";
 import { RecommendedAction } from "@/components/growth/RecommendedAction";
-import { CampaignMetricsCard } from "@/components/growth/CampaignMetricsCard";
 import { CampaignPerformanceHistory } from "@/components/growth/CampaignPerformanceHistory";
 import { GrowthCopilotChat } from "@/components/growth/GrowthCopilotChat";
 import { InfrastructureHealthCard } from "@/components/growth/InfrastructureHealthCard";
@@ -420,15 +419,14 @@ export default function CommandCenter() {
           </Card>
         )}
 
-        {/* Campaign Metrics */}
-        <CampaignMetricsCard
-          metrics={campaignMetrics}
-          isLoading={false}
-          lastSyncAt={integration?.last_sync_at}
+        {/* Campaign Performance */}
+        <CampaignPerformanceHistory
           onSync={handleSync}
           isSyncing={isSyncing}
+          benchmark={1.2}
           timelineDays={timelineDays}
           onTimelineChange={setTimelineDays}
+          refreshKey={variantRefreshKey}
         />
 
         {/* Main Content Grid - KPIs, Actions, and Copilot */}
@@ -469,15 +467,6 @@ export default function CommandCenter() {
               )}
             </div>
 
-            {/* Campaign Performance */}
-            <CampaignPerformanceHistory
-              onSync={handleSync}
-              isSyncing={isSyncing}
-              benchmark={1.2}
-              timelineDays={timelineDays}
-              onTimelineChange={setTimelineDays}
-              refreshKey={variantRefreshKey}
-            />
           </div>
 
           {/* Right Column - AI Copilot */}
