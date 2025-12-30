@@ -267,59 +267,89 @@ interface ParsedStep {
 function parseSequenceSteps(steps: SequenceStep[]): ParsedStep[] {
   const parsed: ParsedStep[] = [];
   
-  // Log the first step fully to understand the structure
+  // Log step structure for debugging
   if (steps.length > 0) {
-    console.log(`DEBUG: First step full structure: ${JSON.stringify(steps[0])}`);
-    console.log(`DEBUG: All step keys: ${steps.map(s => Object.keys(s)).join(' | ')}`);
+    console.log(`DEBUG: Sample step structure: ${JSON.stringify(steps[0])}`);
   }
   
-  // Group steps by their actual step_number to detect A/B variants
-  // In EmailBison, multiple steps can share the same step_number if they're A/B variants
-  const stepsByNumber: Map<number, SequenceStep[]> = new Map();
+  // EmailBison API structure:
+  // - Parent steps have: variant=false, order=1,2,3..., variant_from_step_id=null
+  // - Variant steps have: variant=true, order=null, variant_from_step_id=<parent_step_id>
+  
+  // Step 1: Build a map of step ID -> step number (for parent steps only)
+  const stepIdToNumber = new Map<number, number>();
+  for (const step of steps) {
+    const stepAsRecord = step as unknown as Record<string, unknown>;
+    const isVariant = stepAsRecord.variant === true;
+    const order = stepAsRecord.order as number | null;
+    
+    if (!isVariant && order !== null && order !== undefined) {
+      const stepId = typeof step.id === 'string' ? parseInt(step.id, 10) : step.id;
+      stepIdToNumber.set(stepId, order);
+      console.log(`DEBUG: Parent step ID ${step.id} has order ${order}`);
+    }
+  }
+  
+  // Step 2: Group steps by their effective step number
+  // Parent steps use their own order
+  // Variants use the order of their parent (via variant_from_step_id)
+  const stepsByNumber = new Map<number, { parent?: SequenceStep; variants: SequenceStep[] }>();
   
   for (const step of steps) {
-    // Extract step number - could be in different fields
-    const stepNum = step.step_number || step.order || 0;
-    
-    // Log any variant-related fields we find
     const stepAsRecord = step as unknown as Record<string, unknown>;
-    const variantFields = Object.keys(stepAsRecord).filter(k => 
-      k.toLowerCase().includes('variant') || 
-      k.toLowerCase().includes('parent') ||
-      k.toLowerCase().includes('ab') ||
-      k.toLowerCase().includes('a_b') ||
-      k.toLowerCase().includes('version')
-    );
-    if (variantFields.length > 0) {
-      console.log(`DEBUG: Step ${stepNum} has variant-related fields: ${variantFields.join(', ')} = ${variantFields.map(f => JSON.stringify(stepAsRecord[f])).join(', ')}`);
+    const isVariant = stepAsRecord.variant === true;
+    const variantFromStepId = stepAsRecord.variant_from_step_id as number | null;
+    const order = stepAsRecord.order as number | null;
+    
+    let stepNum: number;
+    
+    if (isVariant && variantFromStepId) {
+      // This is a variant - get step number from parent
+      stepNum = stepIdToNumber.get(variantFromStepId) || 0;
+      console.log(`DEBUG: Variant step ID ${step.id} belongs to parent ${variantFromStepId} (step ${stepNum})`);
+    } else {
+      // This is a parent step - use its order
+      stepNum = order || 0;
     }
     
     if (!stepsByNumber.has(stepNum)) {
-      stepsByNumber.set(stepNum, []);
+      stepsByNumber.set(stepNum, { variants: [] });
     }
-    stepsByNumber.get(stepNum)!.push(step);
+    
+    const group = stepsByNumber.get(stepNum)!;
+    if (isVariant) {
+      group.variants.push(step);
+    } else {
+      group.parent = step;
+    }
   }
   
-  console.log(`DEBUG: Step distribution: ${Array.from(stepsByNumber.entries()).map(([num, arr]) => `Step ${num}: ${arr.length} variants`).join(', ')}`);
+  console.log(`DEBUG: Step distribution after grouping: ${Array.from(stepsByNumber.entries()).map(([num, g]) => `Step ${num}: parent=${g.parent ? 'yes' : 'no'}, variants=${g.variants.length}`).join(', ')}`);
   
-  // Now process each group
-  for (const [stepNum, stepsInGroup] of stepsByNumber.entries()) {
-    if (stepsInGroup.length > 1) {
-      // Multiple steps share the same step_number = A/B variants
-      console.log(`DEBUG: Step ${stepNum} has ${stepsInGroup.length} A/B variants`);
-      for (let i = 0; i < stepsInGroup.length; i++) {
+  // Step 3: Create parsed output
+  for (const [stepNum, group] of stepsByNumber.entries()) {
+    if (group.variants.length > 0) {
+      // Has variants - parent is Variant A, other variants are B, C, etc.
+      if (group.parent) {
         parsed.push({
           stepNumber: stepNum,
-          variantLabel: String.fromCharCode(65 + i), // A, B, C...
-          originalStep: stepsInGroup[i],
+          variantLabel: 'A',
+          originalStep: group.parent,
         });
       }
-    } else {
-      // Single step - no variants
+      for (let i = 0; i < group.variants.length; i++) {
+        parsed.push({
+          stepNumber: stepNum,
+          variantLabel: String.fromCharCode(66 + i), // B, C, D...
+          originalStep: group.variants[i],
+        });
+      }
+    } else if (group.parent) {
+      // No variants - just the parent step
       parsed.push({
         stepNumber: stepNum,
         variantLabel: null,
-        originalStep: stepsInGroup[0],
+        originalStep: group.parent,
       });
     }
   }
@@ -331,6 +361,8 @@ function parseSequenceSteps(steps: SequenceStep[]): ParsedStep[] {
     if (!b.variantLabel) return 1;
     return a.variantLabel.localeCompare(b.variantLabel);
   });
+  
+  console.log(`DEBUG: Final parsed steps: ${parsed.map(p => `Step ${p.stepNumber}${p.variantLabel ? ` Var ${p.variantLabel}` : ''}`).join(', ')}`);
   
   return parsed;
 }
