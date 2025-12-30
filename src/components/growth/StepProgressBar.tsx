@@ -29,8 +29,11 @@ export function StepProgressBar({ steps, currentStep, onStepClick, alertSteps = 
     }
   };
 
-  const getStepStyles = (step: Step) => {
+  const getStepStyles = (step: Step, hasAlert: boolean) => {
     const isActive = step.step_number === currentStep;
+    
+    // Alert ring styling (amber/orange tint) - applied alongside normal status
+    const alertRing = hasAlert ? "ring-2 ring-amber-400/50 ring-offset-1 ring-offset-background" : "";
     
     switch (step.status) {
       case 'validated':
@@ -46,12 +49,12 @@ export function StepProgressBar({ steps, currentStep, onStepClick, alertSteps = 
       case 'in_progress':
         return cn(
           "bg-primary text-primary-foreground border-primary",
-          isActive && "ring-4 ring-primary/30"
+          alertRing || (isActive && "ring-4 ring-primary/30")
         );
       default:
         return cn(
           "bg-muted text-muted-foreground border-border",
-          isActive && "ring-4 ring-muted/50"
+          alertRing || (isActive && "ring-4 ring-muted/50")
         );
     }
   };
@@ -78,11 +81,11 @@ export function StepProgressBar({ steps, currentStep, onStepClick, alertSteps = 
               <div className="relative">
                 <button
                   onClick={() => onStepClick?.(step.step_number)}
-                  className={cn(
-                    "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300",
-                    "hover:scale-110 cursor-pointer",
-                    getStepStyles(step)
-                  )}
+                className={cn(
+                  "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+                  "hover:scale-110 cursor-pointer",
+                  getStepStyles(step, hasAlert)
+                )}
                   title={step.name}
                 >
                   {getStepIcon(step)}
