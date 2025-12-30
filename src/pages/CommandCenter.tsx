@@ -483,11 +483,11 @@ export default function CommandCenter() {
         />
 
         {/* Priority Actions + Asset Summary Grid */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <PriorityActionsStack actions={priorityActions} maxVisible={3} />
-          </div>
-          <div className="space-y-4">
+        <div className="space-y-6">
+          <PriorityActionsStack actions={priorityActions} maxVisible={3} />
+          
+          {/* Asset Cards Row */}
+          <div className="grid md:grid-cols-2 gap-4">
             <AssetSummaryCard
               hasIcpDocument={!!icpAsset}
               leadMagnetsCount={leadMagnetsCount}
