@@ -462,7 +462,7 @@ async function processEmailBisonVariants(
       interested_count: stats.interested,
       meetings_booked: 0,
       reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
-      interested_rate: stats.sent > 0 ? (stats.interested / stats.sent) * 100 : 0,
+      interested_rate: stats.replied > 0 ? (stats.interested / stats.replied) * 100 : 0,
       raw_data: { step, stats, parsed_info: { stepNumber: parsed.stepNumber, variantLabel: parsed.variantLabel } },
     });
   }
@@ -523,7 +523,7 @@ async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[
             unsubscribes: analytics.unsubscribed_count || 0,
             open_rate: emailsSent > 0 ? (uniqueOpens / emailsSent) * 100 : 0,
             reply_rate: emailsSent > 0 ? (uniqueReplies / emailsSent) * 100 : 0,
-            interested_rate: emailsSent > 0 ? (interested / emailsSent) * 100 : 0,
+            interested_rate: uniqueReplies > 0 ? (interested / uniqueReplies) * 100 : 0,
             raw_data: { campaign, analytics },
           });
         }
@@ -703,7 +703,7 @@ async function fetchEmailBisonCampaigns(
         unsubscribes: stats.unsubscribed,
         open_rate: stats.sent > 0 ? (stats.opened / stats.sent) * 100 : 0,
         reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
-        interested_rate: stats.sent > 0 ? (stats.interested / stats.sent) * 100 : 0,
+        interested_rate: stats.replied > 0 ? (stats.interested / stats.replied) * 100 : 0,
         raw_data: { campaign, stats },
       });
     }
@@ -916,7 +916,7 @@ serve(async (req) => {
           total_meetings: totals.meetings,
           open_rate: totals.emails_sent > 0 ? (totals.opens / totals.emails_sent) * 100 : 0,
           reply_rate: totals.emails_sent > 0 ? (totals.replies / totals.emails_sent) * 100 : 0,
-          interested_rate: totals.emails_sent > 0 ? (totals.interested / totals.emails_sent) * 100 : 0,
+          interested_rate: totals.replies > 0 ? (totals.interested / totals.replies) * 100 : 0,
         }, {
           onConflict: 'user_id,date',
         });
