@@ -56,7 +56,9 @@ interface CampaignEventStats {
 interface SequenceVariant {
   id: string | number;
   subject?: string;
+  email_subject?: string;
   body?: string;
+  email_body?: string;
   is_active?: boolean;
   sent_count?: number;
   opened_count?: number;
@@ -70,7 +72,9 @@ interface SequenceStep {
   step_number?: number;
   order?: number;
   subject?: string;
+  email_subject?: string;
   body?: string;
+  email_body?: string;
   delay_in_days?: number;
   is_active?: boolean;
   variants?: SequenceVariant[];
@@ -187,12 +191,16 @@ async function fetchEmailBisonSequenceSteps(
 
       const fallbackData = await fallbackResponse.json();
       console.log(`Sequence steps v1.0 response for ${campaignId}: ${JSON.stringify(fallbackData).substring(0, 500)}`);
-      return fallbackData.data || fallbackData || [];
+      // Response format: { data: { sequence_id, sequence_steps: [...] } }
+      const innerData = fallbackData.data || fallbackData;
+      return innerData.sequence_steps || innerData || [];
     }
 
     const data = await response.json();
     console.log(`Sequence steps v1.1 response for ${campaignId}: ${JSON.stringify(data).substring(0, 500)}`);
-    return data.data || data || [];
+    // Response format: { data: { sequence_id, sequence_steps: [...] } }
+    const innerData = data.data || data;
+    return innerData.sequence_steps || innerData || [];
   } catch (err) {
     console.error(`Error fetching sequence steps for ${campaignId}:`, err);
     return [];
@@ -304,7 +312,7 @@ async function processEmailBisonVariants(
           step_number: stepNumber,
           variant_id: variantId,
           variant_label: `Step ${stepNumber} - Variant ${variantLabel}`,
-          subject_line: variant.subject || step.subject || '',
+          subject_line: variant.email_subject || variant.subject || step.email_subject || step.subject || '',
           is_active: variant.is_active !== false,
           emails_sent: stats.sent,
           unique_replies: stats.replied,
@@ -337,7 +345,7 @@ async function processEmailBisonVariants(
         step_number: stepNumber,
         variant_id: stepId,
         variant_label: `Step ${stepNumber}`,
-        subject_line: step.subject || '',
+        subject_line: step.email_subject || step.subject || '',
         is_active: step.is_active !== false,
         emails_sent: stats.sent,
         unique_replies: stats.replied,
