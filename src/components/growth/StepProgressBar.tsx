@@ -12,9 +12,10 @@ interface StepProgressBarProps {
   steps: Step[];
   currentStep: number;
   onStepClick?: (stepNumber: number) => void;
+  alertSteps?: number[];
 }
 
-export function StepProgressBar({ steps, currentStep, onStepClick }: StepProgressBarProps) {
+export function StepProgressBar({ steps, currentStep, onStepClick, alertSteps = [] }: StepProgressBarProps) {
   const getStepIcon = (step: Step) => {
     switch (step.status) {
       case 'validated':
@@ -30,6 +31,16 @@ export function StepProgressBar({ steps, currentStep, onStepClick }: StepProgres
 
   const getStepStyles = (step: Step) => {
     const isActive = step.step_number === currentStep;
+    const hasAlert = alertSteps.includes(step.step_number) && step.status !== 'validated';
+    
+    // Alert state takes visual priority for non-validated steps
+    if (hasAlert) {
+      return cn(
+        "bg-amber-500/20 text-amber-600 border-amber-500",
+        "ring-2 ring-amber-500 ring-offset-2 ring-offset-background animate-pulse",
+        isActive && "ring-4"
+      );
+    }
     
     switch (step.status) {
       case 'validated':
