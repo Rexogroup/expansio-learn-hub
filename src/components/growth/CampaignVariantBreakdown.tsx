@@ -46,16 +46,17 @@ interface GroupedVariants {
 
 interface CampaignVariantBreakdownProps {
   timelineDays: number;
+  refreshKey?: number;
 }
 
-export function CampaignVariantBreakdown({ timelineDays }: CampaignVariantBreakdownProps) {
+export function CampaignVariantBreakdown({ timelineDays, refreshKey }: CampaignVariantBreakdownProps) {
   const [variants, setVariants] = useState<CampaignVariant[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchVariants();
-  }, [timelineDays]);
+  }, [timelineDays, refreshKey]);
 
   const fetchVariants = async () => {
     setLoading(true);
