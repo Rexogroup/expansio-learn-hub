@@ -169,6 +169,72 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_variants: {
+        Row: {
+          campaign_id: string
+          campaign_name: string | null
+          created_at: string | null
+          emails_sent: number | null
+          id: string
+          interested_count: number | null
+          interested_rate: number | null
+          is_active: boolean | null
+          meetings_booked: number | null
+          raw_data: Json | null
+          reply_rate: number | null
+          step_number: number
+          subject_line: string | null
+          synced_at: string | null
+          timeline_days: number | null
+          unique_replies: number | null
+          user_id: string
+          variant_id: string
+          variant_label: string | null
+        }
+        Insert: {
+          campaign_id: string
+          campaign_name?: string | null
+          created_at?: string | null
+          emails_sent?: number | null
+          id?: string
+          interested_count?: number | null
+          interested_rate?: number | null
+          is_active?: boolean | null
+          meetings_booked?: number | null
+          raw_data?: Json | null
+          reply_rate?: number | null
+          step_number: number
+          subject_line?: string | null
+          synced_at?: string | null
+          timeline_days?: number | null
+          unique_replies?: number | null
+          user_id: string
+          variant_id: string
+          variant_label?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          campaign_name?: string | null
+          created_at?: string | null
+          emails_sent?: number | null
+          id?: string
+          interested_count?: number | null
+          interested_rate?: number | null
+          is_active?: boolean | null
+          meetings_booked?: number | null
+          raw_data?: Json | null
+          reply_rate?: number | null
+          step_number?: number
+          subject_line?: string | null
+          synced_at?: string | null
+          timeline_days?: number | null
+          unique_replies?: number | null
+          user_id?: string
+          variant_id?: string
+          variant_label?: string | null
+        }
+        Relationships: []
+      }
       client_projects: {
         Row: {
           assigned_to: string | null

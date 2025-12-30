@@ -52,6 +52,53 @@ interface CampaignEventStats {
   unsubscribed: number;
 }
 
+// Interfaces for sequence steps and A/B variants
+interface SequenceVariant {
+  id: string | number;
+  subject?: string;
+  body?: string;
+  is_active?: boolean;
+  sent_count?: number;
+  opened_count?: number;
+  replied_count?: number;
+  interested_count?: number;
+  bounced_count?: number;
+}
+
+interface SequenceStep {
+  id: string | number;
+  step_number?: number;
+  order?: number;
+  subject?: string;
+  body?: string;
+  delay_in_days?: number;
+  is_active?: boolean;
+  variants?: SequenceVariant[];
+  // Stats if included at step level
+  sent_count?: number;
+  opened_count?: number;
+  replied_count?: number;
+  interested_count?: number;
+  bounced_count?: number;
+}
+
+interface CampaignVariantMetrics {
+  campaign_id: string;
+  campaign_name: string;
+  step_number: number;
+  variant_id: string;
+  variant_label: string;
+  subject_line: string;
+  is_active: boolean;
+  emails_sent: number;
+  unique_replies: number;
+  interested_count: number;
+  meetings_booked: number;
+  reply_rate: number;
+  interested_rate: number;
+  raw_data: Record<string, unknown>;
+}
+
 // Fetch date-filtered stats using /api/campaign-events/stats endpoint
 async function fetchEmailBisonCampaignEventsStats(
   apiKey: string,
@@ -103,6 +150,208 @@ async function fetchEmailBisonCampaignEventsStats(
   }
   
   return result;
+}
+
+// Fetch sequence steps and A/B variants for a campaign
+async function fetchEmailBisonSequenceSteps(
+  apiKey: string,
+  campaignId: string
+): Promise<SequenceStep[]> {
+  try {
+    // Try v1.1 endpoint first (may have more data)
+    const url = `https://send.expansio.io/api/campaigns/v1.1/${campaignId}/sequence-steps`;
+    console.log(`Fetching sequence steps: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // Fallback to v1.0 endpoint
+      console.log(`v1.1 failed (${response.status}), trying v1.0`);
+      const fallbackUrl = `https://send.expansio.io/api/campaigns/${campaignId}/sequence-steps`;
+      const fallbackResponse = await fetch(fallbackUrl, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!fallbackResponse.ok) {
+        console.log(`Both endpoints failed for campaign ${campaignId}`);
+        return [];
+      }
+
+      const fallbackData = await fallbackResponse.json();
+      console.log(`Sequence steps v1.0 response for ${campaignId}: ${JSON.stringify(fallbackData).substring(0, 500)}`);
+      return fallbackData.data || fallbackData || [];
+    }
+
+    const data = await response.json();
+    console.log(`Sequence steps v1.1 response for ${campaignId}: ${JSON.stringify(data).substring(0, 500)}`);
+    return data.data || data || [];
+  } catch (err) {
+    console.error(`Error fetching sequence steps for ${campaignId}:`, err);
+    return [];
+  }
+}
+
+// Fetch stats for a specific sequence step
+async function fetchEmailBisonStepStats(
+  apiKey: string,
+  campaignId: string,
+  stepId: string,
+  startDate: string,
+  endDate: string
+): Promise<CampaignEventStats> {
+  const result: CampaignEventStats = { sent: 0, opened: 0, replied: 0, interested: 0, bounced: 0, unsubscribed: 0 };
+  
+  try {
+    // Try to get step-specific stats using campaign-events/stats with step filter
+    const url = `https://send.expansio.io/api/campaign-events/stats?start_date=${startDate}&end_date=${endDate}&campaign_ids[0]=${campaignId}&sequence_step_ids[0]=${stepId}`;
+    console.log(`Fetching step stats: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.log(`Step stats failed: ${response.status}`);
+      return result;
+    }
+
+    const data = await response.json();
+    console.log(`Step stats response for step ${stepId}: ${JSON.stringify(data).substring(0, 300)}`);
+    
+    const eventGroups = data.data || data || [];
+    
+    for (const eventGroup of eventGroups) {
+      const dates = eventGroup.dates || [];
+      const totalForEvent = dates.reduce((sum: number, item: [string, number]) => sum + (item[1] || 0), 0);
+      
+      const label = (eventGroup.label || '').toLowerCase();
+      if (label.includes('sent')) result.sent = totalForEvent;
+      else if (label.includes('unique opens') || label === 'opened') result.opened = totalForEvent;
+      else if (label.includes('replied') || label.includes('reply')) result.replied = totalForEvent;
+      else if (label.includes('interested')) result.interested = totalForEvent;
+      else if (label.includes('bounced') || label.includes('bounce')) result.bounced = totalForEvent;
+      else if (label.includes('unsubscribed') || label.includes('unsubscribe')) result.unsubscribed = totalForEvent;
+    }
+  } catch (err) {
+    console.error(`Error fetching step stats for ${stepId}:`, err);
+  }
+  
+  return result;
+}
+
+// Process variants for a campaign and return metrics
+async function processEmailBisonVariants(
+  apiKey: string,
+  campaignId: string,
+  campaignName: string,
+  startDate: string,
+  endDate: string
+): Promise<CampaignVariantMetrics[]> {
+  const variants: CampaignVariantMetrics[] = [];
+  
+  const sequenceSteps = await fetchEmailBisonSequenceSteps(apiKey, campaignId);
+  
+  if (sequenceSteps.length === 0) {
+    console.log(`No sequence steps found for campaign ${campaignId}`);
+    return variants;
+  }
+  
+  console.log(`Processing ${sequenceSteps.length} sequence steps for campaign ${campaignId}`);
+  
+  for (let i = 0; i < sequenceSteps.length; i++) {
+    const step = sequenceSteps[i];
+    const stepNumber = step.step_number || step.order || (i + 1);
+    const stepId = step.id.toString();
+    
+    // Check if this step has A/B variants
+    if (step.variants && step.variants.length > 0) {
+      // Process each variant
+      for (let v = 0; v < step.variants.length; v++) {
+        const variant = step.variants[v];
+        const variantId = variant.id.toString();
+        const variantLabel = String.fromCharCode(65 + v); // A, B, C...
+        
+        // Use variant stats if available, otherwise fetch
+        let stats: CampaignEventStats;
+        if (variant.sent_count !== undefined) {
+          stats = {
+            sent: variant.sent_count || 0,
+            opened: variant.opened_count || 0,
+            replied: variant.replied_count || 0,
+            interested: variant.interested_count || 0,
+            bounced: variant.bounced_count || 0,
+            unsubscribed: 0,
+          };
+        } else {
+          // Try to fetch stats for this specific variant
+          stats = await fetchEmailBisonStepStats(apiKey, campaignId, variantId, startDate, endDate);
+        }
+        
+        variants.push({
+          campaign_id: campaignId,
+          campaign_name: campaignName,
+          step_number: stepNumber,
+          variant_id: variantId,
+          variant_label: `Step ${stepNumber} - Variant ${variantLabel}`,
+          subject_line: variant.subject || step.subject || '',
+          is_active: variant.is_active !== false,
+          emails_sent: stats.sent,
+          unique_replies: stats.replied,
+          interested_count: stats.interested,
+          meetings_booked: 0, // Will be handled separately if needed
+          reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
+          interested_rate: stats.sent > 0 ? (stats.interested / stats.sent) * 100 : 0,
+          raw_data: { step, variant, stats },
+        });
+      }
+    } else {
+      // No A/B variants - treat the step itself as a single variant
+      let stats: CampaignEventStats;
+      if (step.sent_count !== undefined) {
+        stats = {
+          sent: step.sent_count || 0,
+          opened: step.opened_count || 0,
+          replied: step.replied_count || 0,
+          interested: step.interested_count || 0,
+          bounced: step.bounced_count || 0,
+          unsubscribed: 0,
+        };
+      } else {
+        stats = await fetchEmailBisonStepStats(apiKey, campaignId, stepId, startDate, endDate);
+      }
+      
+      variants.push({
+        campaign_id: campaignId,
+        campaign_name: campaignName,
+        step_number: stepNumber,
+        variant_id: stepId,
+        variant_label: `Step ${stepNumber}`,
+        subject_line: step.subject || '',
+        is_active: step.is_active !== false,
+        emails_sent: stats.sent,
+        unique_replies: stats.replied,
+        interested_count: stats.interested,
+        meetings_booked: 0,
+        reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
+        interested_rate: stats.sent > 0 ? (stats.interested / stats.sent) * 100 : 0,
+        raw_data: { step, stats },
+      });
+    }
+  }
+  
+  console.log(`Processed ${variants.length} variants for campaign ${campaignId}`);
+  return variants;
 }
 
 async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[]> {
@@ -451,6 +700,67 @@ serve(async (req) => {
         }
       }
 
+      // Sync campaign variants (A/B test data) for EmailBison only
+      let variantsSynced = 0;
+      if (integration.platform === 'emailbison') {
+        console.log('Starting variant sync for EmailBison campaigns...');
+        
+        // Calculate date range for variant stats
+        const endDate = new Date();
+        const startDate = new Date();
+        if (days) {
+          startDate.setDate(startDate.getDate() - days);
+        } else {
+          startDate.setFullYear(startDate.getFullYear() - 3);
+        }
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        for (const campaign of campaigns) {
+          const variants = await processEmailBisonVariants(
+            integration.api_key,
+            campaign.external_campaign_id,
+            campaign.campaign_name,
+            startDateStr,
+            endDateStr
+          );
+          
+          for (const variant of variants) {
+            const { error: variantError } = await supabase
+              .from('campaign_variants')
+              .upsert({
+                user_id: user.id,
+                campaign_id: variant.campaign_id,
+                campaign_name: variant.campaign_name,
+                step_number: variant.step_number,
+                variant_id: variant.variant_id,
+                variant_label: variant.variant_label,
+                subject_line: variant.subject_line,
+                is_active: variant.is_active,
+                emails_sent: variant.emails_sent,
+                unique_replies: variant.unique_replies,
+                interested_count: variant.interested_count,
+                meetings_booked: variant.meetings_booked,
+                reply_rate: variant.reply_rate,
+                interested_rate: variant.interested_rate,
+                timeline_days: days || null,
+                raw_data: variant.raw_data,
+                synced_at: new Date().toISOString(),
+              }, {
+                onConflict: 'user_id,campaign_id,variant_id,step_number,timeline_days',
+              });
+            
+            if (variantError) {
+              console.error(`Error upserting variant ${variant.variant_id}:`, variantError);
+            } else {
+              variantsSynced++;
+            }
+          }
+        }
+        
+        console.log(`Synced ${variantsSynced} variants for user ${user.id}`);
+      }
+
       // Calculate and store daily aggregates
       const today = new Date().toISOString().split('T')[0];
       const totals = campaigns.reduce((acc, c) => ({
@@ -493,6 +803,7 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           campaigns_synced: campaigns.length,
+          variants_synced: variantsSynced,
           timeline_days: days || null,
           totals 
         }),
