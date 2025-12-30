@@ -53,13 +53,67 @@ interface RequestBody {
   conversationHistory?: Array<{ role: string; content: string }>;
 }
 
+interface KnowledgeBaseDoc {
+  title: string;
+  category: string;
+  extracted_content: string;
+}
+
+function buildKnowledgeBaseSection(docs: KnowledgeBaseDoc[]): string {
+  if (!docs || docs.length === 0) return '';
+
+  const byCategory = docs.reduce((acc, doc) => {
+    const cat = doc.category || 'other';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(doc);
+    return acc;
+  }, {} as Record<string, KnowledgeBaseDoc[]>);
+
+  const categoryLabels: Record<string, string> = {
+    'examples': 'Winning Script Examples',
+    'lead_magnet': 'Lead Magnet Best Practices',
+    'framework': 'Frameworks & Methodologies',
+    'icp': 'ICP Templates',
+    'pain_points': 'Pain Point References',
+    'objections': 'Objection Handling',
+    'scripts': 'Script Templates',
+    'other': 'Additional Resources'
+  };
+
+  // Prioritize categories that are most actionable
+  const categoryOrder = ['examples', 'scripts', 'framework', 'objections', 'lead_magnet', 'icp', 'pain_points', 'other'];
+  
+  let section = '\n## KNOWLEDGE BASE (Reference for Recommendations)\n\n';
+  let totalChars = 0;
+  const maxTotalChars = 15000; // Limit total KB content to prevent token overflow
+
+  for (const category of categoryOrder) {
+    if (!byCategory[category]) continue;
+    
+    section += `### ${categoryLabels[category] || category}\n`;
+    for (const doc of byCategory[category]) {
+      if (totalChars >= maxTotalChars) break;
+      
+      // Truncate each document to ~1500 chars
+      const content = doc.extracted_content?.substring(0, 1500) || '';
+      const docSection = `**${doc.title}:**\n${content}\n\n`;
+      totalChars += docSection.length;
+      section += docSection;
+    }
+    if (totalChars >= maxTotalChars) break;
+  }
+
+  return section;
+}
+
 function buildSystemPrompt(
   growthSteps: GrowthStep[],
   currentStep: GrowthStep | null,
   userProgress: UserProgress | null,
   campaigns: CampaignData[],
   totalMetrics: { emails_sent: number; replies: number; interested: number; reply_rate: number; interested_rate: number },
-  infrastructureAlerts: InfrastructureAlert[]
+  infrastructureAlerts: InfrastructureAlert[],
+  knowledgeBaseContent: string
 ): string {
   const topCampaigns = [...campaigns]
     .filter(c => c.emails_sent > 100)
@@ -157,11 +211,12 @@ ${infrastructureSection}
 
 ## DIAGNOSTIC RULES
 
-### Interested Rate Diagnostics
-- < 0.5%: Critical - Major issue with offer, targeting, or deliverability
-- 0.5% - 1.0%: Below benchmark - Test new offer angles, refine ICP
-- 1.0% - 1.5%: Near benchmark - Minor optimizations needed
-- > 1.5%: Above benchmark - Ready to scale
+### Interested Rate (IR%) Diagnostics
+NOTE: IR% is calculated as (Interested / Total Replies) × 100 — the conversion rate from replies to interested.
+- < 5%: Critical - Reply-to-interested conversion is failing. Offer/messaging mismatch. KILL this variant.
+- 5% - 10%: Below benchmark - Replies aren't converting. Test new offer angles, refine ICP. ITERATE.
+- 10% - 15%: Near benchmark - Minor optimizations needed. Tweak messaging. ITERATE.
+- > 15%: Above benchmark - High conversion from replies. Ready to SCALE.
 
 ### Reply Rate Diagnostics  
 - < 1.0%: Very low engagement - Check deliverability and personalization
@@ -169,27 +224,45 @@ ${infrastructureSection}
 - 2.0% - 3.0%: Good - Focus on converting replies to interested
 - > 3.0%: Excellent - Optimize for quality over quantity
 
+### Variant Analysis Rules
+When analyzing A/B variants:
+- **WINNER**: Variant with highest IR% AND at least 50+ replies (statistical significance)
+- **SCALE**: IR% > 15% of replies - recommend increasing volume immediately
+- **ITERATE**: IR% between 5-15% - suggest specific tweaks based on winning scripts in knowledge base
+- **KILL**: IR% < 5% after 50+ replies - recommend pausing and replacing with new angle
+
 ### Campaign Scaling Rules
-- Scale campaigns with >1.2% interested rate
-- Pause campaigns with <0.5% interested rate after 5000+ emails
+- Scale campaigns with >15% interested rate (of replies)
+- Pause campaigns with <5% interested rate after 50+ replies
 - Test 2-3 variants before declaring a winner
 - Increase volume by 20-30% per week when scaling
+
+${knowledgeBaseContent}
 
 ## YOUR ROLE
 1. ${infrastructureAlerts.length > 0 ? 'FIRST: Address any infrastructure alerts - these are the highest priority' : 'Check infrastructure health is stable'}
 2. Diagnose where the user is struggling based on their data
 3. Compare their metrics to benchmarks and identify gaps
-4. Recommend specific campaigns to scale vs. pause
-5. Provide ONE clear, actionable next step
-6. Guide them to the next step in the framework when ready
+4. **Analyze variants** and recommend which to SCALE, ITERATE, or KILL based on IR%
+5. **Reference the Knowledge Base** to provide specific script examples and frameworks
+6. When suggesting improvements, cite specific examples from the knowledge base
+7. Provide ONE clear, actionable next step with a concrete example
+8. Guide them to the next step in the framework when ready
+
+## HOW TO USE KNOWLEDGE BASE
+- Reference specific winning script examples when recommending iterations
+- Cite framework docs when explaining best practices
+- Use lead magnet examples when suggesting new angles to test
+- When recommending ITERATE, provide a specific example from the knowledge base
 
 ## RESPONSE STYLE
 - Be direct, concise, and data-driven
 - Reference specific numbers from their campaigns
+- When analyzing variants, clearly state: SCALE, ITERATE, or KILL for each
 - Prioritize ONE clear action over multiple suggestions
 - Explain WHY based on the data
 - Use bullet points for clarity
-- Keep responses under 200 words unless asked for detail
+- Keep responses under 250 words unless asked for detail
 ${infrastructureAlerts.length > 0 ? '- ALWAYS lead with infrastructure health concerns when they exist' : ''}`;
 }
 
@@ -231,19 +304,21 @@ serve(async (req) => {
 
     console.log(`Growth Copilot request: type=${type}, user=${user.id}`);
 
-    // Fetch all context data in parallel (including infrastructure alerts)
+    // Fetch all context data in parallel (including infrastructure alerts and knowledge base)
     const [
       { data: growthSteps },
       { data: userProgress },
       { data: campaigns },
       { data: dailyMetrics },
-      { data: infrastructureAlerts }
+      { data: infrastructureAlerts },
+      { data: knowledgeBaseDocs }
     ] = await Promise.all([
       supabase.from('growth_steps').select('*').order('step_number'),
       supabase.from('user_growth_progress').select('*').eq('user_id', user.id),
       supabase.from('synced_campaigns').select('*').eq('user_id', user.id),
       supabase.from('daily_campaign_metrics').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1),
-      supabase.from('email_account_alerts').select('email_address, alert_type, severity, current_value, threshold_value, recommended_action').eq('user_id', user.id).eq('status', 'active')
+      supabase.from('email_account_alerts').select('email_address, alert_type, severity, current_value, threshold_value, recommended_action').eq('user_id', user.id).eq('status', 'active'),
+      supabase.from('knowledge_base_documents').select('title, category, extracted_content').eq('document_type', 'admin').eq('is_active', true)
     ]);
 
     // Determine current step
@@ -306,6 +381,17 @@ serve(async (req) => {
       recommended_action: a.recommended_action,
     }));
 
+    // Build knowledge base section
+    const knowledgeBaseContent = buildKnowledgeBaseSection(
+      (knowledgeBaseDocs || []).map(doc => ({
+        title: doc.title,
+        category: doc.category,
+        extracted_content: doc.extracted_content || ''
+      }))
+    );
+
+    console.log(`Knowledge base loaded: ${knowledgeBaseDocs?.length || 0} documents`);
+
     // Build system prompt with full context
     const systemPrompt = buildSystemPrompt(
       growthSteps || [],
@@ -313,7 +399,8 @@ serve(async (req) => {
       currentProgress,
       campaignData,
       totalMetrics,
-      alertData
+      alertData,
+      knowledgeBaseContent
     );
 
     // Build user message based on type
