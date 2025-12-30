@@ -7,7 +7,7 @@ import { KPIComparisonCard } from "@/components/growth/KPIComparisonCard";
 import { ValidationBadge } from "@/components/growth/ValidationBadge";
 import { RecommendedAction } from "@/components/growth/RecommendedAction";
 import { CampaignPerformanceHistory } from "@/components/growth/CampaignPerformanceHistory";
-import { GrowthCopilotChat } from "@/components/growth/GrowthCopilotChat";
+import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { InfrastructureHealthCard } from "@/components/growth/InfrastructureHealthCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -429,53 +429,45 @@ export default function CommandCenter() {
           refreshKey={variantRefreshKey}
         />
 
-        {/* Main Content Grid - KPIs, Actions, and Copilot */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - KPIs and Actions */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Infrastructure Health Card - Show for Step 1 */}
-            {currentStepNumber === 1 && (
-              <InfrastructureHealthCard />
+        {/* Main Content Grid - KPIs and Actions */}
+        <div className="space-y-6">
+          {/* Infrastructure Health Card - Show for Step 1 */}
+          {currentStepNumber === 1 && (
+            <InfrastructureHealthCard />
+          )}
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* KPI Comparison - Hide for Step 1 since InfrastructureHealthCard already shows health */}
+            {currentStep && currentStep.benchmark_kpi_name && currentStepNumber !== 1 && (
+              <KPIComparisonCard
+                title={currentStep.benchmark_kpi_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                currentValue={
+                  currentStep.benchmark_kpi_name === 'interested_rate' 
+                    ? (campaignMetrics?.interested_rate || 0)
+                    : currentStep.benchmark_kpi_name === 'reply_rate'
+                      ? (campaignMetrics?.reply_rate || 0)
+                      : (currentProgress?.current_kpi_value || 0)
+                }
+                benchmarkValue={Number(currentStep.benchmark_kpi_value)}
+                unit={currentStep.benchmark_kpi_unit}
+                description={`Target: ${currentStep.benchmark_kpi_value}${currentStep.benchmark_kpi_unit === 'percent' ? '%' : ''}`}
+              />
             )}
-            
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* KPI Comparison - Hide for Step 1 since InfrastructureHealthCard already shows health */}
-              {currentStep && currentStep.benchmark_kpi_name && currentStepNumber !== 1 && (
-                <KPIComparisonCard
-                  title={currentStep.benchmark_kpi_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  currentValue={
-                    currentStep.benchmark_kpi_name === 'interested_rate' 
-                      ? (campaignMetrics?.interested_rate || 0)
-                      : currentStep.benchmark_kpi_name === 'reply_rate'
-                        ? (campaignMetrics?.reply_rate || 0)
-                        : (currentProgress?.current_kpi_value || 0)
-                  }
-                  benchmarkValue={Number(currentStep.benchmark_kpi_value)}
-                  unit={currentStep.benchmark_kpi_unit}
-                  description={`Target: ${currentStep.benchmark_kpi_value}${currentStep.benchmark_kpi_unit === 'percent' ? '%' : ''}`}
-                />
-              )}
 
-              {/* Recommended Action */}
-              {recommendedAction && (
-                <RecommendedAction
-                  title={recommendedAction.title}
-                  description={recommendedAction.description}
-                  actionLabel={recommendedAction.actionLabel}
-                  actionPath={recommendedAction.actionPath}
-                />
-              )}
-            </div>
-
-          </div>
-
-          {/* Right Column - AI Copilot */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-4">
-              <GrowthCopilotChat />
-            </div>
+            {/* Recommended Action */}
+            {recommendedAction && (
+              <RecommendedAction
+                title={recommendedAction.title}
+                description={recommendedAction.description}
+                actionLabel={recommendedAction.actionLabel}
+                actionPath={recommendedAction.actionPath}
+              />
+            )}
           </div>
         </div>
+
+        {/* Floating Growth Copilot */}
+        <GrowthCopilotSheet />
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
