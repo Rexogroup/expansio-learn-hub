@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { TrendingUp, TrendingDown, ChevronDown, Mail, Target, Zap, Lock } from "lucide-react";
+import { TrendingUp, TrendingDown, ChevronDown, Mail, Target, Zap, Lock, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 interface ScriptAsset {
   id: string;
@@ -24,16 +26,19 @@ interface ScriptAsset {
 
 interface AssetVaultScriptsProps {
   className?: string;
+  refreshKey?: number;
+  onRefreshComplete?: () => void;
 }
 
-export function AssetVaultScripts({ className }: AssetVaultScriptsProps) {
+export function AssetVaultScripts({ className, refreshKey, onRefreshComplete }: AssetVaultScriptsProps) {
   const [scripts, setScripts] = useState<ScriptAsset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchScripts();
-  }, []);
+  }, [refreshKey]);
 
   const fetchScripts = async () => {
     try {
@@ -61,6 +66,38 @@ export function AssetVaultScripts({ className }: AssetVaultScriptsProps) {
       console.error('Error fetching script assets:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshAILearning = async () => {
+    setIsRefreshing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Not authenticated');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('classify-scripts', {
+        body: { user_id: user.id },
+      });
+
+      if (response.error) throw response.error;
+
+      const result = response.data;
+      if (result.scripts_saved > 0) {
+        toast.success(`AI learned from ${result.scripts_saved} new script(s)`);
+      } else {
+        toast.info('No new scripts to learn from');
+      }
+      
+      await fetchScripts();
+      onRefreshComplete?.();
+    } catch (err) {
+      console.error('Error refreshing AI learning:', err);
+      toast.error('Failed to refresh AI learning');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -103,10 +140,20 @@ export function AssetVaultScripts({ className }: AssetVaultScriptsProps) {
             AI Learning Vault
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No scripts captured yet. After your campaigns send 1000+ emails, top and underperforming scripts will be automatically saved here for the AI Copilot to learn from.
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground text-center py-2">
+            No scripts captured yet. After your campaigns send 1000+ emails, top and underperforming scripts will be automatically saved here.
           </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleRefreshAILearning}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Analyzing...' : 'Analyze Scripts Now'}
+          </Button>
         </CardContent>
       </Card>
     );
@@ -120,9 +167,21 @@ export function AssetVaultScripts({ className }: AssetVaultScriptsProps) {
             <Lock className="w-4 h-4" />
             AI Learning Vault
           </CardTitle>
-          <Badge variant="secondary" className="text-xs">
-            {scripts.length} scripts captured
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {scripts.length} captured
+            </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleRefreshAILearning}
+              disabled={isRefreshing}
+              title="Refresh AI Learning"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           Proprietary scripts powering your personalized AI Copilot
