@@ -57,20 +57,12 @@ export function useVariantRecommendations() {
 
       // Fetch all data in parallel
       const [variantsResult, scriptsResult, metricsResult] = await Promise.all([
-        // Get 30-day variant data
+        // Get 30-day variant data - direct query (not join)
         supabase
           .from('campaign_variants')
-          .select(`
-            id,
-            variant_label,
-            step_number,
-            emails_sent,
-            interested_count,
-            unique_replies,
-            synced_campaigns!inner(campaign_name, user_id, timeline_days)
-          `)
-          .eq('synced_campaigns.user_id', session.user.id)
-          .eq('synced_campaigns.timeline_days', 30)
+          .select('id, variant_label, step_number, emails_sent, interested_count, unique_replies, campaign_name')
+          .eq('user_id', session.user.id)
+          .eq('timeline_days', 30)
           .gte('emails_sent', SOP_THRESHOLDS.MIN_SAMPLE_SIZE),
         
         // Get winning scripts for reference
@@ -112,7 +104,7 @@ export function useVariantRecommendations() {
         const recs: VariantRecommendation[] = [];
 
         for (const variant of variantsResult.data) {
-          const campaign = variant.synced_campaigns as unknown as { campaign_name: string };
+          const campaignName = variant.campaign_name || 'Campaign';
           const emailsSent = variant.emails_sent || 0;
           const interested = variant.interested_count || 0;
           const replies = variant.unique_replies || 0;
@@ -141,7 +133,7 @@ export function useVariantRecommendations() {
 
           recs.push({
             id: variant.id,
-            campaignName: campaign?.campaign_name || 'Campaign',
+            campaignName,
             stepNumber: variant.step_number || 1,
             variantLabel: variant.variant_label || 'A',
             emailsSent,
