@@ -104,7 +104,7 @@ export function AssetVaultScripts({ className, refreshKey, onRefreshComplete }: 
   const winningScripts = scripts.filter(s => s.asset_type === 'winning_script');
   const losingScripts = scripts.filter(s => s.asset_type === 'losing_script');
 
-  const parseContent = (content: string): { subject_line?: string; campaign_name?: string; step_number?: number; variant_label?: string } => {
+  const parseContent = (content: string): { subject_line?: string; email_body?: string; campaign_name?: string; step_number?: number; variant_label?: string } => {
     try {
       return typeof content === 'string' ? JSON.parse(content) : content;
     } catch {
@@ -236,6 +236,11 @@ export function AssetVaultScripts({ className, refreshKey, onRefreshComplete }: 
                               </span>
                             </div>
                           )}
+                          {content.email_body && (
+                            <div className="mt-2 p-2 bg-background/50 rounded border text-xs text-foreground/80">
+                              <span className="text-muted-foreground font-medium">Offer:</span> {content.email_body.substring(0, 200)}{content.email_body.length > 200 ? '...' : ''}
+                            </div>
+                          )}
                           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Target className="w-3 h-3" />
@@ -305,6 +310,11 @@ export function AssetVaultScripts({ className, refreshKey, onRefreshComplete }: 
                               <span className="text-muted-foreground">
                                 Subject: <span className="text-foreground">"{content.subject_line}"</span>
                               </span>
+                            </div>
+                          )}
+                          {content.email_body && (
+                            <div className="mt-2 p-2 bg-background/50 rounded border text-xs text-foreground/80">
+                              <span className="text-muted-foreground font-medium">Offer:</span> {content.email_body.substring(0, 200)}{content.email_body.length > 200 ? '...' : ''}
                             </div>
                           )}
                           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">

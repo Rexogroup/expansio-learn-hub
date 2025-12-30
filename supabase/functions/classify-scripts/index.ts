@@ -23,6 +23,26 @@ interface CampaignVariant {
   interested_rate: number | null;
   emails_per_lead: number | null;
   timeline_days: number | null;
+  raw_data: {
+    step?: {
+      email_body?: string;
+      email_subject?: string;
+    };
+  } | null;
+}
+
+// Extract clean text from HTML email body
+function extractCleanBody(htmlBody: string | undefined): string {
+  if (!htmlBody) return '';
+  return htmlBody
+    .replace(/<[^>]*>/g, ' ')           // Remove HTML tags
+    .replace(/\{[^}]+\|[^}]+\}/g, (m) => m.split('|')[0].replace('{', '')) // Clean spintax, take first option
+    .replace(/\{FIRST_NAME\}/g, '[Name]')
+    .replace(/\{SENDER_EMAIL_SIGNATURE\}/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')               // Normalize whitespace
+    .trim()
+    .substring(0, 2000);                // Limit length for storage
 }
 
 interface ClassificationResult {
@@ -223,6 +243,9 @@ serve(async (req) => {
         const assetType = classification.action === 'SCALE' ? 'winning_script' : 'losing_script';
         const title = `${variant.campaign_name || 'Campaign'} - ${variant.variant_label || `Step ${variant.step_number}`}`;
 
+        // Extract email body from raw_data
+        const emailBody = extractCleanBody(variant.raw_data?.step?.email_body);
+        
         const { error: insertError } = await supabase
           .from('user_assets')
           .insert({
@@ -231,6 +254,7 @@ serve(async (req) => {
             title: title,
             content: JSON.stringify({
               subject_line: variant.subject_line,
+              email_body: emailBody,
               campaign_name: variant.campaign_name,
               step_number: variant.step_number,
               variant_label: variant.variant_label,
