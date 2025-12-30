@@ -15,6 +15,8 @@ interface SenderEmail {
   imap_connection_status?: string;
   smtp_connection_status?: string;
   status?: string;
+  bounced_count?: number;
+  emails_sent_count?: number;
 }
 
 interface WarmupEmail {
@@ -22,6 +24,24 @@ interface WarmupEmail {
   enabled?: boolean;
   warmup_progress?: number;
 }
+
+interface AlertData {
+  user_id: string;
+  sender_email_id: string;
+  email_address: string;
+  alert_type: string;
+  severity: string;
+  current_value: number;
+  threshold_value: number;
+  recommended_action: string;
+  status: string;
+}
+
+// Alert thresholds
+const BOUNCE_RATE_WARNING = 1.0;
+const BOUNCE_RATE_CRITICAL = 2.0;
+const HEALTH_SCORE_WARNING = 90;
+const HEALTH_SCORE_CRITICAL = 70;
 
 async function fetchSenderEmails(apiKey: string): Promise<SenderEmail[]> {
   console.log('Fetching sender emails from EmailBison...');
@@ -125,6 +145,88 @@ async function fetchWarmupStatus(apiKey: string): Promise<WarmupEmail[]> {
   }
 }
 
+function calculateBounceRate(bouncedCount: number, emailsSentCount: number): number {
+  if (emailsSentCount === 0) return 0;
+  return (bouncedCount / emailsSentCount) * 100;
+}
+
+function calculateHealthScore(warmupProgress: number | null, bounceRate: number): number {
+  // Base health from warmup progress (default to 100 if not warming up)
+  const baseHealth = warmupProgress ?? 100;
+  
+  // Penalize for high bounce rates (each 1% bounce = 10 points penalty)
+  const bouncePenalty = bounceRate * 10;
+  
+  // Calculate final score (min 0, max 100)
+  return Math.max(0, Math.min(100, baseHealth - bouncePenalty));
+}
+
+function determineAlerts(
+  userId: string,
+  senderId: string,
+  email: string,
+  bounceRate: number,
+  healthScore: number
+): AlertData[] {
+  const alerts: AlertData[] = [];
+
+  // Check bounce rate alert
+  if (bounceRate >= BOUNCE_RATE_CRITICAL) {
+    alerts.push({
+      user_id: userId,
+      sender_email_id: senderId,
+      email_address: email,
+      alert_type: 'high_bounce_rate',
+      severity: 'critical',
+      current_value: bounceRate,
+      threshold_value: BOUNCE_RATE_CRITICAL,
+      recommended_action: 'CRITICAL: Pause this account immediately for 14 days. Remove from all active campaigns and let it warm up until health reaches 100%. High bounce rates damage sender reputation and can blacklist your domain.',
+      status: 'active',
+    });
+  } else if (bounceRate >= BOUNCE_RATE_WARNING) {
+    alerts.push({
+      user_id: userId,
+      sender_email_id: senderId,
+      email_address: email,
+      alert_type: 'high_bounce_rate',
+      severity: 'warning',
+      current_value: bounceRate,
+      threshold_value: BOUNCE_RATE_WARNING,
+      recommended_action: 'WARNING: Monitor this account closely. Consider reducing sending volume by 50% and verifying email list quality. If bounce rate continues to rise, pause for 7 days.',
+      status: 'active',
+    });
+  }
+
+  // Check health score alert
+  if (healthScore < HEALTH_SCORE_CRITICAL) {
+    alerts.push({
+      user_id: userId,
+      sender_email_id: senderId,
+      email_address: email,
+      alert_type: 'low_health_score',
+      severity: 'critical',
+      current_value: healthScore,
+      threshold_value: HEALTH_SCORE_CRITICAL,
+      recommended_action: 'CRITICAL: Account health is dangerously low. Pause this account from all campaigns immediately. Enable warmup only and wait 14 days minimum for recovery. Do not resume until health returns to 100%.',
+      status: 'active',
+    });
+  } else if (healthScore < HEALTH_SCORE_WARNING) {
+    alerts.push({
+      user_id: userId,
+      sender_email_id: senderId,
+      email_address: email,
+      alert_type: 'low_health_score',
+      severity: 'warning',
+      current_value: healthScore,
+      threshold_value: HEALTH_SCORE_WARNING,
+      recommended_action: 'WARNING: Account health needs attention. Reduce sending volume by 50% and enable warmup mode. Monitor daily for 7-14 days until health improves above 90%.',
+      status: 'active',
+    });
+  }
+
+  return alerts;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -201,9 +303,15 @@ serve(async (req) => {
       warmupMap.set(ws.sender_email_id, ws);
     }
 
+    // Track all alerts to upsert
+    const allAlerts: AlertData[] = [];
+    const alertAccountIds: Set<string> = new Set();
+    let atRiskCount = 0;
+
     // Process and store health data
     const healthRecords = senderEmails.map((email) => {
       const warmup = warmupMap.get(email.id);
+      const senderId = email.id.toString();
       
       // Determine connection status (normalize to lowercase for consistent comparison)
       let connectionStatus = 'unknown';
@@ -222,9 +330,23 @@ serve(async (req) => {
         }
       }
 
+      // Calculate bounce rate and health score
+      const bouncedCount = email.bounced_count || 0;
+      const emailsSentCount = email.emails_sent_count || 0;
+      const bounceRate = calculateBounceRate(bouncedCount, emailsSentCount);
+      const healthScore = calculateHealthScore(warmup?.warmup_progress || null, bounceRate);
+      const isAtRisk = bounceRate >= BOUNCE_RATE_WARNING || healthScore < HEALTH_SCORE_WARNING;
+
+      if (isAtRisk) atRiskCount++;
+
+      // Generate alerts for this account
+      const accountAlerts = determineAlerts(user.id, senderId, email.email, bounceRate, healthScore);
+      allAlerts.push(...accountAlerts);
+      accountAlerts.forEach(a => alertAccountIds.add(`${senderId}:${a.alert_type}`));
+
       return {
         user_id: user.id,
-        sender_email_id: email.id.toString(),
+        sender_email_id: senderId,
         email_address: email.email,
         account_type: email.type || 'unknown',
         connection_status: connectionStatus,
@@ -234,6 +356,12 @@ serve(async (req) => {
         emails_sent_today: email.emails_sent_today || 0,
         last_checked_at: new Date().toISOString(),
         raw_data: { sender_email: email, warmup },
+        // New health fields
+        bounce_rate: bounceRate,
+        health_score: healthScore,
+        is_at_risk: isAtRisk,
+        bounced_count: bouncedCount,
+        emails_sent_count: emailsSentCount,
       };
     });
 
@@ -250,6 +378,44 @@ serve(async (req) => {
       }
     }
 
+    // Upsert alerts
+    console.log(`Processing ${allAlerts.length} alerts`);
+    for (const alert of allAlerts) {
+      const { error: alertError } = await supabase
+        .from('email_account_alerts')
+        .upsert(alert, { onConflict: 'user_id,sender_email_id,alert_type' });
+
+      if (alertError) {
+        console.error('Error upserting alert:', alertError);
+      }
+    }
+
+    // Resolve alerts for accounts that are now healthy
+    // Get all active alerts for this user
+    const { data: existingAlerts } = await supabase
+      .from('email_account_alerts')
+      .select('id, sender_email_id, alert_type')
+      .eq('user_id', user.id)
+      .eq('status', 'active');
+
+    if (existingAlerts) {
+      for (const existingAlert of existingAlerts) {
+        const key = `${existingAlert.sender_email_id}:${existingAlert.alert_type}`;
+        if (!alertAccountIds.has(key)) {
+          // This alert should be resolved
+          await supabase
+            .from('email_account_alerts')
+            .update({ 
+              status: 'resolved', 
+              resolved_at: new Date().toISOString() 
+            })
+            .eq('id', existingAlert.id);
+          
+          console.log(`Resolved alert ${existingAlert.id} for ${existingAlert.sender_email_id}`);
+        }
+      }
+    }
+
     // Calculate summary metrics
     const summary = {
       total_accounts: healthRecords.length,
@@ -261,6 +427,8 @@ serve(async (req) => {
       average_warmup_progress: warmupStatuses.length > 0
         ? warmupStatuses.reduce((sum, ws) => sum + (ws.warmup_progress || 0), 0) / warmupStatuses.length
         : null,
+      at_risk_accounts: atRiskCount,
+      active_alerts: allAlerts.length,
     };
 
     console.log('Health sync summary:', summary);
@@ -270,6 +438,7 @@ serve(async (req) => {
         success: true,
         summary,
         accounts: healthRecords.length,
+        alerts_created: allAlerts.length,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
