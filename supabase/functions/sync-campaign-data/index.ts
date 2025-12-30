@@ -834,6 +834,20 @@ serve(async (req) => {
         const endDateStr = endDate.toISOString().split('T')[0];
         
         for (const campaign of campaigns) {
+          // Delete existing variants for this campaign + timeline before inserting fresh data
+          const { error: deleteError } = await supabase
+            .from('campaign_variants')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('campaign_id', campaign.external_campaign_id)
+            .eq('timeline_days', days || null);
+          
+          if (deleteError) {
+            console.error(`Error deleting old variants for campaign ${campaign.external_campaign_id}:`, deleteError);
+          } else {
+            console.log(`Cleared existing variants for campaign ${campaign.external_campaign_id}, timeline ${days || 'all-time'}`);
+          }
+          
           const variants = await processEmailBisonVariants(
             integration.api_key,
             campaign.external_campaign_id,
