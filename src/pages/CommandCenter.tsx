@@ -69,6 +69,7 @@ export default function CommandCenter() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [assetCount, setAssetCount] = useState(0);
   const [timelineDays, setTimelineDays] = useState(10);
+  const [variantRefreshKey, setVariantRefreshKey] = useState(0);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -245,6 +246,7 @@ export default function CommandCenter() {
       toast.success('Campaign data synced successfully');
       await fetchCampaignMetrics(session.user.id, timelineDays);
       await fetchIntegration(session.user.id);
+      setVariantRefreshKey(k => k + 1);
     } catch (error) {
       console.error('Sync error:', error);
       toast.error('Failed to sync campaign data');
@@ -479,7 +481,7 @@ export default function CommandCenter() {
 
             {/* A/B Variant Performance - Show for Step 2+ */}
             {currentStepNumber >= 2 && (
-              <CampaignVariantBreakdown timelineDays={timelineDays} />
+              <CampaignVariantBreakdown timelineDays={timelineDays} refreshKey={variantRefreshKey} />
             )}
           </div>
 
