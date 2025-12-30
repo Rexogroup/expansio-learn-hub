@@ -206,7 +206,7 @@ async function fetchEmailBisonSequenceSteps(
   }
 }
 
-// Fetch stats for a specific sequence step
+// Fetch stats for a specific sequence step by aggregating individual campaign events
 async function fetchEmailBisonStepStats(
   apiKey: string,
   campaignId: string,
@@ -217,41 +217,66 @@ async function fetchEmailBisonStepStats(
   const result: CampaignEventStats = { sent: 0, opened: 0, replied: 0, interested: 0, bounced: 0, unsubscribed: 0 };
   
   try {
-    // Try to get step-specific stats using campaign-events/stats with step filter
-    const url = `https://send.expansio.io/api/campaign-events/stats?start_date=${startDate}&end_date=${endDate}&campaign_ids[0]=${campaignId}&sequence_step_ids[0]=${stepId}`;
-    console.log(`Fetching step stats: ${url}`);
+    // The /api/campaign-events/stats endpoint ignores sequence_step_ids filter
+    // So we need to fetch individual events and aggregate them ourselves
+    const eventTypes = ['sent', 'opened', 'replied', 'interested', 'bounced', 'unsubscribed'];
     
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.log(`Step stats failed: ${response.status}`);
-      return result;
-    }
-
-    const data = await response.json();
-    console.log(`Step stats response for step ${stepId}: ${JSON.stringify(data).substring(0, 300)}`);
-    
-    const eventGroups = data.data || data || [];
-    
-    for (const eventGroup of eventGroups) {
-      const dates = eventGroup.dates || [];
-      const totalForEvent = dates.reduce((sum: number, item: [string, number]) => sum + (item[1] || 0), 0);
+    for (const eventType of eventTypes) {
+      let page = 1;
+      let totalCount = 0;
+      let hasMorePages = true;
       
-      const label = (eventGroup.label || '').toLowerCase();
-      if (label.includes('sent')) result.sent = totalForEvent;
-      else if (label.includes('unique opens') || label === 'opened') result.opened = totalForEvent;
-      else if (label.includes('replied') || label.includes('reply')) result.replied = totalForEvent;
-      else if (label.includes('interested')) result.interested = totalForEvent;
-      else if (label.includes('bounced') || label.includes('bounce')) result.bounced = totalForEvent;
-      else if (label.includes('unsubscribed') || label.includes('unsubscribe')) result.unsubscribed = totalForEvent;
+      while (hasMorePages) {
+        // Fetch events filtered by step ID
+        const url = `https://send.expansio.io/api/campaign-events?` +
+          `filters[campaign_ids][0]=${campaignId}` +
+          `&filters[sequence_step_ids][0]=${stepId}` +
+          `&filters[event_types][0]=${eventType}` +
+          `&filters[start_date]=${startDate}` +
+          `&filters[end_date]=${endDate}` +
+          `&page=${page}&per_page=1`;
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          console.log(`Events fetch failed for step ${stepId}, type ${eventType}: ${response.status}`);
+          hasMorePages = false;
+          break;
+        }
+
+        const data = await response.json();
+        
+        // Extract total count from meta.total
+        const meta = data.meta || {};
+        totalCount = meta.total || 0;
+        
+        if (page === 1) {
+          console.log(`Step ${stepId} - ${eventType}: total=${totalCount}`);
+        }
+        
+        // We only need the count, not the actual events
+        hasMorePages = false;
+      }
+      
+      // Map event type to result field
+      switch (eventType) {
+        case 'sent': result.sent = totalCount; break;
+        case 'opened': result.opened = totalCount; break;
+        case 'replied': result.replied = totalCount; break;
+        case 'interested': result.interested = totalCount; break;
+        case 'bounced': result.bounced = totalCount; break;
+        case 'unsubscribed': result.unsubscribed = totalCount; break;
+      }
     }
+    
+    console.log(`Aggregated stats for step ${stepId}: sent=${result.sent}, replied=${result.replied}, interested=${result.interested}`);
   } catch (err) {
-    console.error(`Error fetching step stats for ${stepId}:`, err);
+    console.error(`Error fetching step events for ${stepId}:`, err);
   }
   
   return result;
