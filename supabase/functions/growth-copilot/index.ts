@@ -211,31 +211,44 @@ ${infrastructureSection}
 
 ## DIAGNOSTIC RULES
 
-### Interested Rate (IR%) Diagnostics
+### Positive Reply Rate (IR%) Diagnostics
 NOTE: IR% is calculated as (Interested / Total Replies) × 100 — the conversion rate from replies to interested.
+Benchmark: 15-20% positive reply rate.
 - < 5%: Critical - Reply-to-interested conversion is failing. Offer/messaging mismatch. KILL this variant.
-- 5% - 10%: Below benchmark - Replies aren't converting. Test new offer angles, refine ICP. ITERATE.
+- 5% - 10%: Poor - Replies aren't converting well. Test new offer angles, refine ICP. ITERATE urgently.
 - 10% - 15%: Near benchmark - Minor optimizations needed. Tweak messaging. ITERATE.
-- > 15%: Above benchmark - High conversion from replies. Ready to SCALE.
+- 15% - 20%: At benchmark - Good performance. Continue monitoring. Ready to SCALE.
+- > 20%: Above benchmark - Excellent conversion. SCALE immediately.
 
-### Reply Rate Diagnostics  
-- < 1.0%: Very low engagement - Check deliverability and personalization
-- 1.0% - 2.0%: Average - Improve subject lines and opening hooks
-- 2.0% - 3.0%: Good - Focus on converting replies to interested
-- > 3.0%: Excellent - Optimize for quality over quantity
+### Emails per Interested Lead Diagnostics
+This measures efficiency: how many emails does it take to generate one interested lead?
+- < 250: ELITE - Scale heavily, this is exceptional performance
+- 250 - 500: STRONG - Scale and iterate for even better results
+- 500 - 700: GOOD - Improve offer positioning, test new angles
+- 700 - 1000: NEEDS WORK - Evaluate ICP and messaging
+- > 1000: POOR - Kill or completely rewrite. Not viable.
+
+### Interested → Meeting Rate Diagnostics
+This measures appointment-setting effectiveness.
+Benchmark: 20-30% of interested leads should convert to meetings.
+- < 15%: Critical - Follow-up process is broken. Fix immediately.
+- 15% - 20%: Needs improvement - Optimize speed-to-lead and follow-up scripts.
+- 20% - 30%: At benchmark - Good performance.
+- > 30%: Excellent - Top-tier appointment setting.
 
 ### Variant Analysis Rules
 When analyzing A/B variants:
 - **WINNER**: Variant with highest IR% AND at least 50+ replies (statistical significance)
-- **SCALE**: IR% > 15% of replies - recommend increasing volume immediately
-- **ITERATE**: IR% between 5-15% - suggest specific tweaks based on winning scripts in knowledge base
-- **KILL**: IR% < 5% after 50+ replies - recommend pausing and replacing with new angle
+- **SCALE**: IR% > 15% of replies AND emails_per_lead < 500 - recommend increasing volume immediately
+- **ITERATE**: IR% between 10-15% OR emails_per_lead between 500-700 - suggest specific tweaks
+- **KILL**: IR% < 5% after 50+ replies OR emails_per_lead > 1000 - recommend pausing and replacing
 
-### Campaign Scaling Rules
-- Scale campaigns with >15% interested rate (of replies)
-- Pause campaigns with <5% interested rate after 50+ replies
-- Test 2-3 variants before declaring a winner
-- Increase volume by 20-30% per week when scaling
+### Campaign Scaling Rules (From SOP)
+- **Minimum sample size**: 700-1000 emails before making decisions
+- **Scale criteria**: IR% > 15% AND emails_per_lead < 500
+- **Pause criteria**: IR% < 5% after 1000 sends OR 0 interested after 1000 sends
+- **Test methodology**: Always run 2-3 variants before declaring a winner
+- **Volume scaling**: Increase by 20-30% per week when metrics are healthy
 
 ${knowledgeBaseContent}
 

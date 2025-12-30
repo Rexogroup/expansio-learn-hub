@@ -423,7 +423,7 @@ export default function CommandCenter() {
         <CampaignPerformanceHistory
           onSync={handleSync}
           isSyncing={isSyncing}
-          benchmark={1.2}
+          benchmark={15}
           timelineDays={timelineDays}
           onTimelineChange={setTimelineDays}
           refreshKey={variantRefreshKey}

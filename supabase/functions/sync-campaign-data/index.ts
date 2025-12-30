@@ -20,6 +20,8 @@ interface CampaignMetrics {
   open_rate: number;
   reply_rate: number;
   interested_rate: number;
+  emails_per_lead: number | null;
+  interested_to_meeting_rate: number | null;
   raw_data: Record<string, unknown>;
 }
 
@@ -100,6 +102,7 @@ interface CampaignVariantMetrics {
   meetings_booked: number;
   reply_rate: number;
   interested_rate: number;
+  emails_per_lead: number | null;
   raw_data: Record<string, unknown>;
 }
 
@@ -463,6 +466,7 @@ async function processEmailBisonVariants(
       meetings_booked: 0,
       reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
       interested_rate: stats.replied > 0 ? (stats.interested / stats.replied) * 100 : 0,
+      emails_per_lead: stats.interested > 0 ? Math.round(stats.sent / stats.interested) : null,
       raw_data: { step, stats, parsed_info: { stepNumber: parsed.stepNumber, variantLabel: parsed.variantLabel } },
     });
   }
@@ -524,6 +528,8 @@ async function fetchInstantlyCampaigns(apiKey: string): Promise<CampaignMetrics[
             open_rate: emailsSent > 0 ? (uniqueOpens / emailsSent) * 100 : 0,
             reply_rate: emailsSent > 0 ? (uniqueReplies / emailsSent) * 100 : 0,
             interested_rate: uniqueReplies > 0 ? (interested / uniqueReplies) * 100 : 0,
+            emails_per_lead: interested > 0 ? Math.round(emailsSent / interested) : null,
+            interested_to_meeting_rate: null, // Instantly doesn't track meetings the same way
             raw_data: { campaign, analytics },
           });
         }
@@ -704,6 +710,8 @@ async function fetchEmailBisonCampaigns(
         open_rate: stats.sent > 0 ? (stats.opened / stats.sent) * 100 : 0,
         reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
         interested_rate: stats.replied > 0 ? (stats.interested / stats.replied) * 100 : 0,
+        emails_per_lead: stats.interested > 0 ? Math.round(stats.sent / stats.interested) : null,
+        interested_to_meeting_rate: stats.interested > 0 ? (meetingsBooked / stats.interested) * 100 : null,
         raw_data: { campaign, stats },
       });
     }
@@ -805,6 +813,8 @@ serve(async (req) => {
             open_rate: campaign.open_rate,
             reply_rate: campaign.reply_rate,
             interested_rate: campaign.interested_rate,
+            emails_per_lead: campaign.emails_per_lead,
+            interested_to_meeting_rate: campaign.interested_to_meeting_rate,
             raw_data: campaign.raw_data,
             synced_at: new Date().toISOString(),
             timeline_days: days || null,
@@ -874,6 +884,7 @@ serve(async (req) => {
                 meetings_booked: variant.meetings_booked,
                 reply_rate: variant.reply_rate,
                 interested_rate: variant.interested_rate,
+                emails_per_lead: variant.emails_per_lead,
                 timeline_days: days || null,
                 raw_data: variant.raw_data,
                 synced_at: new Date().toISOString(),
