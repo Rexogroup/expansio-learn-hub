@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.sync-email-health]
 verify_jwt = false
+
+[functions.classify-scripts]
+verify_jwt = false
