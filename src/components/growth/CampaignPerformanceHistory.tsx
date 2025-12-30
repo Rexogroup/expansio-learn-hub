@@ -4,12 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { RefreshCw, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TimelineFilter } from "./TimelineFilter";
 
 interface Campaign {
   id: string;
+  external_campaign_id: string;
   campaign_name: string;
   campaign_status: string;
   emails_sent: number;
@@ -22,12 +28,36 @@ interface Campaign {
   timeline_days: number | null;
 }
 
+interface CampaignVariant {
+  id: string;
+  campaign_id: string;
+  campaign_name: string;
+  step_number: number;
+  variant_id: string;
+  variant_label: string;
+  subject_line: string;
+  is_active: boolean;
+  emails_sent: number;
+  unique_replies: number;
+  interested_count: number;
+  meetings_booked: number;
+  interested_rate: number;
+  reply_rate?: number;
+}
+
+interface GroupedStep {
+  step_number: number;
+  variants: CampaignVariant[];
+  best_variant_id: string | null;
+}
+
 interface CampaignPerformanceHistoryProps {
   onSync?: () => void;
   isSyncing?: boolean;
   benchmark?: number;
   timelineDays: number;
   onTimelineChange: (days: number) => void;
+  refreshKey?: number;
 }
 
 export function CampaignPerformanceHistory({ 
@@ -36,34 +66,37 @@ export function CampaignPerformanceHistory({
   benchmark = 1.2,
   timelineDays,
   onTimelineChange,
+  refreshKey,
 }: CampaignPerformanceHistoryProps) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [variants, setVariants] = useState<CampaignVariant[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'interested_rate' | 'emails_sent'>('interested_rate');
   const [sortDesc, setSortDesc] = useState(true);
   const [expanded, setExpanded] = useState(true);
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchCampaigns();
-  }, [timelineDays]);
+    fetchData();
+  }, [timelineDays, refreshKey]);
 
-  const fetchCampaigns = async () => {
+  const fetchData = async () => {
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      setLoading(false);
+      return;
+    }
 
-    // First try to fetch data for the specific timeline period
-    let query = supabase
+    // Fetch campaigns
+    let { data: campaignData, error: campaignError } = await supabase
       .from('synced_campaigns')
       .select('*')
       .eq('user_id', session.user.id)
       .eq('timeline_days', timelineDays)
       .order('interested_rate', { ascending: false });
 
-    let { data, error } = await query;
-
-    // If no data for this period, fall back to all-time data (timeline_days = null)
-    if ((!data || data.length === 0) && !error) {
+    if ((!campaignData || campaignData.length === 0) && !campaignError) {
       const fallbackQuery = await supabase
         .from('synced_campaigns')
         .select('*')
@@ -71,17 +104,75 @@ export function CampaignPerformanceHistory({
         .is('timeline_days', null)
         .order('interested_rate', { ascending: false });
       
-      data = fallbackQuery.data;
-      error = fallbackQuery.error;
+      campaignData = fallbackQuery.data;
+      campaignError = fallbackQuery.error;
     }
 
-    if (!error && data) {
-      setCampaigns(data.map(c => ({
+    if (!campaignError && campaignData) {
+      setCampaigns(campaignData.map(c => ({
         ...c,
         meetings_booked: c.meetings_booked || 0,
       })));
     }
+
+    // Fetch variants
+    let { data: variantData, error: variantError } = await supabase
+      .from('campaign_variants')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('timeline_days', timelineDays)
+      .order('campaign_name')
+      .order('step_number')
+      .order('variant_label');
+
+    if ((!variantData || variantData.length === 0) && !variantError) {
+      const fallbackQuery = await supabase
+        .from('campaign_variants')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .is('timeline_days', null)
+        .order('campaign_name')
+        .order('step_number')
+        .order('variant_label');
+      
+      variantData = fallbackQuery.data;
+      variantError = fallbackQuery.error;
+    }
+
+    if (!variantError && variantData) {
+      setVariants(variantData as CampaignVariant[]);
+    }
+
     setLoading(false);
+  };
+
+  const getVariantsForCampaign = (campaignId: string): GroupedStep[] => {
+    const campaignVariants = variants.filter(v => v.campaign_id === campaignId);
+    const stepMap = new Map<number, GroupedStep>();
+
+    campaignVariants.forEach(variant => {
+      if (!stepMap.has(variant.step_number)) {
+        stepMap.set(variant.step_number, {
+          step_number: variant.step_number,
+          variants: [],
+          best_variant_id: null,
+        });
+      }
+      stepMap.get(variant.step_number)!.variants.push(variant);
+    });
+
+    // Determine best variant per step
+    stepMap.forEach(step => {
+      const eligibleVariants = step.variants.filter(v => v.emails_sent >= 50);
+      if (eligibleVariants.length > 1) {
+        const best = eligibleVariants.reduce((a, b) =>
+          a.interested_rate > b.interested_rate ? a : b
+        );
+        step.best_variant_id = best.variant_id;
+      }
+    });
+
+    return Array.from(stepMap.values()).sort((a, b) => a.step_number - b.step_number);
   };
 
   const sortedCampaigns = [...campaigns].sort((a, b) => {
@@ -101,6 +192,21 @@ export function CampaignPerformanceHistory({
       setSortDesc(true);
     }
   };
+
+  const toggleCampaignExpand = (campaignId: string) => {
+    setExpandedCampaigns(prev => {
+      const next = new Set(prev);
+      if (next.has(campaignId)) {
+        next.delete(campaignId);
+      } else {
+        next.add(campaignId);
+      }
+      return next;
+    });
+  };
+
+  const formatNumber = (num: number) => num.toLocaleString();
+  const formatRate = (rate: number) => rate.toFixed(2) + "%";
 
   if (loading) {
     return (
@@ -123,7 +229,7 @@ export function CampaignPerformanceHistory({
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Campaign Performance History</CardTitle>
+          <CardTitle className="text-lg">Campaign Performance</CardTitle>
           <div className="flex items-center gap-2">
             <TimelineFilter value={timelineDays} onChange={onTimelineChange} />
             <Button variant="ghost" size="sm" onClick={onSync} disabled={isSyncing}>
@@ -144,7 +250,7 @@ export function CampaignPerformanceHistory({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-lg">Campaign Performance History</CardTitle>
+          <CardTitle className="text-lg">Campaign Performance</CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -180,85 +286,163 @@ export function CampaignPerformanceHistory({
             )}
           </div>
 
-          {/* Campaign Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 px-2 font-medium text-muted-foreground">Campaign</th>
-                  <th 
-                    className="text-right py-2 px-2 font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                    onClick={() => toggleSort('emails_sent')}
-                  >
-                    Sent {sortBy === 'emails_sent' && (sortDesc ? '↓' : '↑')}
-                  </th>
-                  <th className="text-right py-2 px-2 font-medium text-muted-foreground">Replies</th>
-                  <th className="text-right py-2 px-2 font-medium text-muted-foreground">Interested</th>
-                  <th className="text-right py-2 px-2 font-medium text-muted-foreground">Meetings</th>
-                  <th 
-                    className="text-right py-2 px-2 font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                    onClick={() => toggleSort('interested_rate')}
-                  >
-                    IR% {sortBy === 'interested_rate' && (sortDesc ? '↓' : '↑')}
-                  </th>
-                  <th className="text-right py-2 px-2 font-medium text-muted-foreground">vs Bench</th>
-                  <th className="text-center py-2 px-2 font-medium text-muted-foreground">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedCampaigns.map((campaign) => {
-                  const delta = campaign.interested_rate - benchmark;
-                  const isAbove = delta >= 0;
-                  const statusColor = campaign.campaign_status === 'active' 
-                    ? 'bg-emerald-500/10 text-emerald-600'
-                    : campaign.campaign_status === 'paused'
-                      ? 'bg-amber-500/10 text-amber-600'
-                      : 'bg-muted text-muted-foreground';
+          {/* Campaign List */}
+          <div className="space-y-3">
+            {sortedCampaigns.map((campaign) => {
+              const delta = campaign.interested_rate - benchmark;
+              const isAbove = delta >= 0;
+              const statusColor = campaign.campaign_status === 'active' 
+                ? 'bg-emerald-500/10 text-emerald-600'
+                : campaign.campaign_status === 'paused'
+                  ? 'bg-amber-500/10 text-amber-600'
+                  : 'bg-muted text-muted-foreground';
+              const isExpanded = expandedCampaigns.has(campaign.external_campaign_id);
+              const campaignSteps = getVariantsForCampaign(campaign.external_campaign_id);
+              const hasVariants = campaignSteps.length > 0;
 
-                  return (
-                    <tr key={campaign.id} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="py-2 px-2">
-                        <span className="font-medium truncate block max-w-[180px]" title={campaign.campaign_name}>
-                          {campaign.campaign_name}
-                        </span>
-                      </td>
-                      <td className="text-right py-2 px-2 tabular-nums">
-                        {campaign.emails_sent.toLocaleString()}
-                      </td>
-                      <td className="text-right py-2 px-2 tabular-nums">
-                        {campaign.unique_replies.toLocaleString()}
-                      </td>
-                      <td className="text-right py-2 px-2 tabular-nums">
-                        {campaign.interested_count.toLocaleString()}
-                      </td>
-                      <td className="text-right py-2 px-2 tabular-nums">
-                        {campaign.meetings_booked.toLocaleString()}
-                      </td>
-                      <td className={cn(
-                        "text-right py-2 px-2 font-semibold tabular-nums",
-                        isAbove ? "text-emerald-600" : campaign.interested_rate < benchmark * 0.5 ? "text-destructive" : "text-amber-600"
+              return (
+                <Collapsible
+                  key={campaign.id}
+                  open={isExpanded}
+                  onOpenChange={() => hasVariants && toggleCampaignExpand(campaign.external_campaign_id)}
+                >
+                  <div className="border rounded-lg overflow-hidden">
+                    {/* Campaign Row */}
+                    <CollapsibleTrigger className="w-full" disabled={!hasVariants}>
+                      <div className={cn(
+                        "grid grid-cols-[1fr_repeat(6,_auto)_32px] gap-4 items-center px-4 py-3 text-sm",
+                        hasVariants && "hover:bg-muted/30 cursor-pointer"
                       )}>
-                        {campaign.interested_rate.toFixed(2)}%
-                      </td>
-                      <td className="text-right py-2 px-2 tabular-nums">
-                        <span className={cn(
-                          "inline-flex items-center gap-1",
-                          isAbove ? "text-emerald-600" : "text-destructive"
+                        <div className="text-left">
+                          <span className="font-medium truncate block max-w-[200px]" title={campaign.campaign_name}>
+                            {campaign.campaign_name}
+                          </span>
+                        </div>
+                        <div className="text-right tabular-nums min-w-[70px]">
+                          <div className="text-sm font-medium">{formatNumber(campaign.emails_sent)}</div>
+                          <div className="text-xs text-muted-foreground">Sent</div>
+                        </div>
+                        <div className="text-right tabular-nums min-w-[80px]">
+                          <div className="text-sm font-medium">{formatNumber(campaign.unique_replies)}</div>
+                          <div className="text-xs text-muted-foreground">Replies</div>
+                        </div>
+                        <div className="text-right tabular-nums min-w-[80px]">
+                          <div className="text-sm font-medium">{formatNumber(campaign.interested_count)}</div>
+                          <div className="text-xs text-muted-foreground">Interested</div>
+                        </div>
+                        <div className="text-right tabular-nums min-w-[70px]">
+                          <div className="text-sm font-medium">{formatNumber(campaign.meetings_booked)}</div>
+                          <div className="text-xs text-muted-foreground">Meetings</div>
+                        </div>
+                        <div className={cn(
+                          "text-right tabular-nums min-w-[60px]",
+                          isAbove ? "text-emerald-600" : campaign.interested_rate < benchmark * 0.5 ? "text-destructive" : "text-amber-600"
                         )}>
-                          {isAbove ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {delta >= 0 ? '+' : ''}{delta.toFixed(2)}%
-                        </span>
-                      </td>
-                      <td className="text-center py-2 px-2">
+                          <div className="text-sm font-semibold">{formatRate(campaign.interested_rate)}</div>
+                          <div className="text-xs text-muted-foreground">IR%</div>
+                        </div>
                         <Badge variant="outline" className={cn("text-xs capitalize", statusColor)}>
                           {campaign.campaign_status}
                         </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <div className="flex justify-center">
+                          {hasVariants ? (
+                            isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <div className="w-4" />
+                          )}
+                        </div>
+                      </div>
+                    </CollapsibleTrigger>
+
+                    {/* Expanded Variant Details */}
+                    <CollapsibleContent>
+                      <div className="border-t bg-muted/20 px-4 py-4">
+                        <p className="text-sm text-muted-foreground mb-3">Individual Email Stats</p>
+                        
+                        <div className="space-y-2">
+                          {campaignSteps.flatMap((step) => 
+                            step.variants.map((variant) => {
+                              const isVariant = variant.variant_label?.includes("Variant");
+                              const variantLetter = isVariant 
+                                ? variant.variant_label.split("Variant ")[1] 
+                                : null;
+                              const isBest = step.best_variant_id === variant.variant_id;
+                              const replyRate = variant.emails_sent > 0 
+                                ? (variant.unique_replies / variant.emails_sent) * 100 
+                                : 0;
+                              
+                              return (
+                                <div
+                                  key={variant.id}
+                                  className="bg-background rounded-lg p-3 border"
+                                >
+                                  {/* Label and Subject */}
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                      {isVariant 
+                                        ? `VARIANT ${variantLetter} FOR STEP ${variant.step_number}`
+                                        : `STEP ${variant.step_number}`
+                                      }
+                                    </span>
+                                    {isBest && (
+                                      <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                    )}
+                                  </div>
+                                  <p className="text-sm mb-3">
+                                    <span className="text-muted-foreground">Subject: </span>
+                                    <span className="font-medium">{variant.subject_line || "(no subject)"}</span>
+                                  </p>
+                                  
+                                  {/* Stats Grid */}
+                                  <div className="grid grid-cols-6 gap-4">
+                                    <div>
+                                      <div className="text-sm font-medium">{formatNumber(variant.emails_sent)}</div>
+                                      <div className="text-xs text-muted-foreground">Sent</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-medium">{formatNumber(variant.unique_replies)}</div>
+                                      <div className="text-xs text-muted-foreground">Replies</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-medium">{formatRate(replyRate)}</div>
+                                      <div className="text-xs text-muted-foreground">Reply %</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-medium">{formatNumber(variant.interested_count)}</div>
+                                      <div className="text-xs text-muted-foreground">Interested</div>
+                                    </div>
+                                    <div>
+                                      <div className={cn(
+                                        "text-sm font-medium",
+                                        variant.interested_rate >= 1 && "text-emerald-600"
+                                      )}>
+                                        {formatRate(variant.interested_rate)}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">IR%</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-medium">{formatNumber(variant.meetings_booked)}</div>
+                                      <div className="text-xs text-muted-foreground">Meetings</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                        
+                        {campaignSteps.some(s => s.best_variant_id) && (
+                          <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1.5">
+                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            Best performing variant (min 50 emails sent)
+                          </p>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              );
+            })}
           </div>
 
           {/* Benchmark Legend */}

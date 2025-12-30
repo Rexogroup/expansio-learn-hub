@@ -8,7 +8,6 @@ import { ValidationBadge } from "@/components/growth/ValidationBadge";
 import { RecommendedAction } from "@/components/growth/RecommendedAction";
 import { CampaignMetricsCard } from "@/components/growth/CampaignMetricsCard";
 import { CampaignPerformanceHistory } from "@/components/growth/CampaignPerformanceHistory";
-import { CampaignVariantBreakdown } from "@/components/growth/CampaignVariantBreakdown";
 import { GrowthCopilotChat } from "@/components/growth/GrowthCopilotChat";
 import { InfrastructureHealthCard } from "@/components/growth/InfrastructureHealthCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -470,19 +469,15 @@ export default function CommandCenter() {
               )}
             </div>
 
-            {/* Campaign Performance History */}
+            {/* Campaign Performance */}
             <CampaignPerformanceHistory
               onSync={handleSync}
               isSyncing={isSyncing}
               benchmark={1.2}
               timelineDays={timelineDays}
               onTimelineChange={setTimelineDays}
+              refreshKey={variantRefreshKey}
             />
-
-            {/* A/B Variant Performance - Show for Step 2+ */}
-            {currentStepNumber >= 2 && (
-              <CampaignVariantBreakdown timelineDays={timelineDays} refreshKey={variantRefreshKey} />
-            )}
           </div>
 
           {/* Right Column - AI Copilot */}
