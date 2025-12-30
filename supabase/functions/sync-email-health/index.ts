@@ -28,12 +28,11 @@ async function fetchSenderEmails(apiKey: string): Promise<SenderEmail[]> {
   
   const allEmails: SenderEmail[] = [];
   let page = 1;
-  const perPage = 100;
-  let hasMore = true;
+  let lastPage = 1;
   
-  while (hasMore) {
-    const url = `https://send.expansio.io/api/sender-emails?page=${page}&per_page=${perPage}`;
-    console.log(`Fetching sender emails page ${page}...`);
+  while (page <= lastPage) {
+    const url = `https://send.expansio.io/api/sender-emails?page=${page}`;
+    console.log(`Fetching sender emails page ${page} of ${lastPage}...`);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -53,12 +52,19 @@ async function fetchSenderEmails(apiKey: string): Promise<SenderEmail[]> {
     const pageEmails = data.data || [];
     allEmails.push(...pageEmails);
     
-    console.log(`Page ${page}: fetched ${pageEmails.length} emails (total: ${allEmails.length})`);
+    // Get last_page from meta object (EmailBison uses fixed page size of 15)
+    if (data.meta && data.meta.last_page) {
+      lastPage = data.meta.last_page;
+    }
     
-    if (pageEmails.length < perPage || page >= 50) {
-      hasMore = false;
-    } else {
-      page++;
+    console.log(`Page ${page}/${lastPage}: fetched ${pageEmails.length} emails (total: ${allEmails.length})`);
+    
+    page++;
+    
+    // Safety limit to prevent infinite loops
+    if (page > 100) {
+      console.log('Reached page limit (100), stopping');
+      break;
     }
   }
   
@@ -71,13 +77,12 @@ async function fetchWarmupStatus(apiKey: string): Promise<WarmupEmail[]> {
   
   const allWarmup: WarmupEmail[] = [];
   let page = 1;
-  const perPage = 100;
-  let hasMore = true;
+  let lastPage = 1;
   
   try {
-    while (hasMore) {
-      const url = `https://send.expansio.io/api/warmup/sender-emails?page=${page}&per_page=${perPage}`;
-      console.log(`Fetching warmup status page ${page}...`);
+    while (page <= lastPage) {
+      const url = `https://send.expansio.io/api/warmup/sender-emails?page=${page}`;
+      console.log(`Fetching warmup status page ${page} of ${lastPage}...`);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -96,12 +101,19 @@ async function fetchWarmupStatus(apiKey: string): Promise<WarmupEmail[]> {
       const pageWarmup = data.data || [];
       allWarmup.push(...pageWarmup);
       
-      console.log(`Page ${page}: fetched ${pageWarmup.length} warmup records (total: ${allWarmup.length})`);
+      // Get last_page from meta object (EmailBison uses fixed page size of 15)
+      if (data.meta && data.meta.last_page) {
+        lastPage = data.meta.last_page;
+      }
       
-      if (pageWarmup.length < perPage || page >= 50) {
-        hasMore = false;
-      } else {
-        page++;
+      console.log(`Page ${page}/${lastPage}: fetched ${pageWarmup.length} warmup records (total: ${allWarmup.length})`);
+      
+      page++;
+      
+      // Safety limit to prevent infinite loops
+      if (page > 100) {
+        console.log('Reached page limit (100), stopping');
+        break;
       }
     }
     
