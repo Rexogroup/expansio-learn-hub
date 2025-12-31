@@ -136,6 +136,47 @@ export type Database = {
           },
         ]
       }
+      appointment_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          reply_type: string
+          template_content: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          reply_type: string
+          template_content: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          reply_type?: string
+          template_content?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           arr_value: string | null
@@ -858,6 +899,74 @@ export type Database = {
           uploaded_by?: string
         }
         Relationships: []
+      }
+      lead_replies: {
+        Row: {
+          ai_draft: string | null
+          body: string
+          campaign_id: string | null
+          campaign_name: string | null
+          created_at: string
+          external_reply_id: string
+          id: string
+          lead_email: string
+          lead_name: string | null
+          received_at: string
+          reply_type: string | null
+          responded_at: string | null
+          sent_response: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_draft?: string | null
+          body: string
+          campaign_id?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          external_reply_id: string
+          id?: string
+          lead_email: string
+          lead_name?: string | null
+          received_at?: string
+          reply_type?: string | null
+          responded_at?: string | null
+          sent_response?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_draft?: string | null
+          body?: string
+          campaign_id?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          external_reply_id?: string
+          id?: string
+          lead_email?: string
+          lead_name?: string | null
+          received_at?: string
+          reply_type?: string | null
+          responded_at?: string | null
+          sent_response?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_replies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lesson_progress: {
         Row: {

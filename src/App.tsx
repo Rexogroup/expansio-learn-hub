@@ -23,6 +23,7 @@ import AffiliatePortal from "./pages/AffiliatePortal";
 import AgencyProfile from "./pages/AgencyProfile";
 import Tools from "./pages/Tools";
 import NotFound from "./pages/NotFound";
+import MasterInbox from "./pages/MasterInbox";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/network" element={<AuthenticatedLayout><AffiliatePortal /></AuthenticatedLayout>} />
             <Route path="/agency/:id" element={<AuthenticatedLayout><AgencyProfile /></AuthenticatedLayout>} />
             <Route path="/tools" element={<AuthenticatedLayout><Tools /></AuthenticatedLayout>} />
+            <Route path="/inbox" element={<AuthenticatedLayout><MasterInbox /></AuthenticatedLayout>} />
             <Route path="/admin" element={<AuthenticatedLayout><Admin /></AuthenticatedLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
