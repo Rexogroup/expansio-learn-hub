@@ -73,6 +73,51 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
+    // Get user's profile with calendar settings
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('calendar_link, timezone, default_meeting_duration, full_name')
+      .eq('id', user.id)
+      .single();
+
+    // Get user's EmailBison API key to fetch lead timezone
+    const { data: integration } = await supabase
+      .from('user_integrations')
+      .select('api_key, platform')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single();
+
+    // Try to fetch lead timezone from EmailBison
+    let leadTimezone = null;
+    if (integration && integration.platform === 'emailbison' && reply.lead_email) {
+      try {
+        console.log('Fetching lead details from EmailBison...');
+        const leadSearchResponse = await fetch(
+          `https://send.expansio.io/api/leads?search=${encodeURIComponent(reply.lead_email)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${integration.api_key}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (leadSearchResponse.ok) {
+          const leadData = await leadSearchResponse.json();
+          const leads = leadData.data || [];
+          if (leads.length > 0) {
+            const lead = leads[0];
+            // Check for timezone in custom variables or location
+            leadTimezone = lead.timezone || lead.custom_variables?.timezone || null;
+            console.log('Lead timezone found:', leadTimezone);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch lead timezone:', e);
+      }
+    }
+
     // Get appointment setting knowledge base documents
     const { data: kbDocs } = await supabase
       .from('knowledge_base_documents')
@@ -119,19 +164,27 @@ ${Object.entries(templatesByType).map(([type, content]) => `[${type.toUpperCase(
 ${profile ? `- Company: ${profile.company_name || 'Not specified'}
 - Services: ${profile.services_offered || 'Not specified'}` : 'No company profile available'}
 
+## SCHEDULING CONTEXT:
+- Your timezone: ${userProfile?.timezone || 'America/New_York'}
+- Your calendar booking link: ${userProfile?.calendar_link || '{{calendar_link}}'}
+- Meeting duration: ${userProfile?.default_meeting_duration || 15} minutes
+- Your name for sign-off: ${userProfile?.full_name || 'Team'}
+${leadTimezone ? `- Lead's timezone: ${leadTimezone}` : '- Lead timezone: Unknown (suggest times in your timezone)'}
+- Current date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+
 ## CRITICAL INSTRUCTIONS:
 1. For "interested_sure" scenarios (lead agrees, says yes, wants to proceed):
    - Use the "Scenario: Interested" or appointment setting template EXACTLY as written
    - Copy the template word-for-word, only replacing placeholders
-2. Only personalize these placeholders:
-   - {{first_name}} or [first_name] - Lead's first name (use from email if available)
-   - {{day}} or [day] - Suggest a specific day (e.g., "Thursday", "Monday")
-   - {{time}} or [time] - Suggest a specific time (e.g., "2pm", "10am")
-   - {{calendar_link}} - Leave as-is for user to fill
+2. Fill in these placeholders with ACTUAL values:
+   - {{first_name}} or [first_name] - Lead's first name: "${reply.lead_name?.split(' ')[0] || 'there'}"
+   - {{day}} or [day] - Suggest a specific day 2-3 business days from now (avoid same-day or next-day)
+   - {{time}} or [time] - Suggest a business hours time (10am-4pm) ${leadTimezone ? `in the lead's timezone (${leadTimezone})` : 'in your timezone'}
+   - {{calendar_link}} - Replace with: ${userProfile?.calendar_link || '{{calendar_link}}'}
 3. Keep the EXACT wording and structure from the template
 4. Do NOT add extra sentences, explanations, or pleasantries
 5. The templates have proven booking rates - do NOT deviate from them
-6. Include the sign-off from the template if present
+6. Use the user's name for sign-off: ${userProfile?.full_name || 'Team'}
 
 Respond with JSON:
 {
