@@ -533,6 +533,60 @@ export default function IntegrationSettings() {
                 </Card>
               )}
 
+              {/* Interested Replies Webhook Setup (EmailBison only) */}
+              {integration.platform === 'emailbison' && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                        <Mail className="w-5 h-5 text-teal-500" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Real-Time Interested Replies</CardTitle>
+                        <CardDescription>
+                          Automatically sync interested leads to your Master Inbox
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Set up a webhook to receive interested replies in real-time 
+                        without manual syncing:
+                      </p>
+                      <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
+                        <li>Go to EmailBison → Settings → Webhooks</li>
+                        <li>Create a new webhook with the URL below</li>
+                        <li>Subscribe to the <code className="bg-muted px-1 rounded">LEAD_INTERESTED</code> event</li>
+                        <li>Save and activate the webhook</li>
+                      </ol>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Webhook URL</Label>
+                        <div className="flex gap-2">
+                          <code className="flex-1 p-2 bg-background border rounded text-xs break-all">
+                            https://teelukblrpynzcdabtuu.supabase.co/functions/v1/handle-emailbison-webhook
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              navigator.clipboard.writeText('https://teelukblrpynzcdabtuu.supabase.co/functions/v1/handle-emailbison-webhook');
+                              toast.success("Copied to clipboard");
+                            }}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Once configured, interested replies will appear in your Master Inbox within seconds of being received.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Synced Campaigns */}
               {campaigns.length > 0 && (
                 <Card>
