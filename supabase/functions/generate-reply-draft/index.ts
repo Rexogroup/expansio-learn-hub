@@ -81,54 +81,63 @@ serve(async (req) => {
       .eq('is_active', true)
       .in('category', ['appointment_setting', 'examples', 'framework']);
 
-    // Build knowledge base context
+    // Build knowledge base context - use FULL content for templates
     const kbContext = (kbDocs || []).map(doc => {
-      // Truncate content to ~1000 chars per doc
-      const content = doc.extracted_content?.substring(0, 1000) || '';
+      const content = doc.extracted_content || '';
       return `**${doc.title}** (${doc.category}):\n${content}`;
-    }).join('\n\n');
+    }).join('\n\n---\n\n');
 
-    // Build template context
+    // Build template context from user's custom templates
     const templatesByType = (templates || []).reduce((acc, t) => {
       acc[t.reply_type] = t.template_content;
       return acc;
     }, {} as Record<string, string>);
 
-    const systemPrompt = `You are an expert appointment setter for an outbound sales agency. Your job is to:
-1. Classify the incoming lead reply into one of these categories: interested, question, objection, referral, not_interested
-2. Generate a professional, personalized response that moves the conversation toward booking a meeting
+    const systemPrompt = `You are an expert appointment setter. Your job is to:
+1. Classify the lead's reply into the MOST SPECIFIC scenario
+2. Find the EXACT matching template from the Knowledge Base
+3. Use that template VERBATIM, only filling in placeholders
 
-${kbContext ? `## APPOINTMENT SETTING BEST PRACTICES (from Knowledge Base):
-${kbContext}
+## CLASSIFICATION SCENARIOS (in order of priority):
+- **interested_sure**: Lead says yes, agrees, wants to move forward ("Sure", "Send them over", "I'll take the 5 leads", "Let's do it", "Sounds good", "I'm in")
+- **interested_portfolio**: Lead is interested but wants to see examples/portfolio first
+- **interested_more_info**: Lead is interested but wants more details about how it works
+- **question_pricing**: Lead asks about pricing or cost
+- **question_process**: Lead asks how the system/process works
+- **objection_time**: Lead says they don't have time or prefer email
+- **objection_catch**: Lead asks "what's the catch?"
+- **not_interested**: Lead declines or is not interested
+- **referral**: Lead refers to someone else
 
-Use these examples and techniques to craft your response. Match the tone and structure of successful templates.
+## APPOINTMENT SETTING TEMPLATES (from Knowledge Base):
+${kbContext || 'No templates available'}
 
-` : ''}Company Context:
-${profile ? `
-- Company: ${profile.company_name || 'Not specified'}
-- Services: ${profile.services_offered || 'Not specified'}
-- Target Industries: ${profile.target_industries || 'Not specified'}
-` : 'No company profile available'}
+## USER'S CUSTOM TEMPLATES:
+${Object.entries(templatesByType).map(([type, content]) => `[${type.toUpperCase()}]:\n${content}`).join('\n\n') || 'None configured'}
 
-Available Templates:
-${Object.entries(templatesByType).map(([type, content]) => `
-[${type.toUpperCase()}]:
-${content}
-`).join('\n') || 'No templates available - generate a professional response.'}
+## Company Context:
+${profile ? `- Company: ${profile.company_name || 'Not specified'}
+- Services: ${profile.services_offered || 'Not specified'}` : 'No company profile available'}
 
-Guidelines:
-- Keep responses concise (2-4 sentences max)
-- Be warm but professional
-- Always include a clear call-to-action for booking a meeting
-- Use placeholders like {{calendar_link}} for the user to fill in
-- Match the tone and energy of the lead's reply
-- If they asked a question, answer it briefly then pivot to booking
+## CRITICAL INSTRUCTIONS:
+1. For "interested_sure" scenarios (lead agrees, says yes, wants to proceed):
+   - Use the "Scenario: Interested" or appointment setting template EXACTLY as written
+   - Copy the template word-for-word, only replacing placeholders
+2. Only personalize these placeholders:
+   - {{first_name}} or [first_name] - Lead's first name (use from email if available)
+   - {{day}} or [day] - Suggest a specific day (e.g., "Thursday", "Monday")
+   - {{time}} or [time] - Suggest a specific time (e.g., "2pm", "10am")
+   - {{calendar_link}} - Leave as-is for user to fill
+3. Keep the EXACT wording and structure from the template
+4. Do NOT add extra sentences, explanations, or pleasantries
+5. The templates have proven booking rates - do NOT deviate from them
+6. Include the sign-off from the template if present
 
-Respond with JSON in this exact format:
+Respond with JSON:
 {
-  "classification": "interested|question|objection|referral|not_interested",
-  "draft": "Your generated response here",
-  "reasoning": "Brief explanation of your classification"
+  "classification": "interested_sure|interested_portfolio|interested_more_info|question_pricing|question_process|objection_time|objection_catch|not_interested|referral",
+  "draft": "The template with placeholders filled in - copy EXACTLY from KB",
+  "reasoning": "Why this classification matches and which template was used"
 }`;
 
     const userMessage = `Lead Email: ${reply.lead_email}
@@ -195,12 +204,26 @@ Generate an appropriate appointment-setting response.`;
       };
     }
 
+    // Map detailed classification to database reply_type
+    const classificationMap: Record<string, string> = {
+      'interested_sure': 'interested',
+      'interested_portfolio': 'interested',
+      'interested_more_info': 'interested',
+      'question_pricing': 'question',
+      'question_process': 'question',
+      'objection_time': 'objection',
+      'objection_catch': 'objection',
+      'not_interested': 'not_interested',
+      'referral': 'referral'
+    };
+    const dbReplyType = classificationMap[parsed.classification] || parsed.classification;
+
     // Update the reply with the AI draft and classification
     const { error: updateError } = await supabase
       .from('lead_replies')
       .update({
         ai_draft: parsed.draft,
-        reply_type: parsed.classification,
+        reply_type: dbReplyType,
       })
       .eq('id', reply_id);
 
