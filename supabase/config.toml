@@ -35,3 +35,12 @@ verify_jwt = false
 
 [functions.classify-scripts]
 verify_jwt = false
+
+[functions.sync-lead-replies]
+verify_jwt = true
+
+[functions.generate-reply-draft]
+verify_jwt = true
+
+[functions.send-reply]
+verify_jwt = true
