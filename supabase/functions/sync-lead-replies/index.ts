@@ -7,15 +7,26 @@ const corsHeaders = {
 };
 
 interface EmailBisonReply {
-  id: string;
-  lead_id: string;
-  lead_email: string;
+  id?: string | number;
+  reply_id?: string | number;
+  lead_id?: string | number;
+  lead_email?: string;
+  email?: string;
+  from_email?: string;
   lead_name?: string;
-  campaign_id: string;
+  name?: string;
+  from_name?: string;
+  campaign_id?: string | number;
   campaign_name?: string;
+  campaign?: { id?: string | number; name?: string };
   subject?: string;
-  body: string;
-  received_at: string;
+  body?: string;
+  content?: string;
+  message?: string;
+  text?: string;
+  received_at?: string;
+  created_at?: string;
+  date?: string;
   is_interested?: boolean;
 }
 
@@ -85,33 +96,56 @@ serve(async (req) => {
     }
 
     const repliesData = await emailBisonResponse.json();
+    console.log('Raw API response structure:', JSON.stringify(repliesData, null, 2).substring(0, 2000));
+    
     const replies: EmailBisonReply[] = repliesData.data || repliesData || [];
+    
+    // Log first reply to understand the field names
+    if (replies[0]) {
+      console.log('First reply structure:', JSON.stringify(replies[0], null, 2));
+    }
     
     console.log(`Fetched ${replies.length} replies from EmailBison`);
 
     // Upsert replies into database
     let insertedCount = 0;
     let updatedCount = 0;
+    let skippedCount = 0;
 
     for (const reply of replies) {
+      // Handle possible field name variations
+      const externalReplyId = (reply.id?.toString() || reply.reply_id?.toString() || '');
+      const leadEmail = (reply.lead_email || reply.email || reply.from_email || '');
+      const body = (reply.body || reply.content || reply.message || reply.text || '');
+      
+      const replyRecord = {
+        user_id: user.id,
+        external_reply_id: externalReplyId,
+        lead_email: leadEmail,
+        lead_name: reply.lead_name || reply.name || reply.from_name || null,
+        campaign_id: (reply.campaign_id?.toString() || reply.campaign?.id?.toString() || ''),
+        campaign_name: reply.campaign_name || reply.campaign?.name || null,
+        subject: reply.subject || null,
+        body: body,
+        received_at: reply.received_at || reply.created_at || reply.date || new Date().toISOString(),
+      };
+      
+      // Log what we're trying to insert
+      console.log(`Processing reply ${replyRecord.external_reply_id}: email=${replyRecord.lead_email}, has body=${!!replyRecord.body}`);
+      
+      // Skip if required fields are missing
+      if (!replyRecord.external_reply_id || !replyRecord.lead_email || !replyRecord.body) {
+        console.warn(`Skipping reply - missing required fields: id=${replyRecord.external_reply_id}, email=${replyRecord.lead_email}, body=${!!replyRecord.body}`);
+        skippedCount++;
+        continue;
+      }
+
       const { data: existing } = await supabase
         .from('lead_replies')
         .select('id')
         .eq('user_id', user.id)
-        .eq('external_reply_id', reply.id)
-        .single();
-
-      const replyRecord = {
-        user_id: user.id,
-        external_reply_id: reply.id,
-        lead_email: reply.lead_email,
-        lead_name: reply.lead_name || null,
-        campaign_id: reply.campaign_id,
-        campaign_name: reply.campaign_name || null,
-        subject: reply.subject || null,
-        body: reply.body,
-        received_at: reply.received_at,
-      };
+        .eq('external_reply_id', replyRecord.external_reply_id)
+        .maybeSingle();
 
       if (existing) {
         const { error: updateError } = await supabase
@@ -119,13 +153,22 @@ serve(async (req) => {
           .update(replyRecord)
           .eq('id', existing.id);
 
-        if (!updateError) updatedCount++;
+        if (updateError) {
+          console.error(`Update error for reply ${replyRecord.external_reply_id}:`, updateError);
+        } else {
+          updatedCount++;
+        }
       } else {
         const { error: insertError } = await supabase
           .from('lead_replies')
           .insert(replyRecord);
 
-        if (!insertError) insertedCount++;
+        if (insertError) {
+          console.error(`Insert error for reply ${replyRecord.external_reply_id}:`, insertError);
+          console.log('Failed record:', JSON.stringify(replyRecord));
+        } else {
+          insertedCount++;
+        }
       }
     }
 
