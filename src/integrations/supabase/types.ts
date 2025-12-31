@@ -1138,26 +1138,35 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          calendar_link: string | null
           created_at: string | null
+          default_meeting_duration: number | null
           email: string
           full_name: string | null
           id: string
+          timezone: string | null
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
+          calendar_link?: string | null
           created_at?: string | null
+          default_meeting_duration?: number | null
           email: string
           full_name?: string | null
           id: string
+          timezone?: string | null
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
+          calendar_link?: string | null
           created_at?: string | null
+          default_meeting_duration?: number | null
           email?: string
           full_name?: string | null
           id?: string
+          timezone?: string | null
           updated_at?: string | null
         }
         Relationships: []

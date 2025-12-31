@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag, Webhook, Copy } from "lucide-react";
+import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag, Webhook, Copy, Calendar, Clock } from "lucide-react";
 
 type Platform = 'instantly' | 'emailbison';
 type SyncStatus = 'pending' | 'syncing' | 'success' | 'error';
@@ -68,9 +68,68 @@ export default function IntegrationSettings() {
   const [selectedTagId, setSelectedTagId] = useState<string>("");
   const [savingTag, setSavingTag] = useState(false);
 
+  // Scheduling settings state
+  const [calendarLink, setCalendarLink] = useState("");
+  const [userTimezone, setUserTimezone] = useState("America/New_York");
+  const [meetingDuration, setMeetingDuration] = useState(15);
+  const [savingScheduling, setSavingScheduling] = useState(false);
+  const [loadingScheduling, setLoadingScheduling] = useState(true);
+
   useEffect(() => {
     fetchIntegration();
+    fetchSchedulingSettings();
   }, []);
+
+  async function fetchSchedulingSettings() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('calendar_link, timezone, default_meeting_duration')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setCalendarLink(profile.calendar_link || '');
+        setUserTimezone(profile.timezone || 'America/New_York');
+        setMeetingDuration(profile.default_meeting_duration || 15);
+      }
+    } catch (error) {
+      console.error('Error fetching scheduling settings:', error);
+    } finally {
+      setLoadingScheduling(false);
+    }
+  }
+
+  async function saveSchedulingSettings() {
+    setSavingScheduling(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          calendar_link: calendarLink || null,
+          timezone: userTimezone,
+          default_meeting_duration: meetingDuration,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success("Scheduling settings saved!", {
+        description: "Your calendar link and timezone will be used in AI-generated replies."
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Failed to save settings", { description: errorMessage });
+    } finally {
+      setSavingScheduling(false);
+    }
+  }
 
   useEffect(() => {
     // Fetch tags when integration is connected and is EmailBison
@@ -363,6 +422,98 @@ export default function IntegrationSettings() {
               Connect your outbound email platform to sync campaign data and enable AI-powered analysis.
             </p>
           </div>
+
+          {/* Scheduling Settings Card - Always visible */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-violet-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Scheduling Settings</CardTitle>
+                  <CardDescription>
+                    Configure your calendar link and timezone for AI-generated meeting requests
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {loadingScheduling ? (
+                <div className="flex items-center justify-center py-4">
+                  <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Calendar Booking Link</Label>
+                    <Input
+                      placeholder="https://calendly.com/yourname/15min"
+                      value={calendarLink}
+                      onChange={(e) => setCalendarLink(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your Calendly, Cal.com, or other booking link. This will be included in AI-generated replies.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Your Timezone</Label>
+                      <Select value={userTimezone} onValueChange={setUserTimezone}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                          <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                          <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                          <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                          <SelectItem value="America/Phoenix">Arizona (MST)</SelectItem>
+                          <SelectItem value="Europe/London">London (GMT/BST)</SelectItem>
+                          <SelectItem value="Europe/Paris">Central European (CET)</SelectItem>
+                          <SelectItem value="Europe/Rome">Rome (CET)</SelectItem>
+                          <SelectItem value="Asia/Dubai">Dubai (GST)</SelectItem>
+                          <SelectItem value="Asia/Singapore">Singapore (SGT)</SelectItem>
+                          <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Default Meeting Duration</Label>
+                      <Select 
+                        value={meetingDuration.toString()} 
+                        onValueChange={(v) => setMeetingDuration(parseInt(v))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="15">15 minutes</SelectItem>
+                          <SelectItem value="30">30 minutes</SelectItem>
+                          <SelectItem value="45">45 minutes</SelectItem>
+                          <SelectItem value="60">60 minutes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={saveSchedulingSettings}
+                    disabled={savingScheduling}
+                    className="w-full"
+                  >
+                    {savingScheduling ? (
+                      <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                    ) : (
+                      <><Clock className="w-4 h-4 mr-2" /> Save Scheduling Settings</>
+                    )}
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
           {integration ? (
             <>
