@@ -7,27 +7,20 @@ const corsHeaders = {
 };
 
 interface EmailBisonReply {
-  id?: string | number;
-  reply_id?: string | number;
-  lead_id?: string | number;
-  lead_email?: string;
-  email?: string;
-  from_email?: string;
-  lead_name?: string;
-  name?: string;
-  from_name?: string;
-  campaign_id?: string | number;
-  campaign_name?: string;
-  campaign?: { id?: string | number; name?: string };
+  id: number;
+  uuid?: string;
+  folder?: string;
   subject?: string;
-  body?: string;
-  content?: string;
-  message?: string;
-  text?: string;
-  received_at?: string;
-  created_at?: string;
-  date?: string;
-  is_interested?: boolean;
+  from_name?: string;
+  from_email_address?: string;
+  text_body?: string;
+  html_body?: string;
+  date_received?: string;
+  campaign_id?: number | null;
+  lead_id?: number | null;
+  type?: string;
+  interested?: boolean;
+  automated_reply?: boolean;
 }
 
 serve(async (req) => {
@@ -113,21 +106,21 @@ serve(async (req) => {
     let skippedCount = 0;
 
     for (const reply of replies) {
-      // Handle possible field name variations
-      const externalReplyId = (reply.id?.toString() || reply.reply_id?.toString() || '');
-      const leadEmail = (reply.lead_email || reply.email || reply.from_email || '');
-      const body = (reply.body || reply.content || reply.message || reply.text || '');
+      // Use correct field names from EmailBison API
+      const externalReplyId = reply.id?.toString() || '';
+      const leadEmail = reply.from_email_address || '';
+      const body = reply.text_body || reply.html_body || '';
       
       const replyRecord = {
         user_id: user.id,
         external_reply_id: externalReplyId,
         lead_email: leadEmail,
-        lead_name: reply.lead_name || reply.name || reply.from_name || null,
-        campaign_id: (reply.campaign_id?.toString() || reply.campaign?.id?.toString() || ''),
-        campaign_name: reply.campaign_name || reply.campaign?.name || null,
+        lead_name: reply.from_name || null,
+        campaign_id: reply.campaign_id?.toString() || null,
+        campaign_name: null,
         subject: reply.subject || null,
         body: body,
-        received_at: reply.received_at || reply.created_at || reply.date || new Date().toISOString(),
+        received_at: reply.date_received || new Date().toISOString(),
       };
       
       // Log what we're trying to insert
