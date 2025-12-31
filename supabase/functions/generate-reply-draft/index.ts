@@ -144,7 +144,7 @@ Generate an appropriate appointment-setting response.`;
     console.log('Generating reply draft with Lovable AI...');
 
     // Call Lovable AI
-    const aiResponse = await fetch('https://api.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,
