@@ -67,7 +67,7 @@ serve(async (req) => {
 
     // Fetch replies from EmailBison API
     console.log('Fetching replies from EmailBison API...');
-    const emailBisonResponse = await fetch('https://api.emailbison.com/api/replies?filter=interested', {
+    const emailBisonResponse = await fetch('https://send.expansio.io/api/replies?filter=interested', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${integration.api_key}`,

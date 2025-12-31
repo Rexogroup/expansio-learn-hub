@@ -79,7 +79,7 @@ serve(async (req) => {
     console.log(`Sending reply to ${reply.lead_email} via EmailBison...`);
     
     const emailBisonResponse = await fetch(
-      `https://api.emailbison.com/api/replies/${reply.external_reply_id}/reply`,
+      `https://send.expansio.io/api/replies/${reply.external_reply_id}/reply`,
       {
         method: 'POST',
         headers: {
