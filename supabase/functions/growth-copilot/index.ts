@@ -77,11 +77,12 @@ function buildKnowledgeBaseSection(docs: KnowledgeBaseDoc[]): string {
     'pain_points': 'Pain Point References',
     'objections': 'Objection Handling',
     'scripts': 'Script Templates',
+    'appointment_setting': 'Appointment Setting Templates',
     'other': 'Additional Resources'
   };
 
   // Prioritize categories that are most actionable
-  const categoryOrder = ['examples', 'scripts', 'framework', 'objections', 'lead_magnet', 'icp', 'pain_points', 'other'];
+  const categoryOrder = ['examples', 'scripts', 'appointment_setting', 'framework', 'objections', 'lead_magnet', 'icp', 'pain_points', 'other'];
   
   let section = '\n## KNOWLEDGE BASE (Reference for Recommendations)\n\n';
   let totalChars = 0;

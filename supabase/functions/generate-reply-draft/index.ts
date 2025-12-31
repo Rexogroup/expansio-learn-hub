@@ -73,6 +73,21 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
+    // Get appointment setting knowledge base documents
+    const { data: kbDocs } = await supabase
+      .from('knowledge_base_documents')
+      .select('title, extracted_content, category')
+      .eq('document_type', 'admin')
+      .eq('is_active', true)
+      .in('category', ['appointment_setting', 'examples', 'framework']);
+
+    // Build knowledge base context
+    const kbContext = (kbDocs || []).map(doc => {
+      // Truncate content to ~1000 chars per doc
+      const content = doc.extracted_content?.substring(0, 1000) || '';
+      return `**${doc.title}** (${doc.category}):\n${content}`;
+    }).join('\n\n');
+
     // Build template context
     const templatesByType = (templates || []).reduce((acc, t) => {
       acc[t.reply_type] = t.template_content;
@@ -83,7 +98,12 @@ serve(async (req) => {
 1. Classify the incoming lead reply into one of these categories: interested, question, objection, referral, not_interested
 2. Generate a professional, personalized response that moves the conversation toward booking a meeting
 
-Company Context:
+${kbContext ? `## APPOINTMENT SETTING BEST PRACTICES (from Knowledge Base):
+${kbContext}
+
+Use these examples and techniques to craft your response. Match the tone and structure of successful templates.
+
+` : ''}Company Context:
 ${profile ? `
 - Company: ${profile.company_name || 'Not specified'}
 - Services: ${profile.services_offered || 'Not specified'}

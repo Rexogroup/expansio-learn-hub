@@ -41,6 +41,7 @@ const CATEGORIES = [
   { value: "pain_points", label: "Pain Points" },
   { value: "examples", label: "Success Examples" },
   { value: "framework", label: "Framework" },
+  { value: "appointment_setting", label: "Appointment Setting" },
   { value: "other", label: "Other" },
 ];
 
