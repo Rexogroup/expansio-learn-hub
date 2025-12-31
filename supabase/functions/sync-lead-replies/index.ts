@@ -69,35 +69,59 @@ serve(async (req) => {
       );
     }
 
-    // Fetch replies from EmailBison API
-    console.log('Fetching replies from EmailBison API...');
-    const emailBisonResponse = await fetch('https://send.expansio.io/api/replies?filter=interested', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${integration.api_key}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Fetch replies from EmailBison API with pagination
+    console.log('Fetching interested inbox replies from EmailBison API...');
+    let allReplies: EmailBisonReply[] = [];
+    let currentPage = 1;
+    let hasNextPage = true;
 
-    if (!emailBisonResponse.ok) {
-      const errorText = await emailBisonResponse.text();
-      console.error('EmailBison API error:', errorText);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch replies from EmailBison', details: errorText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    while (hasNextPage) {
+      console.log(`Fetching page ${currentPage}...`);
+      
+      const emailBisonResponse = await fetch(
+        `https://send.expansio.io/api/replies?status=interested&folder=inbox&page=${currentPage}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${integration.api_key}`,
+            'Content-Type': 'application/json',
+          },
+        }
       );
+
+      if (!emailBisonResponse.ok) {
+        const errorText = await emailBisonResponse.text();
+        console.error('EmailBison API error:', errorText);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch replies from EmailBison', details: errorText }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const repliesData = await emailBisonResponse.json();
+      const pageReplies: EmailBisonReply[] = repliesData.data || [];
+      allReplies = [...allReplies, ...pageReplies];
+      
+      console.log(`Page ${currentPage}: fetched ${pageReplies.length} replies`);
+      
+      // Check if there's a next page
+      hasNextPage = repliesData.links?.next !== null && repliesData.links?.next !== undefined;
+      currentPage++;
+      
+      // Safety limit to prevent infinite loops
+      if (currentPage > 100) {
+        console.warn('Reached maximum page limit (100), stopping pagination');
+        break;
+      }
     }
 
-    const repliesData = await emailBisonResponse.json();
-    const allReplies: EmailBisonReply[] = repliesData.data || repliesData || [];
-    
-    // Filter to only interested, non-automated replies
+    // Filter to only interested, non-automated replies (safety check)
     const replies = allReplies.filter(reply => 
       reply.interested === true && 
       reply.automated_reply !== true
     );
     
-    console.log(`Fetched ${allReplies.length} total replies, ${replies.length} are interested (non-automated)`);
+    console.log(`Fetched ${allReplies.length} total replies across all pages, ${replies.length} are interested (non-automated)`);
 
     // Upsert replies into database
     let insertedCount = 0;
@@ -169,9 +193,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        totalFetched: allReplies.length,
         synced: replies.length,
         inserted: insertedCount,
         updated: updatedCount,
+        skipped: skippedCount,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
