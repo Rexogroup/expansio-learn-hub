@@ -89,16 +89,15 @@ serve(async (req) => {
     }
 
     const repliesData = await emailBisonResponse.json();
-    console.log('Raw API response structure:', JSON.stringify(repliesData, null, 2).substring(0, 2000));
+    const allReplies: EmailBisonReply[] = repliesData.data || repliesData || [];
     
-    const replies: EmailBisonReply[] = repliesData.data || repliesData || [];
+    // Filter to only interested, non-automated replies
+    const replies = allReplies.filter(reply => 
+      reply.interested === true && 
+      reply.automated_reply !== true
+    );
     
-    // Log first reply to understand the field names
-    if (replies[0]) {
-      console.log('First reply structure:', JSON.stringify(replies[0], null, 2));
-    }
-    
-    console.log(`Fetched ${replies.length} replies from EmailBison`);
+    console.log(`Fetched ${allReplies.length} total replies, ${replies.length} are interested (non-automated)`);
 
     // Upsert replies into database
     let insertedCount = 0;
