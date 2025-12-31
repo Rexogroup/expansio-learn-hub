@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle, X } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Alert {
@@ -40,35 +40,35 @@ export function AlertsBanner() {
   if (dismissed || alerts.length === 0) return null;
 
   const criticalAlerts = alerts.filter(a => a.severity === 'critical');
-  const isCritical = criticalAlerts.length > 0;
+
+  // Format alert type for display
+  const formatAlertType = (type: string) => {
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   return (
-    <div className={`rounded-lg p-4 flex items-center justify-between gap-4 ${
-      isCritical 
-        ? 'bg-destructive/10 border border-destructive/30' 
-        : 'bg-amber-500/10 border border-amber-500/30'
-    }`}>
+    <div className="rounded-lg p-4 flex items-center justify-between gap-4 bg-amber-500/10 border border-amber-500/30">
       <div className="flex items-center gap-3">
-        <AlertTriangle className={`w-5 h-5 ${isCritical ? 'text-destructive' : 'text-amber-500'}`} />
+        <Heart className="w-5 h-5 text-amber-500" />
         <div>
-          <p className={`font-medium ${isCritical ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'}`}>
+          <p className="font-medium text-amber-600 dark:text-amber-400">
             {criticalAlerts.length > 0 
-              ? `${criticalAlerts.length} critical infrastructure issue${criticalAlerts.length > 1 ? 's' : ''} detected`
-              : `${alerts.length} infrastructure warning${alerts.length > 1 ? 's' : ''}`
+              ? `Some accounts need attention`
+              : `Review recommended for ${alerts.length} account${alerts.length > 1 ? 's' : ''}`
             }
           </p>
           <p className="text-sm text-muted-foreground">
-            {criticalAlerts[0]?.email_address || alerts[0]?.email_address} - {criticalAlerts[0]?.alert_type || alerts[0]?.alert_type}
+            {criticalAlerts[0]?.email_address || alerts[0]?.email_address} may benefit from a pause - {formatAlertType(criticalAlerts[0]?.alert_type || alerts[0]?.alert_type)}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
         <Button 
           size="sm" 
-          variant={isCritical ? "destructive" : "outline"}
+          variant="outline"
           onClick={() => navigate('/integrations')}
         >
-          View Issues
+          Review Accounts
         </Button>
         <Button 
           size="icon" 

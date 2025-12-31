@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertTriangle, Mail, Calendar } from "lucide-react";
+import { CheckCircle2, Heart, Mail, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface StatusPillsProps {
@@ -21,37 +21,29 @@ export function StatusPills({
     return num.toString();
   };
 
+  // Determine overall health status
+  const needsAttention = !infrastructureHealthy || alertCount > 0;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {/* Infrastructure Status */}
+      {/* Infrastructure Status - softer messaging */}
       <Badge 
         variant="outline" 
         className={`flex items-center gap-1.5 px-3 py-1 ${
-          infrastructureHealthy 
-            ? 'border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10' 
-            : 'border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-500/10'
+          needsAttention 
+            ? 'border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-500/10' 
+            : 'border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10'
         }`}
       >
-        {infrastructureHealthy ? (
-          <CheckCircle2 className="w-3.5 h-3.5" />
+        {needsAttention ? (
+          <Heart className="w-3.5 h-3.5" />
         ) : (
-          <AlertTriangle className="w-3.5 h-3.5" />
+          <CheckCircle2 className="w-3.5 h-3.5" />
         )}
         <span className="text-xs font-medium">
-          {infrastructureHealthy ? 'Healthy' : 'Issues'}
+          {needsAttention ? 'Needs Attention' : 'Healthy'}
         </span>
       </Badge>
-
-      {/* Alert Count - Only show if there are alerts */}
-      {alertCount > 0 && (
-        <Badge 
-          variant="outline" 
-          className="flex items-center gap-1.5 px-3 py-1 border-destructive/50 text-destructive bg-destructive/10"
-        >
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span className="text-xs font-medium">{alertCount} Alert{alertCount > 1 ? 's' : ''}</span>
-        </Badge>
-      )}
 
       {/* Quick Stats */}
       <div className="flex items-center gap-1 text-muted-foreground ml-2">

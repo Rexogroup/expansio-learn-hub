@@ -11,7 +11,7 @@ import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
 import { AssetVaultScripts } from "@/components/growth/AssetVaultScripts";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase, Settings, FolderOpen, Target, FileText, AlertTriangle, Zap, Link, GraduationCap, TrendingUp, XCircle, Pause, RefreshCw, Clock } from "lucide-react";
+import { Briefcase, Settings, FolderOpen, Target, FileText, Heart, Zap, Link, GraduationCap, TrendingUp, Pause, RefreshCw, Clock } from "lucide-react";
 import { useVariantRecommendations } from "@/hooks/useVariantRecommendations";
 import { toast } from "sonner";
 
@@ -336,34 +336,34 @@ export default function CommandCenter() {
   const getPriorityActions = (): PriorityAction[] => {
     const actions: PriorityAction[] = [];
 
-    // Critical: Infrastructure alerts (always first)
+    // Account health check (softer framing)
     if (alertCount > 0) {
       actions.push({
         id: 'infrastructure-alert',
-        title: 'Infrastructure Issues Detected',
-        description: `${alertCount} email account${alertCount > 1 ? 's' : ''} require${alertCount === 1 ? 's' : ''} attention. High bounce rates or low health scores can damage your sender reputation.`,
-        actionLabel: 'View Issues',
+        title: 'Account Health Check',
+        description: `Some accounts may benefit from a brief pause. Let's review and optimize your sending to protect your reputation.`,
+        actionLabel: 'Review',
         actionPath: '/integrations',
-        priority: 'critical',
-        icon: <AlertTriangle className="w-5 h-5" />,
+        priority: 'high',
+        icon: <Heart className="w-5 h-5" />,
       });
     }
 
     // VARIANT-LEVEL SOP RECOMMENDATIONS
-    // KILL actions (critical priority) - show ALL
-    const killVariants = variantRecs.filter(v => v.action === 'KILL');
-    killVariants.forEach(killVar => {
+    // PAUSE actions (previously KILL) - softer language
+    const pauseVariants = variantRecs.filter(v => v.action === 'KILL');
+    pauseVariants.forEach(pauseVar => {
       const winningPattern = winningScripts.length > 0 
-        ? ` Rewrite using your winning pattern.`
+        ? ` Try elements from your winning scripts.`
         : '';
       actions.push({
-        id: `kill-${killVar.id}`,
-        title: `KILL: Step ${killVar.stepNumber} - Variant ${killVar.variantLabel}`,
-        description: `${killVar.reason}${winningPattern}`,
+        id: `pause-${pauseVar.id}`,
+        title: `Pause: Step ${pauseVar.stepNumber} - Variant ${pauseVar.variantLabel}`,
+        description: `Underperforming - consider pausing to iterate.${winningPattern}`,
         actionLabel: 'Rewrite',
         actionPath: '/script-builder',
-        priority: 'critical',
-        icon: <XCircle className="w-5 h-5" />,
+        priority: 'high',
+        icon: <Pause className="w-5 h-5" />,
       });
     });
 

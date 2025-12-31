@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ArrowRight, Zap, TrendingUp, XCircle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, ArrowRight, Zap, TrendingUp, Pause, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 interface PriorityAction {
   id: string;
   title: string;
@@ -29,8 +29,8 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
 
   const getPriorityStyles = (priority: PriorityAction['priority'], actionId: string) => {
     // Special styling for SOP action types
-    if (actionId.startsWith('kill-')) {
-      return 'border-destructive/40 bg-destructive/10';
+    if (actionId.startsWith('pause-')) {
+      return 'border-amber-500/40 bg-amber-500/10';
     }
     if (actionId.startsWith('scale-')) {
       return 'border-emerald-500/40 bg-emerald-500/10';
@@ -41,7 +41,7 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
     
     switch (priority) {
       case 'critical':
-        return 'border-destructive/30 bg-destructive/5';
+        return 'border-amber-500/30 bg-amber-500/5';
       case 'high':
         return 'border-amber-500/30 bg-amber-500/5';
       default:
@@ -50,13 +50,13 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
   };
 
   const getIconStyles = (priority: PriorityAction['priority'], actionId: string) => {
-    if (actionId.startsWith('kill-')) return 'text-destructive';
+    if (actionId.startsWith('pause-')) return 'text-amber-500';
     if (actionId.startsWith('scale-')) return 'text-emerald-500';
     if (actionId.startsWith('iterate-')) return 'text-blue-500';
     
     switch (priority) {
       case 'critical':
-        return 'text-destructive';
+        return 'text-amber-500';
       case 'high':
         return 'text-amber-500';
       default:
@@ -65,8 +65,8 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
   };
 
   const getActionBadge = (actionId: string) => {
-    if (actionId.startsWith('kill-')) {
-      return <Badge variant="destructive" className="text-xs">KILL</Badge>;
+    if (actionId.startsWith('pause-')) {
+      return <Badge className="bg-amber-500 text-white text-xs">PAUSE</Badge>;
     }
     if (actionId.startsWith('scale-')) {
       return <Badge className="bg-emerald-500 text-white text-xs">SCALE</Badge>;
@@ -78,7 +78,7 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
   };
 
   const getDefaultIcon = (actionId: string, priority: PriorityAction['priority']) => {
-    if (actionId.startsWith('kill-')) return <XCircle className="w-5 h-5" />;
+    if (actionId.startsWith('pause-')) return <Pause className="w-5 h-5" />;
     if (actionId.startsWith('scale-')) return <TrendingUp className="w-5 h-5" />;
     if (actionId.startsWith('iterate-')) return <RefreshCw className="w-5 h-5" />;
     
@@ -88,9 +88,9 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
   };
 
   const getButtonVariant = (actionId: string, priority: PriorityAction['priority']) => {
-    if (actionId.startsWith('kill-')) return 'destructive';
+    if (actionId.startsWith('pause-')) return 'outline';
     if (actionId.startsWith('scale-')) return 'default';
-    return priority === 'critical' ? 'destructive' : 'default';
+    return 'default';
   };
 
   return (
