@@ -6,6 +6,44 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Check if a time is within business hours (9am - 6pm)
+function isBusinessHours(timeStr: string): boolean {
+  const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(am|pm)/i);
+  if (!match) return false;
+  
+  let hour = parseInt(match[1]);
+  const period = match[3].toLowerCase();
+  
+  // Convert to 24-hour format
+  if (period === 'pm' && hour !== 12) hour += 12;
+  if (period === 'am' && hour === 12) hour = 0;
+  
+  // Only allow 9am (9) to 6pm (18), exclusive of 6pm
+  return hour >= 9 && hour < 18;
+}
+
+// Get timezone abbreviation for common timezones
+function getTimezoneAbbreviation(timezone: string): string {
+  const tzMap: Record<string, string> = {
+    'America/New_York': 'EST',
+    'America/Chicago': 'CST',
+    'America/Denver': 'MST',
+    'America/Los_Angeles': 'PST',
+    'America/Phoenix': 'MST',
+    'America/Anchorage': 'AKST',
+    'Pacific/Honolulu': 'HST',
+    'Europe/London': 'GMT',
+    'Europe/Paris': 'CET',
+    'Europe/Berlin': 'CET',
+    'Asia/Tokyo': 'JST',
+    'Asia/Shanghai': 'CST',
+    'Asia/Singapore': 'SGT',
+    'Australia/Sydney': 'AEDT',
+  };
+  
+  return tzMap[timezone] || timezone.split('/').pop() || 'local time';
+}
+
 // Fetch available calendar slots using Firecrawl
 async function fetchCalendarAvailability(calendarLink: string, leadTimezone: string | null): Promise<string[]> {
   const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
@@ -56,7 +94,6 @@ function parseAvailableSlotsFromMarkdown(markdown: string, leadTimezone: string 
   const slots: string[] = [];
   
   // Look for common patterns in calendar booking pages
-  // Pattern 1: "Monday, January 6" followed by times like "10:00am", "2:30pm"
   const datePattern = /(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}/gi;
   const timePattern = /\b(\d{1,2}:\d{2}\s*(?:am|pm|AM|PM))\b/g;
   
@@ -65,7 +102,6 @@ function parseAvailableSlotsFromMarkdown(markdown: string, leadTimezone: string 
   
   // If we found structured date/time info, combine them
   if (dates.length > 0 && times.length > 0) {
-    // Group times by their preceding date
     const lines = markdown.split('\n');
     let currentDate = '';
     
@@ -78,27 +114,30 @@ function parseAvailableSlotsFromMarkdown(markdown: string, leadTimezone: string 
       const lineTimeMatches = line.match(timePattern);
       if (lineTimeMatches && currentDate) {
         for (const time of lineTimeMatches) {
-          const slot = `${currentDate} at ${time}`;
-          if (!slots.includes(slot)) {
-            slots.push(slot);
+          // Only include times within business hours (9am - 6pm)
+          if (isBusinessHours(time)) {
+            const slot = `${currentDate} at ${time}`;
+            if (!slots.includes(slot)) {
+              slots.push(slot);
+            }
           }
         }
       }
     }
   }
   
-  // Fallback: look for any time-like patterns
+  // Fallback: look for any time-like patterns within business hours
   if (slots.length === 0 && times.length > 0) {
-    // Just list unique times found
-    const uniqueTimes = [...new Set(times)];
+    const uniqueTimes = [...new Set(times)].filter(isBusinessHours);
     for (const time of uniqueTimes.slice(0, 5)) {
       slots.push(time);
     }
   }
   
-  // Add timezone context if we have lead timezone
+  // Add timezone abbreviation if we have lead timezone
   if (leadTimezone && slots.length > 0) {
-    return slots.map(slot => `${slot} (displayed in calendar's timezone)`);
+    const tzAbbrev = getTimezoneAbbreviation(leadTimezone);
+    return slots.map(slot => `${slot} ${tzAbbrev}`);
   }
   
   return slots;
@@ -243,31 +282,40 @@ serve(async (req) => {
     }, {} as Record<string, string>);
 
     // Build scheduling context based on available data
+    const tzAbbrev = leadTimezone ? getTimezoneAbbreviation(leadTimezone) : null;
     let schedulingContext = '';
     if (availableSlots.length > 0) {
       schedulingContext = `
 ## SCHEDULING CONTEXT - REAL AVAILABILITY:
-- Lead's timezone: ${leadTimezone || 'Unknown'}
+- Lead's timezone: ${leadTimezone || 'Unknown'} ${tzAbbrev ? `(${tzAbbrev})` : ''}
 - Calendar booking link: ${userProfile?.calendar_link}
 - Meeting duration: ${userProfile?.default_meeting_duration || 15} minutes
 
-**YOUR ACTUAL AVAILABLE SLOTS (from calendar):**
+**YOUR ACTUAL AVAILABLE SLOTS (from calendar, filtered to business hours 9am-6pm):**
 ${availableSlots.map((slot, i) => `${i + 1}. ${slot}`).join('\n')}
 
-INSTRUCTIONS: Pick ONE of the available slots above when suggesting a meeting time.
-${leadTimezone ? `Present the time clearly and mention it's convenient for their timezone (${leadTimezone}).` : ''}
-Always include the calendar link as a fallback for self-booking.`;
+## CRITICAL TIME INSTRUCTIONS:
+- ONLY suggest times between 9:00am and 6:00pm in the lead's timezone
+- ALWAYS include the timezone abbreviation (e.g., "Thursday at 2pm ${tzAbbrev || 'PST'}")
+- Prefer round times like 10am, 2pm, 3:30pm over 10:07am or 2:51pm
+- Pick ONE slot from the list above
+${leadTimezone ? `- Present times in ${tzAbbrev} (${leadTimezone})` : ''}
+- Always include the calendar link as a fallback for self-booking.`;
     } else {
       schedulingContext = `
 ## SCHEDULING CONTEXT:
-- Lead's timezone: ${leadTimezone || 'Unknown - suggest business hours'}
+- Lead's timezone: ${leadTimezone || 'Unknown - assume US business hours'} ${tzAbbrev ? `(${tzAbbrev})` : ''}
 - Calendar booking link: ${userProfile?.calendar_link || '{{calendar_link}}'}
 - Meeting duration: ${userProfile?.default_meeting_duration || 15} minutes
 - Current date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
 
-INSTRUCTIONS: Suggest a time 2-3 business days ahead during business hours (9am-5pm).
-${leadTimezone ? `Suggest times that work for ${leadTimezone} timezone.` : ''}
-Always include the calendar link for easy booking.`;
+## CRITICAL TIME INSTRUCTIONS:
+- ONLY suggest times between 9:00am and 6:00pm in the lead's timezone
+- ALWAYS include the timezone abbreviation (e.g., "Thursday at 2pm ${tzAbbrev || 'PST'}")
+- Prefer round times like 10am, 2pm, 3:30pm - NOT 7:51am or 10:07am
+- Suggest a time 2-3 business days ahead
+${leadTimezone ? `- Present times in ${tzAbbrev} (${leadTimezone})` : ''}
+- Always include the calendar link for easy booking.`;
     }
 
     const systemPrompt = `You are an expert appointment setter. Your job is to:
