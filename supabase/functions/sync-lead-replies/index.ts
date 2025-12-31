@@ -116,10 +116,33 @@ serve(async (req) => {
     }
 
     // Filter to only interested, non-automated replies (safety check)
-    const replies = allReplies.filter(reply => 
-      reply.interested === true && 
-      reply.automated_reply !== true
-    );
+    // Also exclude known system/bounce email addresses
+    const bounceDomains = [
+      'mailer-daemon',
+      'postmaster',
+      'noreply',
+      'no-reply',
+      'mail-daemon',
+      'mailerdaemon',
+      'bounce'
+    ];
+    
+    const replies = allReplies.filter(reply => {
+      // Must be marked as interested
+      if (reply.interested !== true) return false;
+      
+      // Must not be an automated reply
+      if (reply.automated_reply === true) return false;
+      
+      // Exclude known system/bounce email addresses
+      const email = (reply.from_email_address || '').toLowerCase();
+      if (bounceDomains.some(domain => email.includes(domain))) {
+        console.log(`Skipping system/bounce email: ${email}`);
+        return false;
+      }
+      
+      return true;
+    });
     
     console.log(`Fetched ${allReplies.length} total replies across all pages, ${replies.length} are interested (non-automated)`);
 
