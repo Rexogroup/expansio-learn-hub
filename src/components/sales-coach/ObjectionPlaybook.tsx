@@ -4,40 +4,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Search, TrendingUp, MessageSquare, Lightbulb, Trash2, Layers, Target, AlertTriangle, CheckCircle2 } from "lucide-react";
-
-interface ObjectionAsset {
-  id: string;
-  title: string;
-  content: {
-    objection_category: string;
-    objection_text: string;
-    suggested_response: string;
-    coaching_notes: string;
-    score: number;
-    frequency: number;
-    last_seen: string;
-  };
-  created_at: string;
-  updated_at: string;
-}
+import { 
+  BookOpen, Search, TrendingUp, Lightbulb, Trash2, Layers, 
+  AlertTriangle, CheckCircle2, ChevronDown, Copy, Zap, MessageSquare
+} from "lucide-react";
 
 interface ObjectionCluster {
   id: string;
   category: string;
   cluster_name: string;
   representative_objection: string;
+  summary: string | null;
   variations: string[];
   best_response: string | null;
   best_response_score: number | null;
   total_occurrences: number;
   avg_handling_score: number | null;
-  source_asset_ids: string[];
+  rebuttal_framework: string | null;
+  difficulty_level: string | null;
   updated_at: string;
 }
 
@@ -52,13 +40,19 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Other': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
 };
 
+const DIFFICULTY_COLORS: Record<string, string> = {
+  'easy': 'text-green-600 bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800',
+  'moderate': 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800',
+  'hard': 'text-red-600 bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800',
+};
+
 export const ObjectionPlaybook = () => {
-  const [objections, setObjections] = useState<ObjectionAsset[]>([]);
   const [clusters, setClusters] = useState<ObjectionCluster[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'clusters' | 'raw'>('clusters');
+  const [viewMode, setViewMode] = useState<'cards' | 'quick'>('cards');
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -70,32 +64,17 @@ export const ObjectionPlaybook = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [objResult, clusterResult] = await Promise.all([
-        supabase
-          .from('user_assets')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('asset_type', 'objection')
-          .order('updated_at', { ascending: false }),
-        supabase
-          .from('objection_clusters')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('total_occurrences', { ascending: false })
-      ]);
+      const { data, error } = await supabase
+        .from('objection_clusters')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('total_occurrences', { ascending: false });
 
-      if (objResult.error) throw objResult.error;
-      if (clusterResult.error) throw clusterResult.error;
+      if (error) throw error;
 
-      setObjections((objResult.data || []).map(item => ({
-        ...item,
-        content: item.content as ObjectionAsset['content']
-      })));
-
-      setClusters((clusterResult.data || []).map(item => ({
+      setClusters((data || []).map(item => ({
         ...item,
         variations: item.variations || [],
-        source_asset_ids: item.source_asset_ids || []
       })));
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -106,29 +85,6 @@ export const ObjectionPlaybook = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDeleteObjection = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_assets')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setObjections(prev => prev.filter(obj => obj.id !== id));
-      toast({
-        title: "Objection removed",
-        description: "Removed from your playbook",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Could not delete objection",
-        variant: "destructive",
-      });
     }
   };
 
@@ -144,7 +100,7 @@ export const ObjectionPlaybook = () => {
       setClusters(prev => prev.filter(c => c.id !== id));
       toast({
         title: "Cluster removed",
-        description: "Cluster deleted from your playbook",
+        description: "Removed from your playbook",
       });
     } catch (error) {
       toast({
@@ -155,26 +111,19 @@ export const ObjectionPlaybook = () => {
     }
   };
 
-  // Group raw objections by category
-  const groupedObjections = objections.reduce((acc, obj) => {
-    const category = obj.content?.objection_category || 'Other';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(obj);
-    return acc;
-  }, {} as Record<string, ObjectionAsset[]>);
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!", description: "Response copied to clipboard" });
+  };
 
-  // Filter raw objections
-  const filteredGroups = Object.entries(groupedObjections)
-    .filter(([category]) => !selectedCategory || category === selectedCategory)
-    .map(([category, items]) => ({
-      category,
-      items: items.filter(item => 
-        !searchQuery || 
-        item.content?.objection_text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.content?.suggested_response?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }))
-    .filter(group => group.items.length > 0);
+  const toggleExpanded = (id: string) => {
+    setExpandedClusters(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Filter clusters
   const filteredClusters = clusters
@@ -182,12 +131,29 @@ export const ObjectionPlaybook = () => {
     .filter(c => 
       !searchQuery ||
       c.cluster_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.representative_objection.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.variations?.some(v => v.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+      c.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.representative_objection.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    // Sort: struggling first, then by occurrences
+    .sort((a, b) => {
+      const aScore = a.avg_handling_score || 5;
+      const bScore = b.avg_handling_score || 5;
+      // Struggling (score < 6) comes first
+      if (aScore < 6 && bScore >= 6) return -1;
+      if (bScore < 6 && aScore >= 6) return 1;
+      // Then by occurrences
+      return b.total_occurrences - a.total_occurrences;
+    });
+
+  // Group by category for quick reference
+  const groupedByCategory = filteredClusters.reduce((acc, cluster) => {
+    if (!acc[cluster.category]) acc[cluster.category] = [];
+    acc[cluster.category].push(cluster);
+    return acc;
+  }, {} as Record<string, ObjectionCluster[]>);
 
   // Stats
-  const categories = [...new Set([...Object.keys(groupedObjections), ...clusters.map(c => c.category)])];
+  const categories = [...new Set(clusters.map(c => c.category))];
   const totalOccurrences = clusters.reduce((sum, c) => sum + c.total_occurrences, 0);
   const masteredClusters = clusters.filter(c => (c.avg_handling_score || 0) >= 7);
   const strugglingClusters = clusters.filter(c => (c.avg_handling_score || 0) > 0 && (c.avg_handling_score || 0) < 6);
@@ -201,7 +167,7 @@ export const ObjectionPlaybook = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-20 w-full" />
+            <Skeleton key={i} className="h-32 w-full" />
           ))}
         </CardContent>
       </Card>
@@ -218,7 +184,7 @@ export const ObjectionPlaybook = () => {
               <Layers className="h-5 w-5 text-primary" />
               <div>
                 <div className="text-2xl font-bold">{clusters.length}</div>
-                <p className="text-sm text-muted-foreground">Clusters</p>
+                <p className="text-sm text-muted-foreground">Patterns</p>
               </div>
             </div>
           </CardContent>
@@ -261,25 +227,25 @@ export const ObjectionPlaybook = () => {
       {/* Main Playbook */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
                 Objection Playbook
               </CardTitle>
               <CardDescription>
-                Your AI-clustered objection patterns and best responses
+                AI-clustered objection patterns with proven responses
               </CardDescription>
             </div>
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'clusters' | 'raw')}>
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'cards' | 'quick')}>
               <TabsList>
-                <TabsTrigger value="clusters" className="gap-1">
+                <TabsTrigger value="cards" className="gap-1">
                   <Layers className="h-4 w-4" />
-                  Clusters
+                  Full View
                 </TabsTrigger>
-                <TabsTrigger value="raw" className="gap-1">
-                  <MessageSquare className="h-4 w-4" />
-                  Raw
+                <TabsTrigger value="quick" className="gap-1">
+                  <Zap className="h-4 w-4" />
+                  Quick Ref
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -306,205 +272,217 @@ export const ObjectionPlaybook = () => {
               className="cursor-pointer"
               onClick={() => setSelectedCategory(null)}
             >
-              All
+              All ({clusters.length})
             </Badge>
-            {categories.map(cat => (
-              <Badge
-                key={cat}
-                variant={selectedCategory === cat ? "default" : "outline"}
-                className={`cursor-pointer ${selectedCategory === cat ? '' : CATEGORY_COLORS[cat] || CATEGORY_COLORS['Other']}`}
-                onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
-              >
-                {cat}
-              </Badge>
-            ))}
+            {categories.map(cat => {
+              const count = clusters.filter(c => c.category === cat).length;
+              return (
+                <Badge
+                  key={cat}
+                  variant={selectedCategory === cat ? "default" : "outline"}
+                  className={`cursor-pointer ${selectedCategory === cat ? '' : CATEGORY_COLORS[cat] || CATEGORY_COLORS['Other']}`}
+                  onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+                >
+                  {cat} ({count})
+                </Badge>
+              );
+            })}
           </div>
 
-          {/* Clusters View */}
-          {viewMode === 'clusters' && (
-            <>
-              {clusters.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Layers className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No objection clusters yet</p>
-                  <p className="text-sm">Analyze sales calls to start building AI-clustered patterns</p>
-                </div>
-              ) : filteredClusters.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No clusters match your search</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredClusters.map((cluster) => {
-                    const avgScore = cluster.avg_handling_score || 0;
-                    const isMastered = avgScore >= 7;
-                    const isStruggling = avgScore > 0 && avgScore < 6;
+          {/* Empty State */}
+          {clusters.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Layers className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="font-medium">No objection patterns yet</p>
+              <p className="text-sm">Analyze sales calls to start building your playbook</p>
+            </div>
+          ) : filteredClusters.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No patterns match your search</p>
+            </div>
+          ) : viewMode === 'cards' ? (
+            /* Full Card View */
+            <div className="space-y-3">
+              {filteredClusters.map((cluster) => {
+                const avgScore = cluster.avg_handling_score || 0;
+                const isMastered = avgScore >= 7;
+                const isStruggling = avgScore > 0 && avgScore < 6;
+                const isExpanded = expandedClusters.has(cluster.id);
+                const difficulty = cluster.difficulty_level || 'moderate';
 
-                    return (
-                      <Card key={cluster.id} className={`border ${isMastered ? 'border-green-200 dark:border-green-800' : isStruggling ? 'border-amber-200 dark:border-amber-800' : ''}`}>
-                        <CardContent className="pt-4 space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge className={CATEGORY_COLORS[cluster.category] || CATEGORY_COLORS['Other']}>
+                return (
+                  <Collapsible key={cluster.id} open={isExpanded} onOpenChange={() => toggleExpanded(cluster.id)}>
+                    <Card className={`transition-all ${isStruggling ? 'border-amber-300 dark:border-amber-700' : ''}`}>
+                      <CardContent className="pt-4 pb-3">
+                        {/* Header Row */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <Badge className={CATEGORY_COLORS[cluster.category] || CATEGORY_COLORS['Other']} variant="secondary">
                                 {cluster.category}
                               </Badge>
-                              <span className="font-semibold">{cluster.cluster_name}</span>
+                              <h3 className="font-semibold text-base">{cluster.cluster_name}</h3>
+                            </div>
+                            
+                            {/* Summary */}
+                            {cluster.summary && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                {cluster.summary}
+                              </p>
+                            )}
+
+                            {/* Meta badges */}
+                            <div className="flex items-center gap-2 flex-wrap text-xs">
+                              <Badge variant="outline" className="font-normal">
+                                {cluster.total_occurrences}x seen
+                              </Badge>
+                              <Badge variant="outline" className={`font-normal border ${DIFFICULTY_COLORS[difficulty]}`}>
+                                {difficulty}
+                              </Badge>
                               {isMastered && (
-                                <Badge variant="outline" className="text-green-600 border-green-300">
+                                <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 dark:bg-green-950/30">
                                   <CheckCircle2 className="h-3 w-3 mr-1" />
                                   Mastered
                                 </Badge>
                               )}
                               {isStruggling && (
-                                <Badge variant="outline" className="text-amber-600 border-amber-300">
+                                <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
                                   <AlertTriangle className="h-3 w-3 mr-1" />
-                                  Needs Work
+                                  Practice
                                 </Badge>
                               )}
+                              <span className="text-muted-foreground">
+                                Score: <span className={isMastered ? 'text-green-600 font-medium' : isStruggling ? 'text-amber-600 font-medium' : ''}>
+                                  {avgScore.toFixed(1)}/10
+                                </span>
+                              </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                {cluster.total_occurrences}x seen
-                              </Badge>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDeleteCluster(cluster.id)}
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <CollapsibleTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              </Button>
+                            </CollapsibleTrigger>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteCluster(cluster.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Best Response (always visible if available) */}
+                        {cluster.best_response && (
+                          <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-1 text-green-700 dark:text-green-400 text-sm font-medium">
+                                <Lightbulb className="h-4 w-4" />
+                                Best Response
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 text-green-700 hover:text-green-800"
+                                onClick={() => copyToClipboard(cluster.best_response!)}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Copy className="h-3.5 w-3.5" />
                               </Button>
                             </div>
+                            <p className="text-sm text-green-800 dark:text-green-300">
+                              "{cluster.best_response}"
+                            </p>
                           </div>
+                        )}
 
-                          {/* Score bar */}
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-muted-foreground w-20">Avg Score:</span>
-                            <Progress 
-                              value={avgScore * 10} 
-                              className={`flex-1 h-2 ${isMastered ? '[&>div]:bg-green-500' : isStruggling ? '[&>div]:bg-amber-500' : ''}`}
-                            />
-                            <span className={`text-sm font-medium ${isMastered ? 'text-green-600' : isStruggling ? 'text-amber-600' : ''}`}>
-                              {avgScore.toFixed(1)}/10
-                            </span>
-                          </div>
+                        {/* Expanded Details */}
+                        <CollapsibleContent className="mt-3 space-y-3">
+                          {/* Rebuttal Framework */}
+                          {cluster.rebuttal_framework && (
+                            <div className="p-2 bg-muted/50 rounded text-sm">
+                              <span className="font-medium">Framework:</span>{' '}
+                              <span className="text-muted-foreground">{cluster.rebuttal_framework}</span>
+                            </div>
+                          )}
 
-                          {/* Representative objection */}
-                          <div className="flex items-start gap-2">
-                            <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
-                            <p className="text-sm">"{cluster.representative_objection}"</p>
+                          {/* Example objection */}
+                          <div className="text-sm">
+                            <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              Example:
+                            </div>
+                            <p className="italic text-muted-foreground pl-4">
+                              "{cluster.representative_objection}"
+                            </p>
                           </div>
 
                           {/* Variations */}
                           {cluster.variations && cluster.variations.length > 0 && (
-                            <div className="pl-6 space-y-1">
-                              <p className="text-xs text-muted-foreground">Also heard as:</p>
-                              {cluster.variations.slice(0, 2).map((v, i) => (
-                                <p key={i} className="text-xs text-muted-foreground italic">• "{v}"</p>
-                              ))}
-                              {cluster.variations.length > 2 && (
-                                <p className="text-xs text-muted-foreground">+{cluster.variations.length - 2} more</p>
-                              )}
+                            <div className="text-sm">
+                              <p className="text-muted-foreground mb-1">Also heard as:</p>
+                              <ul className="pl-4 space-y-1">
+                                {cluster.variations.slice(0, 3).map((v, i) => (
+                                  <li key={i} className="text-xs text-muted-foreground italic">• "{v}"</li>
+                                ))}
+                                {cluster.variations.length > 3 && (
+                                  <li className="text-xs text-muted-foreground">
+                                    +{cluster.variations.length - 3} more variations
+                                  </li>
+                                )}
+                              </ul>
                             </div>
                           )}
-
-                          {/* Best response */}
+                        </CollapsibleContent>
+                      </CardContent>
+                    </Card>
+                  </Collapsible>
+                );
+              })}
+            </div>
+          ) : (
+            /* Quick Reference View */
+            <div className="space-y-6">
+              {Object.entries(groupedByCategory).map(([category, categoryCluster]) => (
+                <div key={category}>
+                  <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                    <Badge className={CATEGORY_COLORS[category] || CATEGORY_COLORS['Other']} variant="secondary">
+                      {category}
+                    </Badge>
+                  </h3>
+                  <div className="space-y-2">
+                    {categoryCluster.map(cluster => (
+                      <div 
+                        key={cluster.id} 
+                        className="flex items-start justify-between gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{cluster.cluster_name}</p>
                           {cluster.best_response && (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-                                <Lightbulb className="h-4 w-4" />
-                                Best Response ({cluster.best_response_score}/10)
-                              </div>
-                              <p className="text-sm bg-green-50 dark:bg-green-950/30 p-3 rounded-lg border border-green-200 dark:border-green-800">
-                                "{cluster.best_response}"
-                              </p>
-                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              → {cluster.best_response}
+                            </p>
                           )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Raw Objections View */}
-          {viewMode === 'raw' && (
-            <>
-              {objections.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No objections in your playbook yet</p>
-                  <p className="text-sm">Analyze a call transcript to start building your playbook</p>
-                </div>
-              ) : filteredGroups.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No objections match your search</p>
-                </div>
-              ) : (
-                <Accordion type="multiple" className="space-y-2">
-                  {filteredGroups.map(({ category, items }) => (
-                    <AccordionItem key={category} value={category} className="border rounded-lg px-4">
-                      <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center gap-3">
-                          <Badge className={CATEGORY_COLORS[category] || CATEGORY_COLORS['Other']}>
-                            {category}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {items.length} objection{items.length !== 1 ? 's' : ''}
-                          </span>
                         </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="space-y-4 pt-2">
-                        {items.map((obj) => (
-                          <div key={obj.id} className="border rounded-lg p-4 space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-2">
-                                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium text-sm">
-                                  "{obj.content?.objection_text}"
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">
-                                  <TrendingUp className="h-3 w-3 mr-1" />
-                                  {obj.content?.frequency || 1}x
-                                </Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                  onClick={() => handleDeleteObjection(obj.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-                                <Lightbulb className="h-4 w-4" />
-                                Best Response
-                              </div>
-                              <p className="text-sm bg-green-50 dark:bg-green-950/30 p-3 rounded-lg border border-green-200 dark:border-green-800">
-                                "{obj.content?.suggested_response}"
-                              </p>
-                            </div>
-
-                            {obj.content?.coaching_notes && (
-                              <p className="text-xs text-muted-foreground">
-                                💡 {obj.content.coaching_notes}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              )}
-            </>
+                        {cluster.best_response && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => copyToClipboard(cluster.best_response!)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

@@ -1164,9 +1164,12 @@ export type Database = {
           category: string
           cluster_name: string
           created_at: string | null
+          difficulty_level: string | null
           id: string
+          rebuttal_framework: string | null
           representative_objection: string
           source_asset_ids: string[] | null
+          summary: string | null
           total_occurrences: number | null
           updated_at: string | null
           user_id: string
@@ -1179,9 +1182,12 @@ export type Database = {
           category: string
           cluster_name: string
           created_at?: string | null
+          difficulty_level?: string | null
           id?: string
+          rebuttal_framework?: string | null
           representative_objection: string
           source_asset_ids?: string[] | null
+          summary?: string | null
           total_occurrences?: number | null
           updated_at?: string | null
           user_id: string
@@ -1194,9 +1200,12 @@ export type Database = {
           category?: string
           cluster_name?: string
           created_at?: string | null
+          difficulty_level?: string | null
           id?: string
+          rebuttal_framework?: string | null
           representative_objection?: string
           source_asset_ids?: string[] | null
+          summary?: string | null
           total_occurrences?: number | null
           updated_at?: string | null
           user_id?: string
