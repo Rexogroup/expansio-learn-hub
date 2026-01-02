@@ -26,6 +26,37 @@ interface ObjectionAnalysis {
   coaching_notes: string;
 }
 
+interface CRMOverview {
+  point_of_contact: { name: string; role: string; email?: string; phone?: string }[];
+  marketing_channels: string[];
+  kpis: {
+    monthly_ad_spend?: { current?: string; target?: string };
+    roi?: { current?: string; target?: string };
+    roas?: { current?: string; target?: string };
+    cpa?: { current?: string; target?: string };
+    cac?: { current?: string; target?: string };
+    other?: { name: string; value: string }[];
+  };
+  offer_made: { pricing: string; model: string; details: string };
+}
+
+interface DealAnalysis {
+  lead_needs: string[];
+  convincing_factors: string[];
+  close_confidence_percent: number;
+  verbal_agreement: boolean;
+  verbal_agreement_quote?: string;
+  proposal_key_points: string[];
+}
+
+interface GapSelling {
+  current_state: string;
+  desired_state: string;
+  gap_articulation_score: number;
+  gap_feedback: string;
+  missed_opportunities: string[];
+}
+
 interface AnalysisResult {
   overall_score: number;
   objections: ObjectionAnalysis[];
@@ -33,6 +64,9 @@ interface AnalysisResult {
   improvements: string[];
   action_items: string[];
   summary: string;
+  crm_overview: CRMOverview;
+  deal_analysis: DealAnalysis;
+  gap_selling: GapSelling;
 }
 
 serve(async (req) => {
@@ -108,7 +142,7 @@ serve(async (req) => {
         .join('\n');
     }
 
-    const systemPrompt = `You are an expert B2B sales coach with 20+ years of experience training high-performing sales teams. Your task is to analyze a sales call transcript and provide actionable coaching feedback.
+    const systemPrompt = `You are the most experienced sales manager in the world with deep expertise in B2B sales, GAP Selling methodology, and objection handling. Analyze this sales call transcript and provide comprehensive coaching feedback.
 
 OBJECTION CATEGORIES TO USE:
 ${OBJECTION_CATEGORIES.join(', ')}
@@ -118,31 +152,92 @@ ${knowledgeContext ? `REFERENCE FRAMEWORKS:\n${knowledgeContext}\n` : ''}
 ${objectionContext ? `USER'S PREVIOUS OBJECTIONS (for context on patterns):\n${objectionContext}\n` : ''}
 
 ANALYSIS INSTRUCTIONS:
-1. Carefully read the entire transcript
-2. Identify every objection the prospect raised
-3. For each objection, evaluate how the rep handled it
-4. Provide specific, actionable coaching
+
+1. CRM QUICK OVERVIEW
+   Extract these details for CRM entry:
+   - Point(s) of Contact: Name, role, contact info if mentioned
+   - Marketing Channels: What channels is the lead using to promote their business?
+   - KPIs Mentioned: Monthly Ad spend, ROI, ROAS, CPA, CAC (current and target values if mentioned)
+   - Offer Made: What pricing and model did the rep propose?
+
+2. DEAL ANALYSIS
+   - Lead's Actual Needs: What does the lead actually need? (the real underlying needs)
+   - Convincing Factors: What specifically convinced them (or would convince them)?
+   - Close Confidence: 0-100% likelihood this deal closes based on the conversation
+   - Verbal Agreement: Did they verbally agree to work together? Include exact quote if yes
+   - Proposal Key Points: What MUST be included in the proposal to win this deal?
+
+3. GAP SELLING EVALUATION (Based on the GAP Selling book methodology)
+   - Current State: Describe the lead's current situation as discussed
+   - Desired State: What outcome does the lead want to achieve?
+   - Gap Articulation Score (1-10): Did the rep clearly show the gap between current and desired state?
+   - Feedback: What could the rep have done better to highlight the gap and create urgency?
+   - Missed Opportunities: What friction points should have been addressed to shorten the sales cycle?
+
+4. OBJECTION ANALYSIS
+   For each objection the prospect raised:
+   - Category: One of ${OBJECTION_CATEGORIES.join(', ')}
+   - Exact Quote: The prospect's exact words
+   - Rep's Response: Exactly what the rep said in response
+   - Score (1-10): 1 = not handled at all, 10 = perfectly resolved
+   - Suggested Response: What they should have said (natural, specific, actionable)
+   - Coaching Notes: Detailed breakdown for training - explain WHY this response works better
+
+5. OVERALL ASSESSMENT
+   - Overall Score (1-10): Overall call performance
+   - Top Strengths: What the rep did well (be specific with examples)
+   - Areas to Improve: Specific weaknesses to work on
+   - Action Items: Concrete next steps to close THIS specific deal
+   - Summary: 2-3 sentence overall assessment
 
 OUTPUT FORMAT (JSON):
 {
   "overall_score": <1-10>,
+  "crm_overview": {
+    "point_of_contact": [{"name": "...", "role": "...", "email": "...", "phone": "..."}],
+    "marketing_channels": ["..."],
+    "kpis": {
+      "monthly_ad_spend": {"current": "...", "target": "..."},
+      "roi": {"current": "...", "target": "..."},
+      "roas": {"current": "...", "target": "..."},
+      "cpa": {"current": "...", "target": "..."},
+      "cac": {"current": "...", "target": "..."},
+      "other": [{"name": "...", "value": "..."}]
+    },
+    "offer_made": {"pricing": "...", "model": "...", "details": "..."}
+  },
+  "deal_analysis": {
+    "lead_needs": ["..."],
+    "convincing_factors": ["..."],
+    "close_confidence_percent": <0-100>,
+    "verbal_agreement": <true/false>,
+    "verbal_agreement_quote": "...",
+    "proposal_key_points": ["..."]
+  },
+  "gap_selling": {
+    "current_state": "...",
+    "desired_state": "...",
+    "gap_articulation_score": <1-10>,
+    "gap_feedback": "...",
+    "missed_opportunities": ["..."]
+  },
   "objections": [
     {
       "category": "<one of the categories>",
       "objection_text": "<exact quote from prospect>",
       "user_response": "<how the rep responded>",
       "score": <1-10>,
-      "suggested_response": "<what they should have said - be specific and natural>",
-      "coaching_notes": "<brief explanation of why and how to improve>"
+      "suggested_response": "<what they should have said>",
+      "coaching_notes": "<detailed explanation>"
     }
   ],
-  "strengths": ["<specific thing done well>", "..."],
-  "improvements": ["<specific area to work on>", "..."],
-  "action_items": ["<concrete action to take>", "..."],
-  "summary": "<2-3 sentence overall assessment>"
+  "strengths": ["..."],
+  "improvements": ["..."],
+  "action_items": ["..."],
+  "summary": "..."
 }
 
-Be specific, practical, and encouraging. Reference the frameworks when relevant.`;
+Be specific, practical, and encouraging. Use exact quotes from the transcript. If information is not mentioned in the transcript, use empty strings or empty arrays rather than making things up.`;
 
     const userPrompt = `Analyze this sales call transcript:\n\n${transcript}`;
 
@@ -198,7 +293,7 @@ Be specific, practical, and encouraging. Reference the frameworks when relevant.
       throw new Error('Failed to parse analysis result');
     }
 
-    // Save the call analysis to database
+    // Save the call analysis to database with new fields
     const { data: savedAnalysis, error: saveError } = await supabaseClient
       .from('call_analyses')
       .insert({
@@ -210,6 +305,10 @@ Be specific, practical, and encouraging. Reference the frameworks when relevant.
         objections_identified: analysis.objections?.length || 0,
         strengths: analysis.strengths,
         improvements: analysis.improvements,
+        crm_overview: analysis.crm_overview,
+        deal_analysis: analysis.deal_analysis,
+        gap_selling: analysis.gap_selling,
+        close_confidence: analysis.deal_analysis?.close_confidence_percent,
       })
       .select()
       .single();
@@ -281,7 +380,7 @@ Be specific, practical, and encouraging. Reference the frameworks when relevant.
       }
     }
 
-    console.log(`Analysis complete. Score: ${analysis.overall_score}, Objections: ${analysis.objections?.length || 0}`);
+    console.log(`Analysis complete. Score: ${analysis.overall_score}, Objections: ${analysis.objections?.length || 0}, Close confidence: ${analysis.deal_analysis?.close_confidence_percent}%`);
 
     return new Response(JSON.stringify({
       success: true,

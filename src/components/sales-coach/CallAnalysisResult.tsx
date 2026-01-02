@@ -2,9 +2,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { AnalysisResult, ObjectionAnalysis } from "@/pages/SalesCoach";
+import { Accordion } from "@/components/ui/accordion";
+import { AnalysisResult } from "@/pages/SalesCoach";
 import { ObjectionCard } from "./ObjectionCard";
+import { CRMOverviewCard } from "./CRMOverviewCard";
+import { DealAnalysisCard } from "./DealAnalysisCard";
+import { GapSellingCard } from "./GapSellingCard";
 import { 
   Trophy, 
   Target, 
@@ -57,7 +60,7 @@ export const CallAnalysisResult = ({ result, analysisId, onNewAnalysis }: CallAn
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-8">
+          <div className="flex flex-wrap items-center gap-8">
             <div className="text-center">
               <div className={`text-5xl font-bold ${getScoreColor(result.overall_score)}`}>
                 {result.overall_score}/10
@@ -66,7 +69,7 @@ export const CallAnalysisResult = ({ result, analysisId, onNewAnalysis }: CallAn
                 {getScoreLabel(result.overall_score)}
               </p>
             </div>
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 min-w-[200px] space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Overall Performance</span>
                 <span>{result.overall_score * 10}%</span>
@@ -79,9 +82,32 @@ export const CallAnalysisResult = ({ result, analysisId, onNewAnalysis }: CallAn
               </div>
               <p className="text-sm text-muted-foreground">Objections Found</p>
             </div>
+            {result.deal_analysis?.close_confidence_percent !== undefined && (
+              <div className="text-center px-4 border-l">
+                <div className="text-3xl font-bold text-foreground">
+                  {result.deal_analysis.close_confidence_percent}%
+                </div>
+                <p className="text-sm text-muted-foreground">Close Confidence</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* CRM Overview */}
+      {result.crm_overview && (
+        <CRMOverviewCard data={result.crm_overview} />
+      )}
+
+      {/* Deal Analysis & GAP Selling */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {result.deal_analysis && (
+          <DealAnalysisCard data={result.deal_analysis} />
+        )}
+        {result.gap_selling && (
+          <GapSellingCard data={result.gap_selling} />
+        )}
+      </div>
 
       {/* Strengths and Improvements */}
       <div className="grid md:grid-cols-2 gap-6">
