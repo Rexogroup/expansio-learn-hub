@@ -213,7 +213,11 @@ export type Database = {
       call_analyses: {
         Row: {
           analysis_result: Json | null
+          close_confidence: number | null
           created_at: string | null
+          crm_overview: Json | null
+          deal_analysis: Json | null
+          gap_selling: Json | null
           id: string
           improvements: Json | null
           objections_identified: number | null
@@ -226,7 +230,11 @@ export type Database = {
         }
         Insert: {
           analysis_result?: Json | null
+          close_confidence?: number | null
           created_at?: string | null
+          crm_overview?: Json | null
+          deal_analysis?: Json | null
+          gap_selling?: Json | null
           id?: string
           improvements?: Json | null
           objections_identified?: number | null
@@ -239,7 +247,11 @@ export type Database = {
         }
         Update: {
           analysis_result?: Json | null
+          close_confidence?: number | null
           created_at?: string | null
+          crm_overview?: Json | null
+          deal_analysis?: Json | null
+          gap_selling?: Json | null
           id?: string
           improvements?: Json | null
           objections_identified?: number | null

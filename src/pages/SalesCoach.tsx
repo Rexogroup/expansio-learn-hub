@@ -18,6 +18,37 @@ export interface ObjectionAnalysis {
   coaching_notes: string;
 }
 
+export interface CRMOverview {
+  point_of_contact: { name: string; role: string; email?: string; phone?: string }[];
+  marketing_channels: string[];
+  kpis: {
+    monthly_ad_spend?: { current?: string; target?: string };
+    roi?: { current?: string; target?: string };
+    roas?: { current?: string; target?: string };
+    cpa?: { current?: string; target?: string };
+    cac?: { current?: string; target?: string };
+    other?: { name: string; value: string }[];
+  };
+  offer_made: { pricing: string; model: string; details: string };
+}
+
+export interface DealAnalysis {
+  lead_needs: string[];
+  convincing_factors: string[];
+  close_confidence_percent: number;
+  verbal_agreement: boolean;
+  verbal_agreement_quote?: string;
+  proposal_key_points: string[];
+}
+
+export interface GapSelling {
+  current_state: string;
+  desired_state: string;
+  gap_articulation_score: number;
+  gap_feedback: string;
+  missed_opportunities: string[];
+}
+
 export interface AnalysisResult {
   overall_score: number;
   objections: ObjectionAnalysis[];
@@ -25,6 +56,9 @@ export interface AnalysisResult {
   improvements: string[];
   action_items: string[];
   summary: string;
+  crm_overview?: CRMOverview;
+  deal_analysis?: DealAnalysis;
+  gap_selling?: GapSelling;
 }
 
 const SalesCoach = () => {
