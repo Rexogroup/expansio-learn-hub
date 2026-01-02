@@ -83,6 +83,17 @@ interface ObjectionAsset {
   };
 }
 
+interface ObjectionCluster {
+  category: string;
+  cluster_name: string;
+  representative_objection: string;
+  variations: string[];
+  best_response: string | null;
+  best_response_score: number | null;
+  total_occurrences: number;
+  avg_handling_score: number | null;
+}
+
 interface ReplyAsset {
   title: string;
   content: {
@@ -221,8 +232,12 @@ function buildUserScriptsSection(assets: UserScriptAsset[]): string {
   return section;
 }
 
-function buildSalesInsightsSection(analyses: CallAnalysis[], objections: ObjectionAsset[]): string {
-  if ((!analyses || analyses.length === 0) && (!objections || objections.length === 0)) return '';
+function buildSalesInsightsSection(
+  analyses: CallAnalysis[], 
+  objections: ObjectionAsset[],
+  clusters: ObjectionCluster[]
+): string {
+  if ((!analyses || analyses.length === 0) && (!objections || objections.length === 0) && (!clusters || clusters.length === 0)) return '';
 
   let section = '\n## SALES CALL INTELLIGENCE (From Your Analyzed Calls)\n\n';
 
@@ -283,11 +298,53 @@ function buildSalesInsightsSection(analyses: CallAnalysis[], objections: Objecti
     }
   }
 
-  if (objections && objections.length > 0) {
+  // Use clusters if available (preferred), otherwise fall back to raw objections
+  if (clusters && clusters.length > 0) {
+    section += '### 🎯 Your Objection Patterns (AI-Clustered Intelligence)\n';
+    section += 'Semantically similar objections have been grouped together for pattern recognition.\n\n';
+
+    // Sort by total occurrences and identify mastered vs struggling
+    const sortedClusters = [...clusters].sort((a, b) => b.total_occurrences - a.total_occurrences);
+    const masteredClusters = sortedClusters.filter(c => (c.avg_handling_score || 0) >= 7);
+    const strugglingClusters = sortedClusters.filter(c => (c.avg_handling_score || 0) < 6 && (c.avg_handling_score || 0) > 0);
+
+    if (masteredClusters.length > 0) {
+      section += '**🏆 Mastered Objections (Avg Score ≥7):**\n';
+      for (const cluster of masteredClusters.slice(0, 3)) {
+        section += `- **${cluster.cluster_name}** (${cluster.category})\n`;
+        section += `  - Seen ${cluster.total_occurrences}x | Avg score: ${cluster.avg_handling_score?.toFixed(1) || 'N/A'}/10\n`;
+        if (cluster.best_response) {
+          section += `  - Best response (${cluster.best_response_score}/10): "${cluster.best_response.substring(0, 150)}${cluster.best_response.length > 150 ? '...' : ''}"\n`;
+        }
+      }
+      section += '\n';
+    }
+
+    if (strugglingClusters.length > 0) {
+      section += '**⚠️ Needs Improvement (Avg Score <6):**\n';
+      for (const cluster of strugglingClusters.slice(0, 3)) {
+        section += `- **${cluster.cluster_name}** (${cluster.category})\n`;
+        section += `  - Seen ${cluster.total_occurrences}x | Avg score: ${cluster.avg_handling_score?.toFixed(1) || 'N/A'}/10\n`;
+        section += `  - Example: "${cluster.representative_objection.substring(0, 100)}${cluster.representative_objection.length > 100 ? '...' : ''}"\n`;
+        if (cluster.variations && cluster.variations.length > 0) {
+          section += `  - Also heard as: "${cluster.variations[0].substring(0, 80)}${cluster.variations[0].length > 80 ? '...' : ''}"\n`;
+        }
+      }
+      section += '\n';
+    }
+
+    // Show top objections by frequency
+    section += '**Most Frequent Objection Patterns:**\n';
+    for (const cluster of sortedClusters.slice(0, 5)) {
+      section += `- ${cluster.cluster_name} (${cluster.category}): ${cluster.total_occurrences}x, avg ${cluster.avg_handling_score?.toFixed(1) || 'N/A'}/10\n`;
+    }
+    section += '\n';
+
+  } else if (objections && objections.length > 0) {
+    // Fallback to raw objections if no clusters exist
     section += '### Your Objection Playbook\n';
     section += 'These objections have been captured from your sales calls:\n\n';
 
-    // Group by category
     const byCategory: Record<string, ObjectionAsset[]> = {};
     for (const obj of objections) {
       const cat = obj.content?.objection_category || 'general';
@@ -309,7 +366,7 @@ function buildSalesInsightsSection(analyses: CallAnalysis[], objections: Objecti
     section += '\n';
   }
 
-  section += '**IMPORTANT**: When the user asks about closing deals, handle objections, or improve their sales calls, reference these specific insights from THEIR call history.\n';
+  section += '**IMPORTANT**: When the user asks about closing deals, handle objections, or improve their sales calls, reference these specific insights from THEIR call history. Use PROVEN patterns from their clustered data.\n';
 
   return section;
 }
@@ -631,7 +688,8 @@ serve(async (req) => {
       { data: callAnalyses },
       { data: objectionAssets },
       { data: replyAssets },
-      { data: leadReplies }
+      { data: leadReplies },
+      { data: objectionClusters }
     ] = await Promise.all([
       supabase.from('growth_steps').select('*').order('step_number'),
       supabase.from('user_growth_progress').select('*').eq('user_id', user.id),
@@ -643,7 +701,8 @@ serve(async (req) => {
       supabase.from('call_analyses').select('title, overall_score, objections_identified, close_confidence, gap_selling, improvements, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
       supabase.from('user_assets').select('title, content').eq('user_id', user.id).eq('asset_type', 'objection').order('updated_at', { ascending: false }).limit(20),
       supabase.from('user_assets').select('title, content, performance_data, asset_type').eq('user_id', user.id).in('asset_type', ['winning_reply', 'losing_reply']).order('created_at', { ascending: false }).limit(20),
-      supabase.from('lead_replies').select('id, outcome').eq('user_id', user.id).eq('status', 'replied')
+      supabase.from('lead_replies').select('id, outcome').eq('user_id', user.id).eq('status', 'replied'),
+      supabase.from('objection_clusters').select('category, cluster_name, representative_objection, variations, best_response, best_response_score, total_occurrences, avg_handling_score').eq('user_id', user.id).order('total_occurrences', { ascending: false }).limit(20)
     ]);
 
     // Determine current step
@@ -731,7 +790,7 @@ serve(async (req) => {
       }))
     );
 
-    // Build sales insights section
+    // Build sales insights section with cluster data
     const salesInsightsContent = buildSalesInsightsSection(
       (callAnalyses || []).map(a => ({
         title: a.title,
@@ -745,6 +804,16 @@ serve(async (req) => {
       (objectionAssets || []).map(o => ({
         title: o.title,
         content: o.content as ObjectionAsset['content']
+      })),
+      (objectionClusters || []).map(c => ({
+        category: c.category,
+        cluster_name: c.cluster_name,
+        representative_objection: c.representative_objection,
+        variations: c.variations || [],
+        best_response: c.best_response,
+        best_response_score: c.best_response_score,
+        total_occurrences: c.total_occurrences,
+        avg_handling_score: c.avg_handling_score
       }))
     );
 

@@ -1156,6 +1156,54 @@ export type Database = {
         }
         Relationships: []
       }
+      objection_clusters: {
+        Row: {
+          avg_handling_score: number | null
+          best_response: string | null
+          best_response_score: number | null
+          category: string
+          cluster_name: string
+          created_at: string | null
+          id: string
+          representative_objection: string
+          source_asset_ids: string[] | null
+          total_occurrences: number | null
+          updated_at: string | null
+          user_id: string
+          variations: string[] | null
+        }
+        Insert: {
+          avg_handling_score?: number | null
+          best_response?: string | null
+          best_response_score?: number | null
+          category: string
+          cluster_name: string
+          created_at?: string | null
+          id?: string
+          representative_objection: string
+          source_asset_ids?: string[] | null
+          total_occurrences?: number | null
+          updated_at?: string | null
+          user_id: string
+          variations?: string[] | null
+        }
+        Update: {
+          avg_handling_score?: number | null
+          best_response?: string | null
+          best_response_score?: number | null
+          category?: string
+          cluster_name?: string
+          created_at?: string | null
+          id?: string
+          representative_objection?: string
+          source_asset_ids?: string[] | null
+          total_occurrences?: number | null
+          updated_at?: string | null
+          user_id?: string
+          variations?: string[] | null
+        }
+        Relationships: []
+      }
       onboarding_steps: {
         Row: {
           created_at: string
