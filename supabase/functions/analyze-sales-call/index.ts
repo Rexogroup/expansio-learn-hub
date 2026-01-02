@@ -295,6 +295,10 @@ Be specific, practical, and encouraging. Use exact quotes from the transcript. I
       // Remove control characters except standard whitespace
       cleaned = cleaned.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '');
       
+      // Remove invalid escape sequences (backslashes not followed by valid JSON escape chars)
+      // Valid JSON escapes: " \ / b f n r t u
+      cleaned = cleaned.replace(/\\(?!["\\/bfnrtu])/g, '');
+      
       return cleaned;
     }
 
