@@ -50,3 +50,6 @@ verify_jwt = true
 
 [functions.classify-replies]
 verify_jwt = true
+
+[functions.cluster-objections]
+verify_jwt = true

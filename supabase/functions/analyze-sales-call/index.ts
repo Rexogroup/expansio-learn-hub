@@ -408,7 +408,7 @@ Be specific, practical, and encouraging. Use exact quotes from the transcript. I
       console.error('Failed to save analysis:', saveError);
     }
 
-    // Auto-save new objections to user_assets
+    // Auto-save new objections to user_assets and trigger clustering
     const savedObjectionIds: string[] = [];
     if (analysis.objections && analysis.objections.length > 0) {
       for (const objection of analysis.objections) {
@@ -420,6 +420,8 @@ Be specific, practical, and encouraging. Use exact quotes from the transcript. I
           .eq('asset_type', 'objection')
           .ilike('title', `%${objection.category}%`)
           .limit(1);
+
+        let assetId: string;
 
         if (existingObj && existingObj.length > 0) {
           // Update frequency if exists
@@ -438,6 +440,7 @@ Be specific, practical, and encouraging. Use exact quotes from the transcript. I
               updated_at: new Date().toISOString(),
             })
             .eq('id', existing.id);
+          assetId = existing.id;
           savedObjectionIds.push(existing.id);
         } else {
           // Create new objection asset
@@ -465,9 +468,33 @@ Be specific, practical, and encouraging. Use exact quotes from the transcript. I
             .single();
           
           if (newObj) {
+            assetId = newObj.id;
             savedObjectionIds.push(newObj.id);
+          } else {
+            continue;
           }
         }
+
+        // Trigger clustering for this objection (fire and forget)
+        supabaseClient.functions.invoke('cluster-objections', {
+          body: {
+            objection_text: objection.objection_text,
+            category: objection.category,
+            user_response: objection.user_response,
+            score: objection.score,
+            suggested_response: objection.suggested_response,
+            coaching_notes: objection.coaching_notes,
+            source_asset_id: assetId,
+          }
+        }).then(({ error }) => {
+          if (error) {
+            console.error('Clustering error for objection:', error);
+          } else {
+            console.log(`Clustered objection: ${objection.category}`);
+          }
+        }).catch(err => {
+          console.error('Clustering invocation error:', err);
+        });
       }
     }
 
