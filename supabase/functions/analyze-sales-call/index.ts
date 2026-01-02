@@ -253,11 +253,12 @@ Be specific, practical, and encouraging. Use exact quotes from the transcript. I
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
+        max_tokens: 16000,
         response_format: { type: 'json_object' }
       }),
     });
