@@ -51,6 +51,7 @@ export const ObjectionPlaybook = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'mastered' | 'needs-work'>('all');
   const [viewMode, setViewMode] = useState<'cards' | 'quick'>('cards');
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -128,6 +129,13 @@ export const ObjectionPlaybook = () => {
   // Filter clusters
   const filteredClusters = clusters
     .filter(c => !selectedCategory || c.category === selectedCategory)
+    .filter(c => {
+      if (statusFilter === 'all') return true;
+      const score = c.avg_handling_score || 0;
+      if (statusFilter === 'mastered') return score >= 7;
+      if (statusFilter === 'needs-work') return score > 0 && score < 6;
+      return true;
+    })
     .filter(c => 
       !searchQuery ||
       c.cluster_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -200,25 +208,41 @@ export const ObjectionPlaybook = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'mastered' ? 'ring-2 ring-green-500 shadow-md' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'mastered' ? 'all' : 'mastered')}
+        >
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <div>
-                <div className="text-2xl font-bold">{masteredClusters.length}</div>
-                <p className="text-sm text-muted-foreground">Mastered</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <div>
+                  <div className="text-2xl font-bold">{masteredClusters.length}</div>
+                  <p className="text-sm text-muted-foreground">Mastered</p>
+                </div>
               </div>
+              {statusFilter === 'mastered' && (
+                <Badge variant="secondary" className="text-xs">Viewing</Badge>
+              )}
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'needs-work' ? 'ring-2 ring-amber-500 shadow-md' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'needs-work' ? 'all' : 'needs-work')}
+        >
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              <div>
-                <div className="text-2xl font-bold">{strugglingClusters.length}</div>
-                <p className="text-sm text-muted-foreground">Needs Work</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                <div>
+                  <div className="text-2xl font-bold">{strugglingClusters.length}</div>
+                  <p className="text-sm text-muted-foreground">Needs Work</p>
+                </div>
               </div>
+              {statusFilter === 'needs-work' && (
+                <Badge variant="secondary" className="text-xs">Viewing</Badge>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -287,6 +311,16 @@ export const ObjectionPlaybook = () => {
                 </Badge>
               );
             })}
+            {statusFilter !== 'all' && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setStatusFilter('all')}
+                className="text-muted-foreground"
+              >
+                Clear Filter
+              </Button>
+            )}
           </div>
 
           {/* Empty State */}
