@@ -210,6 +210,48 @@ export type Database = {
         }
         Relationships: []
       }
+      call_analyses: {
+        Row: {
+          analysis_result: Json | null
+          created_at: string | null
+          id: string
+          improvements: Json | null
+          objections_identified: number | null
+          overall_score: number | null
+          strengths: Json | null
+          title: string
+          transcript_text: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          analysis_result?: Json | null
+          created_at?: string | null
+          id?: string
+          improvements?: Json | null
+          objections_identified?: number | null
+          overall_score?: number | null
+          strengths?: Json | null
+          title: string
+          transcript_text?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          analysis_result?: Json | null
+          created_at?: string | null
+          id?: string
+          improvements?: Json | null
+          objections_identified?: number | null
+          overall_score?: number | null
+          strengths?: Json | null
+          title?: string
+          transcript_text?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaign_variants: {
         Row: {
           campaign_id: string
