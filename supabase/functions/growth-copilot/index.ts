@@ -59,6 +59,47 @@ interface KnowledgeBaseDoc {
   extracted_content: string;
 }
 
+interface CallAnalysis {
+  title: string;
+  overall_score: number;
+  objections_identified: number;
+  close_confidence: number;
+  gap_selling: {
+    gap_articulation_score?: number;
+    missed_opportunities?: string[];
+  } | null;
+  improvements: string[] | null;
+  created_at: string;
+}
+
+interface ObjectionAsset {
+  title: string;
+  content: {
+    objection_category?: string;
+    objection_text?: string;
+    suggested_response?: string;
+    coaching_notes?: string;
+    score?: number;
+  };
+}
+
+interface ReplyAsset {
+  title: string;
+  content: {
+    original_message?: string;
+    sent_response?: string;
+    lead_email?: string;
+    campaign_name?: string;
+    reply_type?: string;
+  };
+  performance_data: {
+    outcome?: string;
+    time_to_book_hours?: number;
+    classification_reason?: string;
+  };
+  asset_type: 'winning_reply' | 'losing_reply';
+}
+
 function buildKnowledgeBaseSection(docs: KnowledgeBaseDoc[]): string {
   if (!docs || docs.length === 0) return '';
 
@@ -180,6 +221,164 @@ function buildUserScriptsSection(assets: UserScriptAsset[]): string {
   return section;
 }
 
+function buildSalesInsightsSection(analyses: CallAnalysis[], objections: ObjectionAsset[]): string {
+  if ((!analyses || analyses.length === 0) && (!objections || objections.length === 0)) return '';
+
+  let section = '\n## SALES CALL INTELLIGENCE (From Your Analyzed Calls)\n\n';
+
+  if (analyses && analyses.length > 0) {
+    const avgScore = analyses.reduce((sum, a) => sum + (a.overall_score || 0), 0) / analyses.length;
+    const avgConfidence = analyses.reduce((sum, a) => sum + (a.close_confidence || 0), 0) / analyses.length;
+    const totalObjections = analyses.reduce((sum, a) => sum + (a.objections_identified || 0), 0);
+
+    section += '### Recent Call Performance\n';
+    section += `- Calls analyzed: ${analyses.length}\n`;
+    section += `- Average score: ${avgScore.toFixed(1)}/10\n`;
+    section += `- Average close confidence: ${avgConfidence.toFixed(0)}%\n`;
+    section += `- Total objections faced: ${totalObjections}\n\n`;
+
+    // Extract GAP selling insights
+    const allMissedOpportunities: string[] = [];
+    for (const analysis of analyses) {
+      if (analysis.gap_selling?.missed_opportunities) {
+        allMissedOpportunities.push(...analysis.gap_selling.missed_opportunities);
+      }
+    }
+
+    if (allMissedOpportunities.length > 0) {
+      // Count frequency of each missed opportunity
+      const opCounts = allMissedOpportunities.reduce((acc, op) => {
+        acc[op] = (acc[op] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const topMissed = Object.entries(opCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      section += '### GAP Selling Opportunities to Address\n';
+      section += 'Common missed opportunities from your calls:\n';
+      for (const [op, count] of topMissed) {
+        section += `- ${op} (seen in ${count} call${count > 1 ? 's' : ''})\n`;
+      }
+      section += '\n';
+    }
+
+    // Extract common improvements
+    const allImprovements: string[] = [];
+    for (const analysis of analyses) {
+      if (analysis.improvements && Array.isArray(analysis.improvements)) {
+        allImprovements.push(...analysis.improvements.slice(0, 2));
+      }
+    }
+
+    if (allImprovements.length > 0) {
+      section += '### Coaching Focus Areas\n';
+      section += 'Based on your calls, focus on:\n';
+      const uniqueImprovements = [...new Set(allImprovements)].slice(0, 4);
+      for (const imp of uniqueImprovements) {
+        section += `- ${imp}\n`;
+      }
+      section += '\n';
+    }
+  }
+
+  if (objections && objections.length > 0) {
+    section += '### Your Objection Playbook\n';
+    section += 'These objections have been captured from your sales calls:\n\n';
+
+    // Group by category
+    const byCategory: Record<string, ObjectionAsset[]> = {};
+    for (const obj of objections) {
+      const cat = obj.content?.objection_category || 'general';
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(obj);
+    }
+
+    for (const [category, objs] of Object.entries(byCategory)) {
+      section += `**${category.charAt(0).toUpperCase() + category.slice(1)}:**\n`;
+      for (const obj of objs.slice(0, 3)) {
+        const text = obj.content?.objection_text || obj.title;
+        const response = obj.content?.suggested_response;
+        section += `- "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"\n`;
+        if (response) {
+          section += `  → Suggested response: "${response.substring(0, 150)}${response.length > 150 ? '...' : ''}"\n`;
+        }
+      }
+    }
+    section += '\n';
+  }
+
+  section += '**IMPORTANT**: When the user asks about closing deals, handle objections, or improve their sales calls, reference these specific insights from THEIR call history.\n';
+
+  return section;
+}
+
+function buildAppointmentSettingSection(
+  winningReplies: ReplyAsset[],
+  losingReplies: ReplyAsset[],
+  replyStats: { total: number; meetingsBooked: number; conversionRate: number }
+): string {
+  if (winningReplies.length === 0 && losingReplies.length === 0 && replyStats.total === 0) return '';
+
+  let section = '\n## APPOINTMENT SETTING INTELLIGENCE (From Your Reply Outcomes)\n\n';
+
+  section += '### Your Booking Performance\n';
+  section += `- Total replies handled: ${replyStats.total}\n`;
+  section += `- Meetings booked: ${replyStats.meetingsBooked}\n`;
+  section += `- Conversion rate: ${replyStats.conversionRate.toFixed(1)}%\n\n`;
+
+  if (winningReplies.length > 0) {
+    section += '### 🏆 Your Winning Reply Patterns (These got meetings!)\n';
+    section += 'Use these as templates - they have proven to convert for YOUR leads.\n\n';
+
+    for (const reply of winningReplies.slice(0, 5)) {
+      const content = typeof reply.content === 'string' ? JSON.parse(reply.content) : reply.content;
+      const perf = reply.performance_data;
+
+      section += `- **${reply.title}**\n`;
+      if (content.campaign_name) {
+        section += `  - Campaign: ${content.campaign_name}\n`;
+      }
+      if (content.reply_type) {
+        section += `  - Lead type: ${content.reply_type}\n`;
+      }
+      if (perf.time_to_book_hours) {
+        section += `  - Time to book: ${perf.time_to_book_hours} hours\n`;
+      }
+      if (content.sent_response) {
+        section += `  - Response used: "${content.sent_response.substring(0, 200)}${content.sent_response.length > 200 ? '...' : ''}"\n`;
+      }
+      section += '\n';
+    }
+  }
+
+  if (losingReplies.length > 0) {
+    section += '### ⚠️ Reply Patterns to Avoid\n';
+    section += 'These responses did NOT convert. Learn from these failures.\n\n';
+
+    for (const reply of losingReplies.slice(0, 3)) {
+      const content = typeof reply.content === 'string' ? JSON.parse(reply.content) : reply.content;
+      const perf = reply.performance_data;
+
+      section += `- **${reply.title}**\n`;
+      if (content.reply_type) {
+        section += `  - Lead type: ${content.reply_type}\n`;
+      }
+      section += `  - Outcome: ${perf.outcome || 'no response'}\n`;
+      if (content.sent_response) {
+        section += `  - Response used: "${content.sent_response.substring(0, 150)}${content.sent_response.length > 150 ? '...' : ''}"\n`;
+      }
+      section += `  - Why it failed: ${perf.classification_reason || 'No response after 7+ days'}\n`;
+      section += '\n';
+    }
+  }
+
+  section += '**IMPORTANT**: When recommending appointment setting responses, ALWAYS reference patterns from winning replies. When the user asks "why am I not booking meetings?", compare their approach to these proven patterns.\n';
+
+  return section;
+}
+
 function buildSystemPrompt(
   growthSteps: GrowthStep[],
   currentStep: GrowthStep | null,
@@ -188,7 +387,9 @@ function buildSystemPrompt(
   totalMetrics: { emails_sent: number; replies: number; interested: number; reply_rate: number; interested_rate: number },
   infrastructureAlerts: InfrastructureAlert[],
   knowledgeBaseContent: string,
-  userScriptsContent: string
+  userScriptsContent: string,
+  salesInsightsContent: string,
+  appointmentSettingContent: string
 ): string {
   const topCampaigns = [...campaigns]
     .filter(c => c.emails_sent >= 1000)
@@ -330,15 +531,32 @@ ${knowledgeBaseContent}
 
 ${userScriptsContent}
 
+${appointmentSettingContent}
+
+${salesInsightsContent}
+
 ## YOUR ROLE
 1. ${infrastructureAlerts.length > 0 ? 'FIRST: Address any infrastructure alerts - these are the highest priority' : 'Check infrastructure health is stable'}
 2. Diagnose where the user is struggling based on their data
 3. Compare their metrics to benchmarks and identify gaps
 4. **Analyze variants** and recommend which to SCALE, ITERATE, or KILL based on IR%
-5. **Reference the Knowledge Base AND the user's proven scripts** to provide specific recommendations
-6. When suggesting improvements, cite examples from their winning scripts or warn against patterns from losing scripts
-7. Provide ONE clear, actionable next step with a concrete example
-8. Guide them to the next step in the framework when ready
+5. **Reference the Knowledge Base, user's proven scripts, AND their sales call insights** to provide specific recommendations
+6. When suggesting appointment setting improvements, cite examples from their winning replies
+7. When discussing sales calls or objections, reference their objection playbook
+8. Provide ONE clear, actionable next step with a concrete example
+9. Guide them to the next step in the framework when ready
+
+## HOW TO USE APPOINTMENT SETTING INTELLIGENCE
+- When user asks "why am I not booking meetings?", reference their winning/losing reply patterns
+- Compare their reply approach to proven winning patterns
+- Reference appointment_setting KB materials for frameworks
+- Suggest templates based on what has worked for THEIR leads
+
+## HOW TO USE SALES CALL INTELLIGENCE  
+- When user asks about closing deals, reference their call analysis scores
+- Use their objection playbook to suggest responses
+- Reference GAP selling missed opportunities for coaching
+- Compare their performance to benchmarks
 
 ## HOW TO USE PERSONALIZED SCRIPTS
 - FIRST check if the user has any winning_script assets - these are PROVEN to work for THEIR audience
@@ -401,7 +619,7 @@ serve(async (req) => {
 
     console.log(`Growth Copilot request: type=${type}, user=${user.id}`);
 
-    // Fetch all context data in parallel (including infrastructure alerts, knowledge base, and user scripts)
+    // Fetch all context data in parallel (including infrastructure alerts, knowledge base, user scripts, sales insights, and reply data)
     const [
       { data: growthSteps },
       { data: userProgress },
@@ -409,7 +627,11 @@ serve(async (req) => {
       { data: dailyMetrics },
       { data: infrastructureAlerts },
       { data: knowledgeBaseDocs },
-      { data: userScriptAssets }
+      { data: userScriptAssets },
+      { data: callAnalyses },
+      { data: objectionAssets },
+      { data: replyAssets },
+      { data: leadReplies }
     ] = await Promise.all([
       supabase.from('growth_steps').select('*').order('step_number'),
       supabase.from('user_growth_progress').select('*').eq('user_id', user.id),
@@ -417,7 +639,11 @@ serve(async (req) => {
       supabase.from('daily_campaign_metrics').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(1),
       supabase.from('email_account_alerts').select('email_address, alert_type, severity, current_value, threshold_value, recommended_action').eq('user_id', user.id).eq('status', 'active'),
       supabase.from('knowledge_base_documents').select('title, category, extracted_content').eq('document_type', 'admin').eq('is_active', true),
-      supabase.from('user_assets').select('title, content, performance_data, asset_type').eq('user_id', user.id).in('asset_type', ['winning_script', 'losing_script']).order('created_at', { ascending: false }).limit(20)
+      supabase.from('user_assets').select('title, content, performance_data, asset_type').eq('user_id', user.id).in('asset_type', ['winning_script', 'losing_script']).order('created_at', { ascending: false }).limit(20),
+      supabase.from('call_analyses').select('title, overall_score, objections_identified, close_confidence, gap_selling, improvements, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+      supabase.from('user_assets').select('title, content').eq('user_id', user.id).eq('asset_type', 'objection').order('updated_at', { ascending: false }).limit(20),
+      supabase.from('user_assets').select('title, content, performance_data, asset_type').eq('user_id', user.id).in('asset_type', ['winning_reply', 'losing_reply']).order('created_at', { ascending: false }).limit(20),
+      supabase.from('lead_replies').select('id, outcome').eq('user_id', user.id).eq('status', 'replied')
     ]);
 
     // Determine current step
@@ -491,6 +717,9 @@ serve(async (req) => {
 
     console.log(`Knowledge base loaded: ${knowledgeBaseDocs?.length || 0} documents`);
     console.log(`User scripts loaded: ${userScriptAssets?.length || 0} assets`);
+    console.log(`Call analyses loaded: ${callAnalyses?.length || 0} analyses`);
+    console.log(`Objection assets loaded: ${objectionAssets?.length || 0} objections`);
+    console.log(`Reply assets loaded: ${replyAssets?.length || 0} reply assets`);
 
     // Build user scripts section (personalized learning)
     const userScriptsContent = buildUserScriptsSection(
@@ -502,6 +731,52 @@ serve(async (req) => {
       }))
     );
 
+    // Build sales insights section
+    const salesInsightsContent = buildSalesInsightsSection(
+      (callAnalyses || []).map(a => ({
+        title: a.title,
+        overall_score: a.overall_score || 0,
+        objections_identified: a.objections_identified || 0,
+        close_confidence: a.close_confidence || 0,
+        gap_selling: a.gap_selling as CallAnalysis['gap_selling'],
+        improvements: a.improvements as string[] | null,
+        created_at: a.created_at
+      })),
+      (objectionAssets || []).map(o => ({
+        title: o.title,
+        content: o.content as ObjectionAsset['content']
+      }))
+    );
+
+    // Build appointment setting section
+    const winningReplies = (replyAssets || [])
+      .filter(a => a.asset_type === 'winning_reply')
+      .map(a => ({
+        title: a.title,
+        content: a.content as ReplyAsset['content'],
+        performance_data: a.performance_data as ReplyAsset['performance_data'],
+        asset_type: 'winning_reply' as const
+      }));
+
+    const losingReplies = (replyAssets || [])
+      .filter(a => a.asset_type === 'losing_reply')
+      .map(a => ({
+        title: a.title,
+        content: a.content as ReplyAsset['content'],
+        performance_data: a.performance_data as ReplyAsset['performance_data'],
+        asset_type: 'losing_reply' as const
+      }));
+
+    const totalReplied = leadReplies?.length || 0;
+    const meetingsBooked = leadReplies?.filter(r => r.outcome === 'meeting_booked').length || 0;
+    const replyStats = {
+      total: totalReplied,
+      meetingsBooked,
+      conversionRate: totalReplied > 0 ? (meetingsBooked / totalReplied) * 100 : 0
+    };
+
+    const appointmentSettingContent = buildAppointmentSettingSection(winningReplies, losingReplies, replyStats);
+
     // Build system prompt with full context
     const systemPrompt = buildSystemPrompt(
       growthSteps || [],
@@ -511,7 +786,9 @@ serve(async (req) => {
       totalMetrics,
       alertData,
       knowledgeBaseContent,
-      userScriptsContent
+      userScriptsContent,
+      salesInsightsContent,
+      appointmentSettingContent
     );
 
     // Build user message based on type
