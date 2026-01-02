@@ -965,6 +965,9 @@ export type Database = {
           id: string
           lead_email: string
           lead_name: string | null
+          outcome: string | null
+          outcome_at: string | null
+          outcome_notes: string | null
           received_at: string
           reply_type: string | null
           responded_at: string | null
@@ -984,6 +987,9 @@ export type Database = {
           id?: string
           lead_email: string
           lead_name?: string | null
+          outcome?: string | null
+          outcome_at?: string | null
+          outcome_notes?: string | null
           received_at?: string
           reply_type?: string | null
           responded_at?: string | null
@@ -1003,6 +1009,9 @@ export type Database = {
           id?: string
           lead_email?: string
           lead_name?: string | null
+          outcome?: string | null
+          outcome_at?: string | null
+          outcome_notes?: string | null
           received_at?: string
           reply_type?: string | null
           responded_at?: string | null

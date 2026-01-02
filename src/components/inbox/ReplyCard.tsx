@@ -15,6 +15,7 @@ interface LeadReply {
   status: 'pending' | 'replied' | 'dismissed';
   reply_type: string | null;
   ai_draft: string | null;
+  outcome?: 'meeting_booked' | 'positive_response' | 'no_response' | 'negative' | 'pending' | null;
 }
 
 interface ReplyCardProps {
@@ -59,6 +60,18 @@ const getStatusBadge = (status: string) => {
   }
 };
 
+const getOutcomeBadge = (outcome: string | null | undefined) => {
+  if (!outcome || outcome === 'pending') return null;
+  const config: Record<string, { color: string; label: string; icon: React.ReactNode }> = {
+    meeting_booked: { color: 'bg-green-600/10 text-green-600 border-green-600/20', label: 'Meeting', icon: <CheckCircle className="h-3 w-3 mr-1" /> },
+    positive_response: { color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', label: 'Positive', icon: null },
+    no_response: { color: 'bg-muted text-muted-foreground', label: 'No Reply', icon: null },
+    negative: { color: 'bg-red-500/10 text-red-500 border-red-500/20', label: 'Negative', icon: <XCircle className="h-3 w-3 mr-1" /> },
+  };
+  const { color, label, icon } = config[outcome] || { color: 'bg-muted', label: outcome, icon: null };
+  return <Badge variant="outline" className={color}>{icon}{label}</Badge>;
+};
+
 const ReplyCard = ({ reply, onClick, onDismiss }: ReplyCardProps) => {
   const truncatedBody = reply.body.length > 150 
     ? reply.body.substring(0, 150) + '...' 
@@ -94,7 +107,8 @@ const ReplyCard = ({ reply, onClick, onDismiss }: ReplyCardProps) => {
               )}
               {getReplyTypeBadge(reply.reply_type)}
               {getStatusBadge(reply.status)}
-              {reply.ai_draft && (
+              {getOutcomeBadge(reply.outcome)}
+              {reply.ai_draft && !reply.outcome && (
                 <Badge variant="outline" className="text-xs bg-primary/5">
                   <Sparkles className="h-3 w-3 mr-1" />
                   Draft Ready

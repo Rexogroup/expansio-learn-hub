@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Inbox, Mail, CheckCircle, XCircle, Sparkles } from "lucide-react";
+import { RefreshCw, Inbox, Mail, CheckCircle, XCircle, Sparkles, CalendarCheck } from "lucide-react";
 import ReplyCard from "@/components/inbox/ReplyCard";
 import ReplyModal from "@/components/inbox/ReplyModal";
 
@@ -27,6 +27,8 @@ interface LeadReply {
   ai_draft: string | null;
   sent_response: string | null;
   responded_at: string | null;
+  outcome?: 'meeting_booked' | 'positive_response' | 'no_response' | 'negative' | 'pending' | null;
+  outcome_at?: string | null;
 }
 
 const MasterInbox = () => {
@@ -162,6 +164,8 @@ const MasterInbox = () => {
 
   const pendingCount = replies.filter(r => r.status === 'pending').length;
   const repliedCount = replies.filter(r => r.status === 'replied').length;
+  const meetingsBookedCount = replies.filter(r => r.outcome === 'meeting_booked').length;
+  const conversionRate = repliedCount > 0 ? ((meetingsBookedCount / repliedCount) * 100).toFixed(1) : '0';
 
   if (loading) {
     return (
@@ -224,7 +228,7 @@ const MasterInbox = () => {
           </Card>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-4 gap-4 mb-6">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -249,6 +253,22 @@ const MasterInbox = () => {
                     <CheckCircle className="h-5 w-5 text-green-500" />
                     <span className="text-2xl font-bold">{repliedCount}</span>
                   </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Meetings Booked
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <CalendarCheck className="h-5 w-5 text-green-600" />
+                    <span className="text-2xl font-bold">{meetingsBookedCount}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {conversionRate}% conversion
+                  </p>
                 </CardContent>
               </Card>
               <Card>

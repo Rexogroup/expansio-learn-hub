@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow, format } from "date-fns";
-import { Sparkles, Send, RefreshCw, User, Calendar, Mail, CheckCircle } from "lucide-react";
+import { Sparkles, Send, RefreshCw, User, Calendar, Mail, CheckCircle, CalendarCheck, ThumbsDown, Clock } from "lucide-react";
 
 interface LeadReply {
   id: string;
@@ -28,6 +28,8 @@ interface LeadReply {
   ai_draft: string | null;
   sent_response: string | null;
   responded_at: string | null;
+  outcome?: 'meeting_booked' | 'positive_response' | 'no_response' | 'negative' | 'pending' | null;
+  outcome_at?: string | null;
 }
 
 interface ReplyModalProps {
@@ -42,6 +44,7 @@ const ReplyModal = ({ open, onOpenChange, reply, onSuccess }: ReplyModalProps) =
   const [draftContent, setDraftContent] = useState(reply.ai_draft || '');
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [markingOutcome, setMarkingOutcome] = useState(false);
 
   const generateDraft = async () => {
     setGenerating(true);
@@ -119,6 +122,41 @@ const ReplyModal = ({ open, onOpenChange, reply, onSuccess }: ReplyModalProps) =
     }
   };
 
+  const markOutcome = async (outcome: 'meeting_booked' | 'positive_response' | 'no_response' | 'negative') => {
+    setMarkingOutcome(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('classify-replies', {
+        body: { 
+          reply_id: reply.id,
+          outcome,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Outcome Recorded",
+        description: data.message,
+      });
+      onSuccess();
+    } catch (error) {
+      console.error('Error marking outcome:', error);
+      toast({
+        title: "Error",
+        description: "Failed to record outcome",
+        variant: "destructive",
+      });
+    } finally {
+      setMarkingOutcome(false);
+    }
+  };
+
   const getClassificationBadge = (type: string | null) => {
     const colors: Record<string, string> = {
       interested: 'bg-green-500/10 text-green-500',
@@ -134,7 +172,21 @@ const ReplyModal = ({ open, onOpenChange, reply, onSuccess }: ReplyModalProps) =
     ) : null;
   };
 
+  const getOutcomeBadge = (outcome: string | null | undefined) => {
+    if (!outcome) return null;
+    const config: Record<string, { color: string; label: string }> = {
+      meeting_booked: { color: 'bg-green-500/10 text-green-500 border-green-500/20', label: 'Meeting Booked' },
+      positive_response: { color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', label: 'Positive Response' },
+      no_response: { color: 'bg-muted text-muted-foreground', label: 'No Response' },
+      negative: { color: 'bg-red-500/10 text-red-500 border-red-500/20', label: 'Negative' },
+      pending: { color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', label: 'Pending' },
+    };
+    const { color, label } = config[outcome] || { color: 'bg-muted', label: outcome };
+    return <Badge variant="outline" className={color}>{label}</Badge>;
+  };
+
   const isReplied = reply.status === 'replied';
+  const hasOutcome = !!reply.outcome && reply.outcome !== 'pending';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -185,7 +237,7 @@ const ReplyModal = ({ open, onOpenChange, reply, onSuccess }: ReplyModalProps) =
 
           {/* Response Section */}
           {isReplied ? (
-            <div>
+            <div className="space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <h4 className="text-sm font-medium">Response Sent</h4>
@@ -194,10 +246,62 @@ const ReplyModal = ({ open, onOpenChange, reply, onSuccess }: ReplyModalProps) =
                     {format(new Date(reply.responded_at), 'PPp')}
                   </span>
                 )}
+                {getOutcomeBadge(reply.outcome)}
               </div>
               <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 text-sm whitespace-pre-wrap">
                 {reply.sent_response}
               </div>
+
+              {/* Outcome Tracking Section */}
+              {!hasOutcome && (
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium mb-3">What was the outcome?</h4>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Track outcomes to help the AI learn what works for your business
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-green-500/10 border-green-500/30 hover:bg-green-500/20"
+                      onClick={() => markOutcome('meeting_booked')}
+                      disabled={markingOutcome}
+                    >
+                      <CalendarCheck className="h-4 w-4 mr-1" />
+                      Meeting Booked
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20"
+                      onClick={() => markOutcome('positive_response')}
+                      disabled={markingOutcome}
+                    >
+                      <ThumbsDown className="h-4 w-4 mr-1 rotate-180" />
+                      Positive Response
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => markOutcome('no_response')}
+                      disabled={markingOutcome}
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      No Response
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-red-500/10 border-red-500/30 hover:bg-red-500/20"
+                      onClick={() => markOutcome('negative')}
+                      disabled={markingOutcome}
+                    >
+                      <ThumbsDown className="h-4 w-4 mr-1" />
+                      Negative
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div>
