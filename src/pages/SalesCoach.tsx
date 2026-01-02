@@ -7,6 +7,7 @@ import { TranscriptUploader } from "@/components/sales-coach/TranscriptUploader"
 import { CallAnalysisResult } from "@/components/sales-coach/CallAnalysisResult";
 import { ObjectionPlaybook } from "@/components/sales-coach/ObjectionPlaybook";
 import { AnalysisHistory } from "@/components/sales-coach/AnalysisHistory";
+import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { Brain, BookOpen, History } from "lucide-react";
 
 export interface ObjectionAnalysis {
@@ -165,6 +166,7 @@ const SalesCoach = () => {
           </TabsContent>
         </Tabs>
       </main>
+      <GrowthCopilotSheet />
     </div>
   );
 };
