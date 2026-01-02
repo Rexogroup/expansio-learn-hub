@@ -283,15 +283,102 @@ Be specific, practical, and encouraging. Use exact quotes from the transcript. I
       throw new Error('No analysis generated');
     }
 
-    console.log('Raw AI response:', analysisText);
+    console.log('Raw AI response length:', analysisText.length);
+
+    // Helper function to sanitize JSON string
+    function sanitizeJsonString(jsonString: string): string {
+      let cleaned = jsonString
+        .replace(/```json\n?/gi, '')
+        .replace(/```\n?/gi, '')
+        .trim();
+      
+      // Remove control characters except standard whitespace
+      cleaned = cleaned.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '');
+      
+      return cleaned;
+    }
+
+    // Helper function to extract JSON from text
+    function extractJsonFromText(text: string): string | null {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      return jsonMatch ? jsonMatch[0] : null;
+    }
 
     let analysis: AnalysisResult;
     try {
       analysis = JSON.parse(analysisText);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      throw new Error('Failed to parse analysis result');
+      console.log('Initial parse failed, attempting sanitization...', parseError);
+      
+      try {
+        const sanitized = sanitizeJsonString(analysisText);
+        analysis = JSON.parse(sanitized);
+      } catch (sanitizeError) {
+        console.log('Sanitized parse failed, attempting JSON extraction...', sanitizeError);
+        
+        try {
+          const extracted = extractJsonFromText(analysisText);
+          if (extracted) {
+            const sanitizedExtracted = sanitizeJsonString(extracted);
+            analysis = JSON.parse(sanitizedExtracted);
+          } else {
+            throw new Error('Could not extract JSON from response');
+          }
+        } catch (extractError) {
+          console.error('All parsing attempts failed:', extractError);
+          console.error('Raw response (first 2000 chars):', analysisText.slice(0, 2000));
+          throw new Error('Failed to parse analysis result. Please try again.');
+        }
+      }
     }
+
+    // Validate and provide defaults for essential fields
+    if (typeof analysis.overall_score !== 'number') {
+      analysis.overall_score = 5;
+    }
+    if (!Array.isArray(analysis.objections)) {
+      analysis.objections = [];
+    }
+    if (!Array.isArray(analysis.strengths)) {
+      analysis.strengths = [];
+    }
+    if (!Array.isArray(analysis.improvements)) {
+      analysis.improvements = [];
+    }
+    if (!Array.isArray(analysis.action_items)) {
+      analysis.action_items = [];
+    }
+    if (!analysis.summary) {
+      analysis.summary = '';
+    }
+    if (!analysis.crm_overview) {
+      analysis.crm_overview = {
+        point_of_contact: [],
+        marketing_channels: [],
+        kpis: {},
+        offer_made: { pricing: '', model: '', details: '' }
+      };
+    }
+    if (!analysis.deal_analysis) {
+      analysis.deal_analysis = {
+        lead_needs: [],
+        convincing_factors: [],
+        close_confidence_percent: 50,
+        verbal_agreement: false,
+        proposal_key_points: []
+      };
+    }
+    if (!analysis.gap_selling) {
+      analysis.gap_selling = {
+        current_state: '',
+        desired_state: '',
+        gap_articulation_score: 5,
+        gap_feedback: '',
+        missed_opportunities: []
+      };
+    }
+
+    console.log('Successfully parsed analysis');
 
     // Save the call analysis to database with new fields
     const { data: savedAnalysis, error: saveError } = await supabaseClient
