@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Calendar, Mail, CheckCircle, Sparkles, CalendarCheck, Inbox } from "lucide-react";
+import { RefreshCw, Calendar, Mail, CheckCircle, Sparkles, CalendarCheck, Inbox, ScanSearch } from "lucide-react";
 import ReplyCard from "@/components/inbox/ReplyCard";
 import ThreadView from "@/components/inbox/ThreadView";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -41,6 +41,7 @@ const MasterInbox = () => {
   const [replies, setReplies] = useState<LeadReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [selectedReply, setSelectedReply] = useState<LeadReply | null>(null);
   const [activeTab, setActiveTab] = useState("pending");
   const [hasIntegration, setHasIntegration] = useState(false);
@@ -133,6 +134,38 @@ const MasterInbox = () => {
       });
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const scanHandledReplies = async () => {
+    setScanning(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('check-handled-replies', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Scan Complete",
+        description: `${data.marked_as_replied} replies marked as handled. ${data.still_pending} still pending.`,
+      });
+
+      await fetchReplies();
+    } catch (error) {
+      console.error('Error scanning replies:', error);
+      toast({
+        title: "Scan Failed",
+        description: "Failed to check for handled replies",
+        variant: "destructive",
+      });
+    } finally {
+      setScanning(false);
     }
   };
 
@@ -243,12 +276,21 @@ const MasterInbox = () => {
               Book meetings with interested leads using AI-powered replies
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {!hasIntegration && (
               <Button variant="outline" size="sm" onClick={() => navigate('/integrations')}>
                 Connect EmailBison
               </Button>
             )}
+            <Button 
+              onClick={scanHandledReplies} 
+              disabled={scanning || !hasIntegration}
+              variant="outline"
+              size="sm"
+            >
+              <ScanSearch className={`h-4 w-4 mr-2 ${scanning ? 'animate-pulse' : ''}`} />
+              {scanning ? 'Scanning...' : 'Scan Handled'}
+            </Button>
             <Button 
               onClick={syncReplies} 
               disabled={syncing || !hasIntegration}

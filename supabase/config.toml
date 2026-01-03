@@ -53,3 +53,6 @@ verify_jwt = true
 
 [functions.cluster-objections]
 verify_jwt = true
+
+[functions.check-handled-replies]
+verify_jwt = true
