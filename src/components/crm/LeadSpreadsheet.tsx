@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CRMLead, TeamMember } from "@/pages/CRM";
 import {
   Table,
@@ -25,8 +25,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus, MoreHorizontal, Trash2, ExternalLink } from "lucide-react";
-import { format } from "date-fns";
-import { QuickMessagePopover } from "./QuickMessagePopover";
+import { supabase } from "@/integrations/supabase/client";
+import { InlineMessageCell } from "./InlineMessageCell";
 
 interface LeadSpreadsheetProps {
   leads: CRMLead[];
@@ -36,6 +36,13 @@ interface LeadSpreadsheetProps {
   onUpdate: (lead: CRMLead) => void;
   onCreate: (lead: Partial<CRMLead>) => void;
   onDelete: (leadId: string) => void;
+}
+
+interface MessageTemplate {
+  id: string;
+  name: string;
+  template_type: string;
+  content: string;
 }
 
 const STATUS_OPTIONS = [
@@ -49,6 +56,11 @@ const STATUS_OPTIONS = [
   { value: 'closed_lost', label: 'Closed Lost' },
 ];
 
+const DEFAULT_TEMPLATES = {
+  connection_followup: "Hey {{first_name}}! Thanks for connecting. I noticed you're at {{company}} - I'd love to learn more about what you're working on. What's the best way to get a quick 15-minute chat on the calendar?",
+  appointment_setting: "Hi {{first_name}}, great to connect! I help companies like {{company}} achieve their growth goals. Would you be open to a quick call to see if there's a fit? Here's my calendar: {{calendly_link}}"
+};
+
 export const LeadSpreadsheet = ({
   leads,
   teamMembers,
@@ -60,6 +72,41 @@ export const LeadSpreadsheet = ({
 }: LeadSpreadsheetProps) => {
   const [editingCell, setEditingCell] = useState<{ leadId: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState<string>("");
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+
+  useEffect(() => {
+    if (teamId) {
+      fetchTemplates();
+    }
+  }, [teamId]);
+
+  const fetchTemplates = async () => {
+    const { data } = await supabase
+      .from('crm_message_templates')
+      .select('*')
+      .eq('team_id', teamId);
+    
+    if (data && data.length > 0) {
+      setTemplates(data);
+    }
+  };
+
+  const fillTemplate = (templateContent: string, lead: CRMLead): string => {
+    const firstName = lead.lead_name?.split(' ')[0] || 'there';
+    const company = lead.company || 'your company';
+    const calendlyLink = userCalendlyLink || '[Your Calendly Link]';
+
+    return templateContent
+      .replace(/\{\{first_name\}\}/g, firstName)
+      .replace(/\{\{company\}\}/g, company)
+      .replace(/\{\{calendly_link\}\}/g, calendlyLink);
+  };
+
+  const getMessageForLead = (lead: CRMLead, type: 'connection_followup' | 'appointment_setting'): string => {
+    const template = templates.find(t => t.template_type === type);
+    const templateContent = template?.content || DEFAULT_TEMPLATES[type];
+    return fillTemplate(templateContent, lead);
+  };
 
   const handleStartEdit = (leadId: string, field: string, currentValue: string) => {
     setEditingCell({ leadId, field });
@@ -153,26 +200,27 @@ export const LeadSpreadsheet = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[180px]">Name</TableHead>
-              <TableHead className="w-[180px]">Company</TableHead>
-              <TableHead className="w-[180px]">Email</TableHead>
-              <TableHead className="w-[120px]">LinkedIn</TableHead>
-              <TableHead className="w-[120px]">1st Reach</TableHead>
-              <TableHead className="w-[100px]">SDR</TableHead>
-              <TableHead className="w-[80px] text-center">Conn. Sent</TableHead>
-              <TableHead className="w-[80px] text-center">Conn. Acc.</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="w-[80px] text-center">Interested</TableHead>
-              <TableHead className="w-[80px] text-center">Meeting</TableHead>
-              <TableHead className="w-[100px]">Deal Value</TableHead>
-              <TableHead className="w-[140px]">Status</TableHead>
+              <TableHead className="w-[150px]">Name</TableHead>
+              <TableHead className="w-[140px]">Company</TableHead>
+              <TableHead className="w-[160px]">Email</TableHead>
+              <TableHead className="w-[80px]">LinkedIn</TableHead>
+              <TableHead className="w-[110px]">1st Reach</TableHead>
+              <TableHead className="w-[90px]">SDR</TableHead>
+              <TableHead className="w-[70px] text-center">Conn.</TableHead>
+              <TableHead className="w-[70px] text-center">Acc.</TableHead>
+              <TableHead className="w-[200px]">1st Message</TableHead>
+              <TableHead className="w-[200px]">Appointment Msg</TableHead>
+              <TableHead className="w-[70px] text-center">Int.</TableHead>
+              <TableHead className="w-[70px] text-center">Meet.</TableHead>
+              <TableHead className="w-[90px]">Deal $</TableHead>
+              <TableHead className="w-[130px]">Status</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {leads.length === 0 ? (
               <TableRow>
-              <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={15} className="text-center py-8 text-muted-foreground">
                   No leads yet. Click "Add Lead" to get started.
                 </TableCell>
               </TableRow>
@@ -204,7 +252,7 @@ export const LeadSpreadsheet = ({
                         className="cursor-pointer hover:bg-muted/50 px-2 py-1 rounded text-sm text-muted-foreground"
                         onClick={() => handleStartEdit(lead.id, 'linkedin_url', "")}
                       >
-                        Add URL
+                        Add
                       </div>
                     )}
                   </TableCell>
@@ -213,7 +261,7 @@ export const LeadSpreadsheet = ({
                       type="date"
                       value={lead.first_reach_date || ""}
                       onChange={(e) => onUpdate({ ...lead, first_reach_date: e.target.value || null })}
-                      className="h-8 text-sm w-[110px]"
+                      className="h-8 text-sm w-[100px]"
                     />
                   </TableCell>
                   <TableCell>
@@ -221,14 +269,14 @@ export const LeadSpreadsheet = ({
                       value={lead.assigned_to || "unassigned"}
                       onValueChange={(value) => handleAssigneeChange(lead, value)}
                     >
-                      <SelectTrigger className="h-8 text-sm w-[100px]">
+                      <SelectTrigger className="h-8 text-sm w-[85px]">
                         <SelectValue placeholder="Assign" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">-</SelectItem>
                         {teamMembers.map((member) => (
                           <SelectItem key={member.user_id} value={member.user_id}>
-                            {member.profile?.full_name || member.profile?.email || 'Unknown'}
+                            {member.profile?.full_name?.split(' ')[0] || member.profile?.email?.split('@')[0] || 'User'}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -250,14 +298,17 @@ export const LeadSpreadsheet = ({
                       }
                     />
                   </TableCell>
-                  <TableCell className="text-center">
-                    {lead.connection_accepted && (
-                      <QuickMessagePopover
-                        lead={lead}
-                        teamId={teamId}
-                        userCalendlyLink={userCalendlyLink}
-                      />
-                    )}
+                  <TableCell>
+                    <InlineMessageCell
+                      message={getMessageForLead(lead, 'connection_followup')}
+                      isActive={lead.connection_accepted || false}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlineMessageCell
+                      message={getMessageForLead(lead, 'appointment_setting')}
+                      isActive={lead.connection_accepted || false}
+                    />
                   </TableCell>
                   <TableCell className="text-center">
                     <Checkbox
@@ -280,7 +331,7 @@ export const LeadSpreadsheet = ({
                       type="number"
                       value={lead.deal_value || ""}
                       onChange={(e) => onUpdate({ ...lead, deal_value: e.target.value ? parseFloat(e.target.value) : null })}
-                      className="h-8 text-sm w-[90px]"
+                      className="h-8 text-sm w-[80px]"
                       placeholder="$0"
                     />
                   </TableCell>
