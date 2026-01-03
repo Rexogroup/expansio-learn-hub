@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -231,53 +231,45 @@ const MasterInbox = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-64" />
-            <Skeleton className="h-[400px] w-full" />
-          </div>
-        </main>
-      </div>
+      <main className="container mx-auto px-4 py-8">
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-[400px] w-full" />
+        </div>
+      </main>
     );
   }
 
   // Mobile: Show thread view full-screen when a reply is selected
   if (isMobile && showThreadOnMobile && selectedReply) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="h-[calc(100vh-4rem)]">
-          <ThreadView
-            reply={selectedReply}
-            onSuccess={handleSuccess}
-            onDismiss={() => handleDismiss(selectedReply.id)}
-            onBack={() => setShowThreadOnMobile(false)}
-            isMobile={true}
-          />
-        </div>
+      <div className="h-[calc(100vh-3.5rem)]">
+        <ThreadView
+          reply={selectedReply}
+          onSuccess={handleSuccess}
+          onDismiss={() => handleDismiss(selectedReply.id)}
+          onBack={() => setShowThreadOnMobile(false)}
+          isMobile={true}
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4 flex-shrink-0">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Calendar className="h-6 w-6" />
-              Appointment Copilot
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Book meetings with interested leads using AI-powered replies
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {!hasIntegration && (
+    <main className="flex-1 container mx-auto px-4 py-6 flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Calendar className="h-6 w-6" />
+            Master Inbox
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Book meetings with interested leads using AI-powered replies
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {!hasIntegration && (
               <Button variant="outline" size="sm" onClick={() => navigate('/integrations')}>
                 Connect EmailBison
               </Button>
@@ -435,11 +427,10 @@ const MasterInbox = () => {
                   </ResizablePanel>
                 </ResizablePanelGroup>
               )}
-            </div>
-          </>
-        )}
-      </main>
-    </div>
+          </div>
+        </>
+      )}
+    </main>
   );
 };
 

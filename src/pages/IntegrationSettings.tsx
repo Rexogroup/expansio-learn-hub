@@ -398,30 +398,21 @@ export default function IntegrationSettings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center h-64">
         <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl py-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)}
-          className="mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back
-        </Button>
-
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Platform Integration</h1>
-            <p className="text-muted-foreground mt-2">
-              Connect your outbound email platform to sync campaign data and enable AI-powered analysis.
-            </p>
-          </div>
+    <div className="container max-w-4xl py-8">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Email Accounts</h1>
+          <p className="text-muted-foreground mt-2">
+            Connect your outbound email platform to sync campaign data and enable AI-powered analysis.
+          </p>
+        </div>
 
           {/* Scheduling Settings Card - Always visible */}
           <Card>
@@ -900,10 +891,9 @@ export default function IntegrationSettings() {
                     </li>
                   </ul>
                 </CardContent>
-              </Card>
-            </>
-          )}
-        </div>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   );

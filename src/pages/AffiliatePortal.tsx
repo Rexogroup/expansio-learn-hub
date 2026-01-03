@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Navbar } from "@/components/Navbar";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -129,25 +129,20 @@ const AffiliatePortal = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Network</h1>
-          <p className="text-muted-foreground mt-1">
-            Connect with agencies, collaborate on deals, and grow together
-          </p>
-        </div>
+    <main className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Network</h1>
+        <p className="text-muted-foreground mt-1">
+          Connect with agencies, collaborate on deals, and grow together
+        </p>
+      </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
@@ -195,8 +190,7 @@ const AffiliatePortal = () => {
             <MessagesInbox onUnreadChange={setUnreadCount} />
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+    </main>
   );
 };
 

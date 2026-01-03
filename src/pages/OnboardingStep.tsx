@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink } from "lucide-react";
-import { Navbar } from "@/components/Navbar";
+
 import { BusinessIntakeForm } from "@/components/onboarding/BusinessIntakeForm";
 
 interface OnboardingStep {
@@ -171,17 +171,15 @@ export default function OnboardingStep() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/onboarding")}
-          className="mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Overview
-        </Button>
+    <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/onboarding")}
+        className="mb-6"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Overview
+      </Button>
 
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
@@ -380,7 +378,6 @@ export default function OnboardingStep() {
             </Button>
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }

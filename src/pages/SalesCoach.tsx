@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TranscriptUploader } from "@/components/sales-coach/TranscriptUploader";
 import { CallAnalysisResult } from "@/components/sales-coach/CallAnalysisResult";
@@ -110,15 +110,13 @@ const SalesCoach = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Sales Copilot</h1>
-          <p className="text-muted-foreground">
-            Analyze call transcripts for AI-powered objection handling and coaching feedback
-          </p>
-        </div>
+    <main className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Sales Coach</h1>
+        <p className="text-muted-foreground">
+          Analyze call transcripts for AI-powered objection handling and coaching feedback
+        </p>
+      </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 max-w-md">
@@ -164,10 +162,9 @@ const SalesCoach = () => {
               }}
             />
           </TabsContent>
-        </Tabs>
-      </main>
+      </Tabs>
       <GrowthCopilotSheet />
-    </div>
+    </main>
   );
 };
 

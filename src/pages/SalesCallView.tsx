@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -158,30 +158,22 @@ export default function SalesCallView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Loading sales call...</p>
-        </div>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p className="text-muted-foreground">Loading sales call...</p>
       </div>
     );
   }
 
   if (!call) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Sales call not found</p>
-        </div>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p className="text-muted-foreground">Sales call not found</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <div className="flex items-start justify-between mb-2">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent flex items-center gap-2">
@@ -369,7 +361,6 @@ export default function SalesCallView() {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }

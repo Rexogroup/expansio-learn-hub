@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Navbar } from "@/components/Navbar";
+
 import ChatInterface from "@/components/script-builder/ChatInterface";
 import ConversationList from "@/components/script-builder/ConversationList";
 import SavedScripts from "@/components/script-builder/SavedScripts";
@@ -75,15 +75,13 @@ const ScriptBuilder = () => {
   const clearInitialMessage = useCallback(() => {
     setInitialMessage(undefined);
   }, []);
-  return <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Script Copilot</h1>
-          <p className="text-muted-foreground">
-            Create high-converting lead magnets with AI-powered scriptwriting
-          </p>
-        </div>
+  return <main className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Script Copilot</h1>
+        <p className="text-muted-foreground">
+          Create high-converting lead magnets with AI-powered scriptwriting
+        </p>
+      </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-2xl grid-cols-5">
@@ -114,7 +112,6 @@ const ScriptBuilder = () => {
             <SavedScripts />
           </TabsContent>
         </Tabs>
-      </div>
-    </div>;
+    </main>;
 };
 export default ScriptBuilder;

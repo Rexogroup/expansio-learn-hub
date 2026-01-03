@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { CampaignPerformanceHistory } from "@/components/growth/CampaignPerformanceHistory";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { AlertsBanner } from "@/components/growth/AlertsBanner";
@@ -499,18 +499,15 @@ export default function CommandCenter() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8 space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-[400px] w-full" />
-          <div className="grid md:grid-cols-3 gap-6">
-            <Skeleton className="h-48 md:col-span-2" />
-            <Skeleton className="h-48" />
-          </div>
-        </main>
-      </div>
+      <main className="container mx-auto px-4 py-8 space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-[400px] w-full" />
+        <div className="grid md:grid-cols-3 gap-6">
+          <Skeleton className="h-48 md:col-span-2" />
+          <Skeleton className="h-48" />
+        </div>
+      </main>
     );
   }
 
@@ -519,17 +516,15 @@ export default function CommandCenter() {
   const priorityActions = getPriorityActions();
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8 space-y-6">
-        {/* Header with Status Pills */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Command Center</h1>
-            <p className="text-muted-foreground mt-1">
-              Campaign performance and priority actions
-            </p>
-          </div>
+    <main className="container mx-auto px-4 py-8 space-y-6">
+      {/* Header with Status Pills */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Campaigns</h1>
+          <p className="text-muted-foreground mt-1">
+            Campaign performance and priority actions
+          </p>
+        </div>
           <StatusPills
             infrastructureHealthy={alertCount === 0}
             alertCount={alertCount}
@@ -587,9 +582,8 @@ export default function CommandCenter() {
           </Button>
         </div>
 
-        {/* Floating Growth Copilot */}
-        <GrowthCopilotSheet />
-      </main>
-    </div>
+      {/* Floating Growth Copilot */}
+      <GrowthCopilotSheet />
+    </main>
   );
 }
