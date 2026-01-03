@@ -25,6 +25,7 @@ import Tools from "./pages/Tools";
 import NotFound from "./pages/NotFound";
 import MasterInbox from "./pages/MasterInbox";
 import SalesCoach from "./pages/SalesCoach";
+import CRM from "./pages/CRM";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/agency/:id" element={<AuthenticatedLayout><AgencyProfile /></AuthenticatedLayout>} />
             <Route path="/tools" element={<AuthenticatedLayout><Tools /></AuthenticatedLayout>} />
             <Route path="/inbox" element={<AuthenticatedLayout><MasterInbox /></AuthenticatedLayout>} />
+            <Route path="/crm" element={<AuthenticatedLayout><CRM /></AuthenticatedLayout>} />
             <Route path="/sales-coach" element={<AuthenticatedLayout><SalesCoach /></AuthenticatedLayout>} />
             <Route path="/admin" element={<AuthenticatedLayout><Admin /></AuthenticatedLayout>} />
             <Route path="*" element={<NotFound />} />
