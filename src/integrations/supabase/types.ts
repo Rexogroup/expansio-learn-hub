@@ -1309,6 +1309,53 @@ export type Database = {
           },
         ]
       }
+      linkedin_branding_assets: {
+        Row: {
+          about_text: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          featured_posts: string | null
+          id: string
+          role_description: string | null
+          role_title: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          about_text?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          featured_posts?: string | null
+          id?: string
+          role_description?: string | null
+          role_title?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          about_text?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          featured_posts?: string | null
+          id?: string
+          role_description?: string | null
+          role_title?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "linkedin_branding_assets_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_tag_events: {
         Row: {
           campaign_id: string | null
