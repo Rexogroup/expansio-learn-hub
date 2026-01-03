@@ -7,10 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Calendar, Mail, CheckCircle, XCircle, Sparkles, CalendarCheck } from "lucide-react";
+import { RefreshCw, Calendar, Mail, CheckCircle, Sparkles, CalendarCheck, Inbox } from "lucide-react";
 import ReplyCard from "@/components/inbox/ReplyCard";
-import ReplyModal from "@/components/inbox/ReplyModal";
+import ThreadView from "@/components/inbox/ThreadView";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LeadReply {
   id: string;
@@ -34,13 +37,14 @@ interface LeadReply {
 const MasterInbox = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [replies, setReplies] = useState<LeadReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [selectedReply, setSelectedReply] = useState<LeadReply | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
   const [hasIntegration, setHasIntegration] = useState(false);
+  const [showThreadOnMobile, setShowThreadOnMobile] = useState(false);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -80,7 +84,14 @@ const MasterInbox = () => {
         .order('received_at', { ascending: false });
 
       if (error) throw error;
-      setReplies((data as LeadReply[]) || []);
+      const fetchedReplies = (data as LeadReply[]) || [];
+      setReplies(fetchedReplies);
+      
+      // Auto-select first pending reply if none selected
+      if (!selectedReply && fetchedReplies.length > 0) {
+        const firstPending = fetchedReplies.find(r => r.status === 'pending');
+        setSelectedReply(firstPending || fetchedReplies[0]);
+      }
     } catch (error) {
       console.error('Error fetching replies:', error);
       toast({
@@ -127,7 +138,9 @@ const MasterInbox = () => {
 
   const handleReplyClick = (reply: LeadReply) => {
     setSelectedReply(reply);
-    setModalOpen(true);
+    if (isMobile) {
+      setShowThreadOnMobile(true);
+    }
   };
 
   const handleDismiss = async (replyId: string) => {
@@ -142,6 +155,11 @@ const MasterInbox = () => {
       setReplies(prev => prev.map(r => 
         r.id === replyId ? { ...r, status: 'dismissed' as const } : r
       ));
+      
+      // Update selected reply if it was dismissed
+      if (selectedReply?.id === replyId) {
+        setSelectedReply(prev => prev ? { ...prev, status: 'dismissed' as const } : null);
+      }
 
       toast({
         title: "Dismissed",
@@ -154,6 +172,17 @@ const MasterInbox = () => {
         description: "Failed to dismiss reply",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSuccess = async () => {
+    await fetchReplies();
+    // Refresh selected reply with updated data
+    if (selectedReply) {
+      const updated = replies.find(r => r.id === selectedReply.id);
+      if (updated) {
+        setSelectedReply(updated);
+      }
     }
   };
 
@@ -181,23 +210,42 @@ const MasterInbox = () => {
     );
   }
 
+  // Mobile: Show thread view full-screen when a reply is selected
+  if (isMobile && showThreadOnMobile && selectedReply) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="h-[calc(100vh-4rem)]">
+          <ThreadView
+            reply={selectedReply}
+            onSuccess={handleSuccess}
+            onDismiss={() => handleDismiss(selectedReply.id)}
+            onBack={() => setShowThreadOnMobile(false)}
+            isMobile={true}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Calendar className="h-8 w-8" />
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Calendar className="h-6 w-6" />
               Appointment Copilot
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-0.5">
               Book meetings with interested leads using AI-powered replies
             </p>
           </div>
           <div className="flex items-center gap-3">
             {!hasIntegration && (
-              <Button variant="outline" onClick={() => navigate('/integrations')}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/integrations')}>
                 Connect EmailBison
               </Button>
             )}
@@ -205,6 +253,7 @@ const MasterInbox = () => {
               onClick={syncReplies} 
               disabled={syncing || !hasIntegration}
               variant="outline"
+              size="sm"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
               {syncing ? 'Syncing...' : 'Sync Replies'}
@@ -228,70 +277,62 @@ const MasterInbox = () => {
           </Card>
         ) : (
           <>
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Pending
-                  </CardTitle>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 flex-shrink-0">
+              <Card className="py-3">
+                <CardHeader className="pb-1 pt-0 px-4">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Pending</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 pb-0">
                   <div className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-amber-500" />
-                    <span className="text-2xl font-bold">{pendingCount}</span>
+                    <Mail className="h-4 w-4 text-amber-500" />
+                    <span className="text-xl font-bold">{pendingCount}</span>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Replied
-                  </CardTitle>
+              <Card className="py-3">
+                <CardHeader className="pb-1 pt-0 px-4">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Replied</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 pb-0">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span className="text-2xl font-bold">{repliedCount}</span>
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-xl font-bold">{repliedCount}</span>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Meetings Booked
-                  </CardTitle>
+              <Card className="py-3">
+                <CardHeader className="pb-1 pt-0 px-4">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Meetings Booked</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 pb-0">
                   <div className="flex items-center gap-2">
-                    <CalendarCheck className="h-5 w-5 text-green-600" />
-                    <span className="text-2xl font-bold">{meetingsBookedCount}</span>
+                    <CalendarCheck className="h-4 w-4 text-green-600" />
+                    <span className="text-xl font-bold">{meetingsBookedCount}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {conversionRate}% conversion
-                  </p>
+                  <p className="text-xs text-muted-foreground">{conversionRate}% conversion</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total
-                  </CardTitle>
+              <Card className="py-3">
+                <CardHeader className="pb-1 pt-0 px-4">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Total</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 pb-0">
                   <div className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-primary" />
-                    <span className="text-2xl font-bold">{replies.length}</span>
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span className="text-xl font-bold">{replies.length}</span>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            {/* Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0 mb-3">
               <TabsList>
-                <TabsTrigger value="pending" className="gap-2">
+                <TabsTrigger value="pending" className="gap-1.5">
                   Pending
                   {pendingCount > 0 && (
-                    <Badge variant="secondary" className="ml-1">
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                       {pendingCount}
                     </Badge>
                   )}
@@ -300,47 +341,60 @@ const MasterInbox = () => {
                 <TabsTrigger value="dismissed">Dismissed</TabsTrigger>
                 <TabsTrigger value="all">All</TabsTrigger>
               </TabsList>
-
-              <TabsContent value={activeTab} className="mt-4">
-                {filteredReplies.length === 0 ? (
-                  <Card className="border-dashed">
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                      <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No replies yet</h3>
-                      <p className="text-muted-foreground text-center max-w-md">
-                        {activeTab === 'pending' 
-                          ? "You're all caught up! No pending replies to respond to."
-                          : `No ${activeTab} replies found.`}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {filteredReplies.map((reply) => (
-                      <ReplyCard
-                        key={reply.id}
-                        reply={reply}
-                        onClick={() => handleReplyClick(reply)}
-                        onDismiss={() => handleDismiss(reply.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
             </Tabs>
-          </>
-        )}
 
-        {selectedReply && (
-          <ReplyModal
-            open={modalOpen}
-            onOpenChange={setModalOpen}
-            reply={selectedReply}
-            onSuccess={() => {
-              fetchReplies();
-              setModalOpen(false);
-            }}
-          />
+            {/* Split Pane Layout */}
+            <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
+              {filteredReplies.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 h-full">
+                  <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No replies yet</h3>
+                  <p className="text-muted-foreground text-center max-w-md">
+                    {activeTab === 'pending' 
+                      ? "You're all caught up! No pending replies to respond to."
+                      : `No ${activeTab} replies found.`}
+                  </p>
+                </div>
+              ) : (
+                <ResizablePanelGroup direction="horizontal">
+                  {/* Reply List Panel */}
+                  <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
+                    <ScrollArea className="h-full">
+                      <div className="p-2 space-y-2">
+                        {filteredReplies.map((reply) => (
+                          <ReplyCard
+                            key={reply.id}
+                            reply={reply}
+                            onClick={() => handleReplyClick(reply)}
+                            onDismiss={() => handleDismiss(reply.id)}
+                            isActive={selectedReply?.id === reply.id}
+                          />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </ResizablePanel>
+
+                  <ResizableHandle withHandle />
+
+                  {/* Thread View Panel */}
+                  <ResizablePanel defaultSize={65}>
+                    {selectedReply ? (
+                      <ThreadView
+                        reply={selectedReply}
+                        onSuccess={handleSuccess}
+                        onDismiss={() => handleDismiss(selectedReply.id)}
+                      />
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                        <Inbox className="h-12 w-12 mb-4" />
+                        <p>Select a reply to view details</p>
+                      </div>
+                    )}
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              )}
+            </div>
+          </>
         )}
       </main>
     </div>
