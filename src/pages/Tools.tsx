@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { ToolCard } from "@/components/ToolCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
@@ -62,15 +62,13 @@ const Tools = () => {
   const isLoading = categoriesLoading || toolsLoading;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Tools Directory</h1>
-          <p className="text-muted-foreground">
-            Discover powerful tools to enhance your Expansio experience
-          </p>
-        </div>
+    <main className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Tools Directory</h1>
+        <p className="text-muted-foreground">
+          Discover powerful tools to enhance your Expansio experience
+        </p>
+      </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center min-h-[400px]">
@@ -112,15 +110,14 @@ const Tools = () => {
           </Tabs>
         )}
 
-        {!isLoading && tools?.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              No tools available in this category yet.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+      {!isLoading && tools?.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">
+            No tools available in this category yet.
+          </p>
+        </div>
+      )}
+    </main>
   );
 };
 

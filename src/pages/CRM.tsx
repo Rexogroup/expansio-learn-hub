@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadSpreadsheet } from "@/components/crm/LeadSpreadsheet";
 import { LeadPipeline } from "@/components/crm/LeadPipeline";
@@ -511,24 +511,19 @@ const CRM = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">CRM</h1>
-            <p className="text-muted-foreground">Track your outbound leads and deals</p>
-          </div>
+    <main className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">SDR</h1>
+          <p className="text-muted-foreground">Track your outbound leads and deals</p>
+        </div>
           <div className="flex items-center gap-3">
             <TeamSelector
               teams={teams}
@@ -624,19 +619,18 @@ const CRM = () => {
           </>
         )}
 
-        <TeamManager
-          open={showTeamManager}
-          onOpenChange={setShowTeamManager}
-          teams={teams}
-          selectedTeamId={selectedTeamId}
-          currentUserId={user?.id}
-          onTeamCreated={handleTeamCreated}
-          onTeamsUpdated={() => user && fetchTeams(user.id)}
-          onClearDemoData={handleClearDemoData}
-        />
-      </main>
+      <TeamManager
+        open={showTeamManager}
+        onOpenChange={setShowTeamManager}
+        teams={teams}
+        selectedTeamId={selectedTeamId}
+        currentUserId={user?.id}
+        onTeamCreated={handleTeamCreated}
+        onTeamsUpdated={() => user && fetchTeams(user.id)}
+        onClearDemoData={handleClearDemoData}
+      />
       <GrowthCopilotSheet />
-    </div>
+    </main>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Navbar } from "@/components/Navbar";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -135,14 +135,11 @@ const AgencyProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse space-y-4">
-            <div className="h-48 bg-muted rounded-lg" />
-            <div className="h-8 w-64 bg-muted rounded" />
-            <div className="h-4 w-96 bg-muted rounded" />
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-48 bg-muted rounded-lg" />
+          <div className="h-8 w-64 bg-muted rounded" />
+          <div className="h-4 w-96 bg-muted rounded" />
         </div>
       </div>
     );
@@ -151,17 +148,15 @@ const AgencyProfile = () => {
   if (!agency) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/network")}
-          className="mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Directory
-        </Button>
+    <main className="container mx-auto px-4 py-8">
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/network")}
+        className="mb-6"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Directory
+      </Button>
 
         {/* Banner & Logo */}
         <div className="relative mb-8">
@@ -317,15 +312,14 @@ const AgencyProfile = () => {
             </Card>
           </div>
         </div>
-      </div>
 
-      <StartConversationDialog
-        open={showMessageDialog}
-        onOpenChange={setShowMessageDialog}
-        recipientUserId={agency.user_id}
-        recipientName={agency.agency_name}
-      />
-    </div>
+        <StartConversationDialog
+          open={showMessageDialog}
+          onOpenChange={setShowMessageDialog}
+          recipientUserId={agency.user_id}
+          recipientName={agency.agency_name}
+        />
+    </main>
   );
 };
 

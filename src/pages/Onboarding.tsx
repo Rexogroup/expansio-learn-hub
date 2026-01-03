@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle } from "lucide-react";
 import { toast } from "sonner";
-import { Navbar } from "@/components/Navbar";
+
 
 interface OnboardingStep {
   id: string;
@@ -99,15 +99,13 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Welcome to Expansio Learning</h1>
-          <p className="text-muted-foreground">
-            Complete these {steps.length} steps to get started with our platform
-          </p>
-        </div>
+    <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Welcome to Expansio</h1>
+        <p className="text-muted-foreground">
+          Complete these {steps.length} steps to get started with our platform
+        </p>
+      </div>
 
         <Card className="mb-8">
           <CardHeader>
@@ -175,7 +173,6 @@ export default function Onboarding() {
             );
           })}
         </div>
-      </main>
-    </div>
+    </main>
   );
 }

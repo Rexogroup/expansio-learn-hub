@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseManager } from "@/components/admin/CourseManager";
 import { SectionManager } from "@/components/admin/SectionManager";
@@ -61,11 +61,8 @@ export default function Admin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -75,15 +72,11 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
-          <p className="text-muted-foreground">Manage courses, sections, and lessons</p>
-        </div>
+    <main className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+        <p className="text-muted-foreground">Manage courses, sections, and lessons</p>
+      </div>
 
         <Tabs defaultValue="courses" className="w-full">
           <TabsList className="grid w-full max-w-7xl grid-cols-12">
@@ -137,7 +130,6 @@ export default function Admin() {
             <ServiceCategoryManager />
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+    </main>
   );
 }

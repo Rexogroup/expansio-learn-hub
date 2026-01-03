@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { BrandCard } from "@/components/BrandCard";
 import { Phone } from "lucide-react";
 
@@ -54,17 +54,13 @@ export default function SalesVault() {
   const uncategorizedCalls = calls.filter(call => !call.brand_id);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-      <Navbar />
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-4 text-foreground">
-            Sales Vault
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Real Deals, Real Conversations, Real Results
-          </p>
-        </div>
+    <main className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Sales Vault</h1>
+        <p className="text-muted-foreground">
+          Real Deals, Real Conversations, Real Results
+        </p>
+      </div>
 
         {loading ? (
           <div className="text-center py-12">
@@ -105,7 +101,6 @@ export default function SalesVault() {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </main>
   );
 }

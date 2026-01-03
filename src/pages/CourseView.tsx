@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -155,30 +155,22 @@ export default function CourseView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Loading course...</p>
-        </div>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p className="text-muted-foreground">Loading course...</p>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Course not found</p>
-        </div>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p className="text-muted-foreground">Course not found</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {course.title}
@@ -270,7 +262,6 @@ export default function CourseView() {
             </Card>
           </div>
         </div>
-      </div>
     </div>
   );
 }
