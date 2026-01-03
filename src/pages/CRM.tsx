@@ -25,7 +25,7 @@ export interface TeamMember {
   id: string;
   team_id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'member';
+  role: 'owner' | 'admin' | 'sdr' | 'client' | 'member';
   joined_at: string;
   profile?: {
     id: string;
@@ -75,6 +75,10 @@ const CRM = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showTeamManager, setShowTeamManager] = useState(false);
   const [userCalendlyLink, setUserCalendlyLink] = useState<string | null>(null);
+  const [userTeamRole, setUserTeamRole] = useState<string | null>(null);
+
+  // SDR roles can see spreadsheet, clients cannot
+  const canViewSpreadsheet = userTeamRole && ['owner', 'admin', 'sdr'].includes(userTeamRole);
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -325,10 +329,25 @@ const CRM = () => {
     }
   };
 
+  const fetchUserTeamRole = async (userId: string, teamId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_team_role', {
+        _user_id: userId,
+        _team_id: teamId
+      });
+      if (error) throw error;
+      setUserTeamRole(data);
+    } catch (error) {
+      console.error("Error fetching team role:", error);
+      setUserTeamRole(null);
+    }
+  };
+
   useEffect(() => {
-    if (selectedTeamId) {
+    if (selectedTeamId && user) {
       fetchLeads(selectedTeamId);
       fetchTeamMembers(selectedTeamId);
+      fetchUserTeamRole(user.id, selectedTeamId);
 
       // Set up realtime subscription
       const channel = supabase
@@ -351,7 +370,7 @@ const CRM = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [selectedTeamId]);
+  }, [selectedTeamId, user]);
 
   const handleTeamCreated = (team: Team) => {
     setTeams(prev => [...prev, team]);
@@ -540,12 +559,14 @@ const CRM = () => {
           <>
             <QuickStats leads={leads} />
 
-            <Tabs defaultValue="spreadsheet" className="mt-6">
+            <Tabs defaultValue={canViewSpreadsheet ? "spreadsheet" : "pipeline"} className="mt-6">
               <TabsList>
-                <TabsTrigger value="spreadsheet" className="gap-2">
-                  <Table2 className="h-4 w-4" />
-                  Spreadsheet
-                </TabsTrigger>
+                {canViewSpreadsheet && (
+                  <TabsTrigger value="spreadsheet" className="gap-2">
+                    <Table2 className="h-4 w-4" />
+                    Spreadsheet
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="pipeline" className="gap-2">
                   <Kanban className="h-4 w-4" />
                   Pipeline
@@ -556,17 +577,19 @@ const CRM = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="spreadsheet" className="mt-4">
-                <LeadSpreadsheet
-                  leads={leads}
-                  teamMembers={teamMembers}
-                  teamId={selectedTeamId!}
-                  userCalendlyLink={userCalendlyLink}
-                  onUpdate={handleLeadUpdate}
-                  onCreate={handleLeadCreate}
-                  onDelete={handleLeadDelete}
-                />
-              </TabsContent>
+              {canViewSpreadsheet && (
+                <TabsContent value="spreadsheet" className="mt-4">
+                  <LeadSpreadsheet
+                    leads={leads}
+                    teamMembers={teamMembers}
+                    teamId={selectedTeamId!}
+                    userCalendlyLink={userCalendlyLink}
+                    onUpdate={handleLeadUpdate}
+                    onCreate={handleLeadCreate}
+                    onDelete={handleLeadDelete}
+                  />
+                </TabsContent>
+              )}
 
               <TabsContent value="pipeline" className="mt-4">
                 <LeadPipeline
