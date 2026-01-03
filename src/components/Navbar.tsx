@@ -4,14 +4,31 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home, Users, Settings, Target, Inbox, Briefcase } from "lucide-react";
+import { 
+  LogOut, 
+  LayoutDashboard, 
+  User as UserIcon, 
+  Home, 
+  Settings, 
+  Target, 
+  Users,
+  ChevronDown,
+  MessageSquare,
+  Calendar,
+  TrendingUp,
+  BookOpen,
+  Video,
+  Briefcase
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -43,6 +60,14 @@ export const Navbar = () => {
       return location.pathname === "/network" || location.pathname.startsWith("/agency/");
     }
     return location.pathname === path;
+  };
+
+  const isCopilotActive = () => {
+    return ["/script-builder", "/inbox", "/sales-coach"].some(p => isActiveRoute(p));
+  };
+
+  const isLearnActive = () => {
+    return ["/courses", "/sales-vault"].some(p => isActiveRoute(p));
   };
 
   useEffect(() => {
@@ -307,64 +332,159 @@ export const Navbar = () => {
   return (
     <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold">
-            <Target className="w-6 h-6 text-primary" />
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Growth OS
-            </span>
-          </Link>
+        <Link to="/" className="flex items-center gap-2 text-xl font-bold">
+          <Target className="w-6 h-6 text-primary" />
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Expansio
+          </span>
+        </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Link to="/dashboard" aria-current={isActiveRoute("/dashboard") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/dashboard") ? "default" : "ghost"}>
+              {/* Command Center - Direct Link */}
+              <Link to="/dashboard">
+                <Button 
+                  variant={isActiveRoute("/dashboard") ? "default" : "ghost"}
+                  size="sm"
+                >
                   <Home className="w-4 h-4 mr-2" />
                   Command Center
                 </Button>
               </Link>
-              <Link to="/script-builder" aria-current={isActiveRoute("/script-builder") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/script-builder") ? "default" : "ghost"}>Script Builder</Button>
-              </Link>
-              <Link to="/integrations" aria-current={isActiveRoute("/integrations") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/integrations") ? "default" : "ghost"}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Integrations
-                </Button>
-              </Link>
-              <Link to="/inbox" aria-current={isActiveRoute("/inbox") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/inbox") ? "default" : "ghost"}>
-                  <Inbox className="w-4 h-4 mr-2" />
-                  Inbox
-                </Button>
-              </Link>
-              <Link to="/crm" aria-current={isActiveRoute("/crm") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/crm") ? "default" : "ghost"}>
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  CRM
-                </Button>
-              </Link>
-              <Link to="/sales-vault" aria-current={isActiveRoute("/sales-vault") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/sales-vault") ? "default" : "ghost"}>Sales Vault</Button>
-              </Link>
-              <Link to="/sales-coach" aria-current={isActiveRoute("/sales-coach") ? "page" : undefined}>
-                <Button variant={isActiveRoute("/sales-coach") ? "default" : "ghost"}>Sales Coach</Button>
-              </Link>
-              {isAdmin && (
-                <Link to="/admin" aria-current={isActiveRoute("/admin") ? "page" : undefined}>
-                  <Button variant={isActiveRoute("/admin") ? "default" : "ghost"}>
-                    <LayoutDashboard className="w-4 h-4 mr-2" />
-                    Admin
-                  </Button>
-                </Link>
-              )}
+
+              {/* Copilots Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <UserIcon className="w-5 h-5" />
+                  <Button 
+                    variant={isCopilotActive() ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-1"
+                  >
+                    Copilots
+                    <ChevronDown className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/script-builder")}
+                    className={cn(isActiveRoute("/script-builder") && "bg-accent")}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span>Script Copilot</span>
+                      <span className="text-xs text-muted-foreground">Create lead magnets</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/inbox")}
+                    className={cn(isActiveRoute("/inbox") && "bg-accent")}
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span>Appointment Copilot</span>
+                      <span className="text-xs text-muted-foreground">Reply to leads</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/sales-coach")}
+                    className={cn(isActiveRoute("/sales-coach") && "bg-accent")}
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span>Sales Copilot</span>
+                      <span className="text-xs text-muted-foreground">Analyze calls</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* LinkedIn CRM - Direct Link */}
+              <Link to="/crm">
+                <Button 
+                  variant={isActiveRoute("/crm") ? "default" : "ghost"}
+                  size="sm"
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  LinkedIn CRM
+                </Button>
+              </Link>
+
+              {/* Learn Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant={isLearnActive() ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-1"
+                  >
+                    Learn
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/courses")}
+                    className={cn(isActiveRoute("/courses") && "bg-accent")}
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span>Courses</span>
+                      <span className="text-xs text-muted-foreground">Training materials</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/sales-vault")}
+                    className={cn(isActiveRoute("/sales-vault") && "bg-accent")}
+                  >
+                    <Video className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span>Sales Vault</span>
+                      <span className="text-xs text-muted-foreground">Call recordings</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <UserIcon className="w-5 h-5" />
+                    {totalNotifications > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                      >
+                        {totalNotifications}
+                      </Badge>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => navigate("/integrations")}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Integrations
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/network")}>
+                    <Users className="w-4 h-4 mr-2" />
+                    Network
+                    {totalNotifications > 0 && (
+                      <Badge variant="secondary" className="ml-auto">
+                        {totalNotifications}
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate("/admin")}>
+                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                        Admin
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out

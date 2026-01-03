@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Inbox, Mail, CheckCircle, XCircle, Sparkles, CalendarCheck } from "lucide-react";
+import { RefreshCw, Calendar, Mail, CheckCircle, XCircle, Sparkles, CalendarCheck } from "lucide-react";
 import ReplyCard from "@/components/inbox/ReplyCard";
 import ReplyModal from "@/components/inbox/ReplyModal";
 
@@ -188,11 +188,11 @@ const MasterInbox = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Inbox className="h-8 w-8" />
-              Master Inbox
+              <Calendar className="h-8 w-8" />
+              Appointment Copilot
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage and respond to interested leads with AI-powered replies
+              Book meetings with interested leads using AI-powered replies
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -279,7 +279,7 @@ const MasterInbox = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <Inbox className="h-5 w-5 text-primary" />
+                    <Mail className="h-5 w-5 text-primary" />
                     <span className="text-2xl font-bold">{replies.length}</span>
                   </div>
                 </CardContent>
