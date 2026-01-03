@@ -354,15 +354,17 @@ const ThreadView = ({ reply, onSuccess, onDismiss, onBack, isMobile }: ThreadVie
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">Your Response</h4>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <h4 className="text-sm font-medium">Appointment Copilot Draft</h4>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={generateDraft}
                   disabled={generating}
                 >
-                  <Sparkles className={`h-4 w-4 mr-2 ${generating ? 'animate-pulse' : ''}`} />
-                  {generating ? 'Generating...' : draftContent ? 'Regenerate' : 'Generate with AI'}
+                  <RefreshCw className={`h-4 w-4 mr-2 ${generating ? 'animate-spin' : ''}`} />
                 </Button>
               </div>
               
