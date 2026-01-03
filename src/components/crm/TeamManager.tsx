@@ -19,12 +19,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Users, UserPlus, Trash2 } from "lucide-react";
+
+type MemberRole = 'admin' | 'sdr' | 'client';
 
 interface TeamManagerProps {
   open: boolean;
@@ -49,6 +58,7 @@ export const TeamManager = ({
 }: TeamManagerProps) => {
   const [newTeamName, setNewTeamName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<MemberRole>("sdr");
   const [isCreating, setIsCreating] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
 
@@ -116,17 +126,18 @@ export const TeamManager = ({
         return;
       }
 
-      // Add as member
+      // Add as member with selected role
       const { error } = await supabase.from("team_members").insert({
         team_id: selectedTeamId,
         user_id: profile.id,
-        role: 'member',
+        role: inviteRole,
       });
 
       if (error) throw error;
 
-      toast.success("Team member added!");
+      toast.success(`${inviteRole.toUpperCase()} added to team!`);
       setInviteEmail("");
+      setInviteRole("sdr");
       onTeamsUpdated();
     } catch (error: any) {
       console.error("Error inviting member:", error);
@@ -234,28 +245,42 @@ export const TeamManager = ({
                 </div>
 
                 {isOwner && (
-                  <div className="space-y-2">
-                    <Label htmlFor="inviteEmail">Add Team Member (by email)</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="inviteEmail"
-                        type="email"
-                        placeholder="member@company.com"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleInviteMember()}
-                      />
-                      <Button
-                        onClick={handleInviteMember}
-                        disabled={!inviteEmail.trim() || isInviting}
-                        size="icon"
-                      >
-                        <UserPlus className="h-4 w-4" />
-                      </Button>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="inviteEmail">Add Team Member (by email)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="inviteEmail"
+                          type="email"
+                          placeholder="member@company.com"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleInviteMember()}
+                          className="flex-1"
+                        />
+                        <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as MemberRole)}>
+                          <SelectTrigger className="w-[100px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="sdr">SDR</SelectItem>
+                            <SelectItem value="client">Client</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          onClick={handleInviteMember}
+                          disabled={!inviteEmail.trim() || isInviting}
+                          size="icon"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      User must have an existing account
-                    </p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p><strong>Admin/SDR:</strong> Full access including spreadsheet</p>
+                      <p><strong>Client:</strong> Pipeline & templates only (no spreadsheet)</p>
+                    </div>
                   </div>
                 )}
 

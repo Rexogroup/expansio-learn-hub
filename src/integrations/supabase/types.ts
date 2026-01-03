@@ -2451,6 +2451,10 @@ export type Database = {
     }
     Functions: {
       generate_invite_code: { Args: never; Returns: string }
+      get_team_role: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
