@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Upload, Copy, Check, Image, User, Briefcase, FileText, Sparkles, Loader2 } from "lucide-react";
+import { Upload, Copy, Check, Image, User, Briefcase, FileText, Sparkles, Loader2, Download } from "lucide-react";
 
 interface LinkedInBrandingProps {
   teamId: string;
@@ -175,6 +175,26 @@ export const LinkedInBranding = ({ teamId, canEdit }: LinkedInBrandingProps) => 
     }
   };
 
+  const handleDownloadImage = async () => {
+    if (!assets.cover_image_url) return;
+    
+    try {
+      const response = await fetch(assets.cover_image_url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'linkedin-cover-image.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Image downloaded");
+    } catch (error) {
+      toast.error("Failed to download image");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -238,21 +258,31 @@ export const LinkedInBranding = ({ teamId, canEdit }: LinkedInBrandingProps) => 
                   className="w-full h-full object-cover"
                 />
               </div>
-              {canEdit && (
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
+                  onClick={handleDownloadImage}
                 >
-                  {isUploading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Upload className="w-4 h-4 mr-2" />
-                  )}
-                  Replace Image
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Image
                 </Button>
-              )}
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 mr-2" />
+                    )}
+                    Replace Image
+                  </Button>
+                )}
+              </div>
             </div>
           ) : (
             <div
