@@ -26,10 +26,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, MoreHorizontal, Trash2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
+import { QuickMessagePopover } from "./QuickMessagePopover";
 
 interface LeadSpreadsheetProps {
   leads: CRMLead[];
   teamMembers: TeamMember[];
+  teamId: string;
+  userCalendlyLink: string | null;
   onUpdate: (lead: CRMLead) => void;
   onCreate: (lead: Partial<CRMLead>) => void;
   onDelete: (leadId: string) => void;
@@ -49,6 +52,8 @@ const STATUS_OPTIONS = [
 export const LeadSpreadsheet = ({
   leads,
   teamMembers,
+  teamId,
+  userCalendlyLink,
   onUpdate,
   onCreate,
   onDelete,
@@ -156,6 +161,7 @@ export const LeadSpreadsheet = ({
               <TableHead className="w-[100px]">SDR</TableHead>
               <TableHead className="w-[80px] text-center">Conn. Sent</TableHead>
               <TableHead className="w-[80px] text-center">Conn. Acc.</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[80px] text-center">Interested</TableHead>
               <TableHead className="w-[80px] text-center">Meeting</TableHead>
               <TableHead className="w-[100px]">Deal Value</TableHead>
@@ -166,7 +172,7 @@ export const LeadSpreadsheet = ({
           <TableBody>
             {leads.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
                   No leads yet. Click "Add Lead" to get started.
                 </TableCell>
               </TableRow>
@@ -243,6 +249,15 @@ export const LeadSpreadsheet = ({
                         handleCheckboxChange(lead, 'connection_accepted', checked as boolean)
                       }
                     />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {lead.connection_accepted && (
+                      <QuickMessagePopover
+                        lead={lead}
+                        teamId={teamId}
+                        userCalendlyLink={userCalendlyLink}
+                      />
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     <Checkbox
