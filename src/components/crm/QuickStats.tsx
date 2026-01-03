@@ -1,6 +1,6 @@
 import { CRMLead } from "@/pages/CRM";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Calendar, DollarSign, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Users, Calendar, DollarSign, TrendingUp, CheckCircle2, Percent } from "lucide-react";
 
 interface QuickStatsProps {
   leads: CRMLead[];
@@ -17,6 +17,10 @@ export const QuickStats = ({ leads }: QuickStatsProps) => {
   const closedValue = leads
     .filter((l) => l.status === 'closed_won')
     .reduce((sum, l) => sum + (l.deal_value || 0), 0);
+
+  const bookingRate = interestedLeads > 0 
+    ? ((meetingsBooked / interestedLeads) * 100).toFixed(0) 
+    : 0;
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
@@ -48,6 +52,13 @@ export const QuickStats = ({ leads }: QuickStatsProps) => {
       color: "text-purple-500",
     },
     {
+      label: "Booking Rate",
+      value: `${bookingRate}%`,
+      icon: Percent,
+      color: "text-cyan-500",
+      isString: true,
+    },
+    {
       label: "Closed Won",
       value: closedWon,
       icon: CheckCircle2,
@@ -70,7 +81,7 @@ export const QuickStats = ({ leads }: QuickStatsProps) => {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       {stats.map((stat) => (
         <Card key={stat.label}>
           <CardContent className="pt-4 pb-3 px-4">
