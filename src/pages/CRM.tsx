@@ -9,9 +9,10 @@ import { TeamSelector } from "@/components/crm/TeamSelector";
 import { TeamManager } from "@/components/crm/TeamManager";
 import { QuickStats } from "@/components/crm/QuickStats";
 import { MessageTemplates } from "@/components/crm/MessageTemplates";
+import { LinkedInBranding } from "@/components/crm/LinkedInBranding";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, Plus, FileText } from "lucide-react";
+import { Table2, Kanban, Settings, Plus, FileText, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Team {
@@ -575,6 +576,10 @@ const CRM = () => {
                   <FileText className="h-4 w-4" />
                   Templates
                 </TabsTrigger>
+                <TabsTrigger value="branding" className="gap-2">
+                  <Linkedin className="h-4 w-4" />
+                  Branding
+                </TabsTrigger>
               </TabsList>
 
               {canViewSpreadsheet && (
@@ -606,6 +611,13 @@ const CRM = () => {
                   leads={leads}
                   userCalendlyLink={userCalendlyLink}
                   onCalendlyLinkUpdate={setUserCalendlyLink}
+                />
+              </TabsContent>
+
+              <TabsContent value="branding" className="mt-4">
+                <LinkedInBranding
+                  teamId={selectedTeamId!}
+                  canEdit={userTeamRole === 'owner' || userTeamRole === 'admin'}
                 />
               </TabsContent>
             </Tabs>
