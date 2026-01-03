@@ -284,51 +284,7 @@ const ThreadView = ({ reply, onSuccess, onDismiss, onBack, isMobile }: ThreadVie
       {/* Thread Content */}
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
-          {/* Subject */}
-          {reply.subject && (
-            <div>
-              <span className="text-sm text-muted-foreground">Subject:</span>
-              <p className="font-medium">{reply.subject}</p>
-            </div>
-          )}
-
-          {/* Latest Message */}
-          <div className="bg-muted/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span>{format(new Date(reply.received_at), 'PPp')}</span>
-            </div>
-            <div className="text-sm whitespace-pre-wrap leading-relaxed">
-              {latestMessage || reply.body}
-            </div>
-          </div>
-
-          {/* Quoted Messages */}
-          {quotedMessages.length > 0 && (
-            <Collapsible open={showQuoted} onOpenChange={setShowQuoted}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-muted-foreground w-full justify-start">
-                  {showQuoted ? (
-                    <ChevronUp className="h-4 w-4 mr-2" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 mr-2" />
-                  )}
-                  {showQuoted ? 'Hide' : 'Show'} previous messages ({quotedMessages.length})
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                {quotedMessages.map((msg, idx) => (
-                  <div key={idx} className="border-l-2 border-muted pl-4 py-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                    {msg}
-                  </div>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-
-          <Separator />
-
-          {/* Response Section */}
+          {/* Response Section - Now at the top */}
           {isReplied ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -414,9 +370,53 @@ const ThreadView = ({ reply, onSuccess, onDismiss, onBack, isMobile }: ThreadVie
                 value={draftContent}
                 onChange={(e) => setDraftContent(e.target.value)}
                 placeholder="Write your response or click 'Generate with AI' to create a draft..."
-                className="min-h-[200px] resize-none"
+                className="min-h-[150px] resize-none"
               />
             </div>
+          )}
+
+          <Separator />
+
+          {/* Subject */}
+          {reply.subject && (
+            <div>
+              <span className="text-sm text-muted-foreground">Subject:</span>
+              <p className="font-medium">{reply.subject}</p>
+            </div>
+          )}
+
+          {/* Latest Message - Now below response */}
+          <div className="bg-muted/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+              <Mail className="h-4 w-4" />
+              <span>{format(new Date(reply.received_at), 'PPp')}</span>
+            </div>
+            <div className="text-sm whitespace-pre-wrap leading-relaxed">
+              {latestMessage || reply.body}
+            </div>
+          </div>
+
+          {/* Quoted Messages */}
+          {quotedMessages.length > 0 && (
+            <Collapsible open={showQuoted} onOpenChange={setShowQuoted}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-muted-foreground w-full justify-start">
+                  {showQuoted ? (
+                    <ChevronUp className="h-4 w-4 mr-2" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                  )}
+                  {showQuoted ? 'Hide' : 'Show'} previous messages ({quotedMessages.length})
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                {quotedMessages.map((msg, idx) => (
+                  <div key={idx} className="border-l-2 border-muted pl-4 py-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {msg}
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       </ScrollArea>
