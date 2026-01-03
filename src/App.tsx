@@ -2,13 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
 import CommandCenter from "./pages/CommandCenter";
-import AIBrain from "./pages/AIBrain";
 import Onboarding from "./pages/Onboarding";
 import OnboardingStep from "./pages/OnboardingStep";
 import Courses from "./pages/Courses";
@@ -48,9 +47,11 @@ const App = () => (
             {/* Copilot has its own full-page layout */}
             <Route path="/copilot" element={<ExpansioCopilot />} />
             
+            {/* Redirect AI Brain to Copilot Memory tab */}
+            <Route path="/ai-brain" element={<Navigate to="/copilot" replace />} />
+            
             {/* All authenticated routes use AppLayout with sidebar */}
             <Route path="/dashboard" element={<AppLayout><CommandCenter /></AppLayout>} />
-            <Route path="/ai-brain" element={<AppLayout><AIBrain /></AppLayout>} />
             <Route path="/onboarding" element={<AppLayout><Onboarding /></AppLayout>} />
             <Route path="/onboarding/step/:stepNumber" element={<AppLayout><OnboardingStep /></AppLayout>} />
             <Route path="/courses" element={<AppLayout><Courses /></AppLayout>} />

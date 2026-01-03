@@ -31,7 +31,6 @@ import {
   Users,
   MailCheck,
   GraduationCap,
-  Brain,
   Network,
   Settings,
   LogOut,
@@ -192,18 +191,6 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={isActive("/ai-brain")}
-                  tooltip="AI Brain"
-                >
-                  <Link to="/ai-brain" className="flex items-center gap-2">
-                    <Brain className="size-4" />
-                    <span>AI Brain</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
                   isActive={isActive("/network")}
                   tooltip="Network"
                 >
@@ -267,13 +254,7 @@ export function AppSidebar() {
                 align="start"
                 sideOffset={4}
               >
-                <DropdownMenuItem asChild>
-                  <Link to="/ai-brain" className="flex items-center gap-2 cursor-pointer">
-                    <Brain className="size-4" />
-                    AI Brain
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild>
                   <Link to="/network" className="flex items-center gap-2 cursor-pointer">
                     <Network className="size-4" />
                     Network

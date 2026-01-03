@@ -202,15 +202,15 @@ serve(async (req) => {
       console.error('Error fetching knowledge base:', kbError);
     }
 
-    // Fetch user's profile for personalization
-    const { data: userProfile, error: profileError } = await supabase
-      .from('user_script_profiles')
+    // Fetch user's profile from copilot_memory for personalization
+    const { data: copilotMemory, error: memoryError } = await supabase
+      .from('copilot_memory')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (profileError) {
-      console.error('Error fetching user profile:', profileError);
+    if (memoryError) {
+      console.error('Error fetching copilot memory:', memoryError);
     }
 
     // Build the enhanced system prompt with knowledge base and user profile
@@ -242,9 +242,9 @@ END OF KNOWLEDGE BASE
 IMPORTANT: When creating lead magnets, reference and adapt the patterns, language, and structures from the knowledge base above. These are proven, high-performing examples that you should learn from and customize for each user's specific situation.`;
     }
 
-    // Add user profile context if available
-    if (userProfile) {
-      console.log('Adding user profile to context');
+    // Add user profile context from copilot_memory if available
+    if (copilotMemory) {
+      console.log('Adding copilot memory to context');
       
       let profileSection = `
 
@@ -256,46 +256,45 @@ This user has saved their business profile. Use this information to provide high
 
 `;
 
-      if (userProfile.company_name) {
-        profileSection += `**Company Name:** ${userProfile.company_name}\n`;
+      if (copilotMemory.company_name) {
+        profileSection += `**Company Name:** ${copilotMemory.company_name}\n`;
       }
-      if (userProfile.company_description) {
-        profileSection += `**Company Description:** ${userProfile.company_description}\n`;
+      if (copilotMemory.business_description) {
+        profileSection += `**Company Description:** ${copilotMemory.business_description}\n`;
       }
-      if (userProfile.services_offered) {
-        profileSection += `\n**Services Offered:**\n${userProfile.services_offered}\n`;
+      if (copilotMemory.awards_achievements) {
+        profileSection += `\n**Awards & Trust Signals:** ${copilotMemory.awards_achievements}\n`;
       }
-      if (userProfile.target_industries) {
-        profileSection += `\n**Target Industries:** ${userProfile.target_industries}\n`;
+      if (copilotMemory.outreach_goal) {
+        profileSection += `\n**Outreach Goal:** ${copilotMemory.outreach_goal}\n`;
       }
 
-      // ICP Details
-      const icpDetails = [];
-      if (userProfile.icp_revenue_range) icpDetails.push(`Revenue: ${userProfile.icp_revenue_range}`);
-      if (userProfile.icp_employee_count) icpDetails.push(`Size: ${userProfile.icp_employee_count}`);
-      if (userProfile.icp_location) icpDetails.push(`Location: ${userProfile.icp_location}`);
-      if (userProfile.icp_tech_stack) icpDetails.push(`Tech Stack: ${userProfile.icp_tech_stack}`);
+      // Customer Profiles (ICPs) from copilot_memory
+      interface CustomerProfile {
+        icp_summary?: string;
+        pain_points?: string[];
+        services_to_pitch?: string[];
+        key_benefits?: string[];
+      }
       
-      if (icpDetails.length > 0) {
-        profileSection += `\n**Ideal Client Profile (ICP):**\n${icpDetails.join(' | ')}\n`;
-      }
-      if (userProfile.icp_additional_details) {
-        profileSection += `**Additional ICP Details:** ${userProfile.icp_additional_details}\n`;
-      }
-
-      // Pain Points
-      const painPoints = userProfile.pain_points as Array<{ problem: string; solution?: string }> | null;
-      if (painPoints && painPoints.length > 0) {
-        profileSection += `\n**Client Pain Points:**\n`;
-        painPoints.forEach((pp, index) => {
-          profileSection += `${index + 1}. Problem: ${pp.problem}`;
-          if (pp.solution) profileSection += ` → Solution: ${pp.solution}`;
-          profileSection += `\n`;
+      const customerProfiles = copilotMemory.customer_profiles as CustomerProfile[] | null;
+      if (customerProfiles && customerProfiles.length > 0) {
+        profileSection += `\n**Ideal Customer Profiles (ICPs):**\n`;
+        customerProfiles.forEach((icp, index) => {
+          profileSection += `\n--- ICP ${index + 1} ---\n`;
+          if (icp.icp_summary) {
+            profileSection += `Summary: ${icp.icp_summary}\n`;
+          }
+          if (icp.services_to_pitch && icp.services_to_pitch.length > 0) {
+            profileSection += `Services to Pitch: ${icp.services_to_pitch.join(', ')}\n`;
+          }
+          if (icp.pain_points && icp.pain_points.length > 0) {
+            profileSection += `Pain Points: ${icp.pain_points.join(', ')}\n`;
+          }
+          if (icp.key_benefits && icp.key_benefits.length > 0) {
+            profileSection += `Key Benefits: ${icp.key_benefits.join(', ')}\n`;
+          }
         });
-      }
-
-      if (userProfile.custom_notes) {
-        profileSection += `\n**Additional Notes:** ${userProfile.custom_notes}\n`;
       }
 
       profileSection += `
