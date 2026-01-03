@@ -87,9 +87,94 @@ const CRM = () => {
     checkAuth();
   }, [navigate]);
 
+  const createSampleLeads = async (teamId: string, userId: string) => {
+    const sampleLeads = [
+      {
+        team_id: teamId,
+        created_by: userId,
+        lead_name: "John Smith",
+        company: "Acme Corp",
+        lead_email: "john@acme.com",
+        linkedin_url: "https://linkedin.com/in/johnsmith",
+        first_reach_date: "2026-01-01",
+        connection_sent: true,
+        connection_accepted: true,
+        interested: true,
+        meeting_booked: false,
+        deal_value: 15000,
+        status: "interested" as const
+      },
+      {
+        team_id: teamId,
+        created_by: userId,
+        lead_name: "Sarah Johnson",
+        company: "TechStart Inc",
+        lead_email: "sarah@techstart.io",
+        linkedin_url: "https://linkedin.com/in/sarahjohnson",
+        first_reach_date: "2025-12-28",
+        connection_sent: true,
+        connection_accepted: true,
+        interested: true,
+        meeting_booked: true,
+        deal_value: 25000,
+        status: "meeting_booked" as const
+      },
+      {
+        team_id: teamId,
+        created_by: userId,
+        lead_name: "Mike Chen",
+        company: "Growth Labs",
+        lead_email: "mike@growthlabs.com",
+        first_reach_date: "2025-12-20",
+        connection_sent: true,
+        connection_accepted: false,
+        interested: false,
+        meeting_booked: false,
+        status: "contacted" as const
+      },
+      {
+        team_id: teamId,
+        created_by: userId,
+        lead_name: "Emma Williams",
+        company: "Scale Solutions",
+        lead_email: "emma@scalesolutions.com",
+        linkedin_url: "https://linkedin.com/in/emmawilliams",
+        first_reach_date: "2025-12-15",
+        connection_sent: true,
+        connection_accepted: true,
+        interested: true,
+        meeting_booked: true,
+        deal_value: 50000,
+        status: "proposal" as const
+      },
+      {
+        team_id: teamId,
+        created_by: userId,
+        lead_name: "David Brown",
+        company: "Enterprise Co",
+        lead_email: "david@enterprise.co",
+        first_reach_date: "2025-12-01",
+        connection_sent: true,
+        connection_accepted: true,
+        interested: true,
+        meeting_booked: true,
+        deal_value: 75000,
+        status: "closed_won" as const
+      }
+    ];
+
+    await supabase.from("crm_leads").insert(sampleLeads);
+  };
+
   const fetchTeams = async (userId: string) => {
     setIsLoading(true);
     try {
+      // Check if user is admin
+      const { data: isAdmin } = await supabase.rpc('has_role', {
+        _user_id: userId,
+        _role: 'admin'
+      });
+
       // Fetch teams where user is owner or member
       const { data: ownedTeams, error: ownedError } = await supabase
         .from("teams")
@@ -111,9 +196,33 @@ const CRM = () => {
       ];
 
       // Remove duplicates
-      const uniqueTeams = allTeams.filter((team, index, self) => 
+      let uniqueTeams = allTeams.filter((team, index, self) => 
         index === self.findIndex(t => t.id === team.id)
       );
+
+      // If admin with no teams, auto-create demo team with sample leads
+      if (isAdmin && uniqueTeams.length === 0) {
+        const { data: demoTeam, error: demoError } = await supabase
+          .from("teams")
+          .insert({ name: "Demo Team", owner_id: userId })
+          .select()
+          .single();
+        
+        if (!demoError && demoTeam) {
+          // Add owner as team member
+          await supabase.from("team_members").insert({
+            team_id: demoTeam.id,
+            user_id: userId,
+            role: "owner"
+          });
+          
+          // Create sample leads
+          await createSampleLeads(demoTeam.id, userId);
+          
+          uniqueTeams = [demoTeam];
+          toast.success("Demo team created with sample leads");
+        }
+      }
 
       setTeams(uniqueTeams);
 
