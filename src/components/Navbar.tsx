@@ -63,12 +63,14 @@ export const Navbar = () => {
   };
 
   const isCopilotActive = () => {
-    return ["/script-builder", "/inbox", "/sales-coach"].some(p => isActiveRoute(p));
+    return ["/script-builder", "/inbox", "/sales-coach", "/copilot"].some(p => isActiveRoute(p));
   };
 
   const isLearnActive = () => {
     return ["/courses", "/sales-vault"].some(p => isActiveRoute(p));
   };
+
+  const isCopilotPage = () => location.pathname === "/copilot";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -366,6 +368,17 @@ export const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/copilot")}
+                    className={cn(isCopilotPage() && "bg-accent")}
+                  >
+                    <Target className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Expansio Copilot</span>
+                      <span className="text-xs text-muted-foreground">AI-powered growth assistant</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => navigate("/script-builder")}
                     className={cn(isActiveRoute("/script-builder") && "bg-accent")}

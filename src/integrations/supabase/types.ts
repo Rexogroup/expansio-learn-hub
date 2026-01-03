@@ -480,6 +480,104 @@ export type Database = {
           },
         ]
       }
+      copilot_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      copilot_memory: {
+        Row: {
+          awards_achievements: string | null
+          business_description: string | null
+          company_name: string | null
+          created_at: string | null
+          customer_profiles: Json | null
+          extracted_at: string | null
+          id: string
+          outreach_goal: string | null
+          updated_at: string | null
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          awards_achievements?: string | null
+          business_description?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          customer_profiles?: Json | null
+          extracted_at?: string | null
+          id?: string
+          outreach_goal?: string | null
+          updated_at?: string | null
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          awards_achievements?: string | null
+          business_description?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          customer_profiles?: Json | null
+          extracted_at?: string | null
+          id?: string
+          outreach_goal?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      copilot_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "copilot_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string | null
