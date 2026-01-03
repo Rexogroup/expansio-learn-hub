@@ -17,7 +17,9 @@ interface EmailBisonReply {
   html_body?: string;
   date_received?: string;
   campaign_id?: number | null;
+  campaign_name?: string | null;
   lead_id?: number | null;
+  lead_company?: string | null;
   type?: string;
   interested?: boolean;
   automated_reply?: boolean;
@@ -56,7 +58,7 @@ serve(async (req) => {
     // Get user's EmailBison integration
     const { data: integration, error: integrationError } = await supabase
       .from('user_integrations')
-      .select('*')
+      .select('*, cold_email_team_id')
       .eq('user_id', user.id)
       .eq('platform', 'emailbison')
       .eq('is_active', true)
@@ -68,6 +70,8 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const coldEmailTeamId = integration.cold_email_team_id;
 
     // Fetch replies from EmailBison API with pagination
     console.log('Fetching interested inbox replies from EmailBison API...');
@@ -150,6 +154,7 @@ serve(async (req) => {
     let insertedCount = 0;
     let updatedCount = 0;
     let skippedCount = 0;
+    let crmLeadsCreated = 0;
 
     for (const reply of replies) {
       // Use correct field names from EmailBison API
@@ -163,7 +168,7 @@ serve(async (req) => {
         lead_email: leadEmail,
         lead_name: reply.from_name || null,
         campaign_id: reply.campaign_id?.toString() || null,
-        campaign_name: null,
+        campaign_name: reply.campaign_name || null,
         subject: reply.subject || null,
         body: body,
         received_at: reply.date_received || new Date().toISOString(),
@@ -186,6 +191,9 @@ serve(async (req) => {
         .eq('external_reply_id', replyRecord.external_reply_id)
         .maybeSingle();
 
+      let replyId: string | null = null;
+      let isNewReply = false;
+
       if (existing) {
         const { error: updateError } = await supabase
           .from('lead_replies')
@@ -196,22 +204,84 @@ serve(async (req) => {
           console.error(`Update error for reply ${replyRecord.external_reply_id}:`, updateError);
         } else {
           updatedCount++;
+          replyId = existing.id;
         }
       } else {
-        const { error: insertError } = await supabase
+        const { data: insertedReply, error: insertError } = await supabase
           .from('lead_replies')
-          .insert(replyRecord);
+          .insert(replyRecord)
+          .select('id')
+          .single();
 
         if (insertError) {
           console.error(`Insert error for reply ${replyRecord.external_reply_id}:`, insertError);
           console.log('Failed record:', JSON.stringify(replyRecord));
         } else {
           insertedCount++;
+          replyId = insertedReply?.id || null;
+          isNewReply = true;
+        }
+      }
+
+      // AUTO-CREATE/UPDATE CRM LEAD for new replies
+      if (coldEmailTeamId && replyId) {
+        try {
+          // Check if CRM lead already exists for this email in this team
+          const { data: existingLead } = await supabase
+            .from('crm_leads')
+            .select('id, reply_count')
+            .eq('team_id', coldEmailTeamId)
+            .eq('lead_email', leadEmail)
+            .eq('source_type', 'cold_email')
+            .maybeSingle();
+
+          if (existingLead) {
+            // Only update if this is a new reply we just inserted
+            if (isNewReply) {
+              await supabase
+                .from('crm_leads')
+                .update({
+                  reply_count: (existingLead.reply_count || 1) + 1,
+                  last_activity_at: new Date().toISOString(),
+                })
+                .eq('id', existingLead.id);
+              
+              console.log(`Updated CRM lead ${existingLead.id} - reply count: ${(existingLead.reply_count || 1) + 1}`);
+            }
+          } else {
+            // Create new CRM lead
+            const { error: crmError } = await supabase
+              .from('crm_leads')
+              .insert({
+                team_id: coldEmailTeamId,
+                created_by: user.id,
+                lead_name: reply.from_name || 'Unknown',
+                lead_email: leadEmail,
+                company: reply.lead_company || null,
+                source_type: 'cold_email',
+                source_id: replyId,
+                platform: 'emailbison',
+                campaign_name: reply.campaign_name || null,
+                status: 'interested',
+                interested: true,
+                reply_count: 1,
+                last_activity_at: new Date().toISOString(),
+              });
+
+            if (crmError) {
+              console.error('Error creating CRM lead:', crmError);
+            } else {
+              crmLeadsCreated++;
+              console.log(`Created CRM lead for ${leadEmail}`);
+            }
+          }
+        } catch (crmErr) {
+          console.error('Error in CRM lead creation:', crmErr);
         }
       }
     }
 
-    console.log(`Sync complete: ${insertedCount} inserted, ${updatedCount} updated`);
+    console.log(`Sync complete: ${insertedCount} inserted, ${updatedCount} updated, ${crmLeadsCreated} CRM leads created`);
 
     return new Response(
       JSON.stringify({
@@ -221,6 +291,7 @@ serve(async (req) => {
         inserted: insertedCount,
         updated: updatedCount,
         skipped: skippedCount,
+        crmLeadsCreated: crmLeadsCreated,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

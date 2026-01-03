@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag, Webhook, Copy, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag, Webhook, Copy, Calendar, Clock, Users } from "lucide-react";
 
 type Platform = 'instantly' | 'emailbison';
 type SyncStatus = 'pending' | 'syncing' | 'success' | 'error';
@@ -29,6 +29,7 @@ interface Integration {
   sync_error: string | null;
   meetings_tag_id: string | null;
   meetings_tag_name: string | null;
+  cold_email_team_id: string | null;
 }
 
 interface SyncedCampaign {
@@ -47,6 +48,11 @@ interface SyncedCampaign {
 }
 
 interface EmailBisonTag {
+  id: string;
+  name: string;
+}
+
+interface Team {
   id: string;
   name: string;
 }
@@ -75,9 +81,16 @@ export default function IntegrationSettings() {
   const [savingScheduling, setSavingScheduling] = useState(false);
   const [loadingScheduling, setLoadingScheduling] = useState(true);
 
+  // CRM Team state
+  const [userTeams, setUserTeams] = useState<Team[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+  const [loadingTeams, setLoadingTeams] = useState(false);
+  const [savingTeam, setSavingTeam] = useState(false);
+
   useEffect(() => {
     fetchIntegration();
     fetchSchedulingSettings();
+    fetchUserTeams();
   }, []);
 
   async function fetchSchedulingSettings() {
@@ -100,6 +113,71 @@ export default function IntegrationSettings() {
       console.error('Error fetching scheduling settings:', error);
     } finally {
       setLoadingScheduling(false);
+    }
+  }
+
+  async function fetchUserTeams() {
+    setLoadingTeams(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch teams where user is owner
+      const { data: ownedTeams } = await supabase
+        .from('teams')
+        .select('id, name')
+        .eq('owner_id', user.id);
+
+      // Fetch teams where user is a member
+      const { data: memberTeams } = await supabase
+        .from('team_members')
+        .select('teams(id, name)')
+        .eq('user_id', user.id);
+
+      const allTeams: Team[] = [
+        ...(ownedTeams || []),
+        ...(memberTeams?.map((m: any) => m.teams).filter(Boolean) || [])
+      ];
+
+      // Remove duplicates
+      const uniqueTeams = allTeams.filter((team, index, self) => 
+        index === self.findIndex(t => t.id === team.id)
+      );
+
+      setUserTeams(uniqueTeams);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+    } finally {
+      setLoadingTeams(false);
+    }
+  }
+
+  async function saveColdEmailTeam() {
+    if (!integration || !selectedTeamId) return;
+    
+    setSavingTeam(true);
+    try {
+      const { error } = await supabase
+        .from('user_integrations')
+        .update({ cold_email_team_id: selectedTeamId })
+        .eq('id', integration.id);
+
+      if (error) throw error;
+
+      setIntegration({
+        ...integration,
+        cold_email_team_id: selectedTeamId,
+      });
+
+      const selectedTeam = userTeams.find(t => t.id === selectedTeamId);
+      toast.success("CRM Team saved!", {
+        description: `Cold email leads will be added to "${selectedTeam?.name}"`
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error("Failed to save team", { description: errorMessage });
+    } finally {
+      setSavingTeam(false);
     }
   }
 
@@ -137,6 +215,9 @@ export default function IntegrationSettings() {
       fetchAvailableTags();
       if (integration.meetings_tag_id) {
         setSelectedTagId(integration.meetings_tag_id);
+      }
+      if (integration.cold_email_team_id) {
+        setSelectedTeamId(integration.cold_email_team_id);
       }
     }
   }, [integration?.id]);
@@ -617,6 +698,75 @@ export default function IntegrationSettings() {
                         Leads with this tag will be counted as "Meetings Booked" during sync.
                       </p>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* CRM Team Assignment (EmailBison only) */}
+              {integration.platform === 'emailbison' && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Cold Email CRM</CardTitle>
+                        <CardDescription>
+                          Automatically add interested leads to your CRM team
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Default CRM Team</Label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={selectedTeamId}
+                          onValueChange={setSelectedTeamId}
+                          disabled={loadingTeams}
+                        >
+                          <SelectTrigger className="flex-1">
+                            {loadingTeams ? (
+                              <span className="text-muted-foreground">Loading teams...</span>
+                            ) : (
+                              <SelectValue placeholder="Select a team" />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userTeams.map((team) => (
+                              <SelectItem key={team.id} value={team.id}>
+                                {team.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          onClick={saveColdEmailTeam}
+                          disabled={savingTeam || !selectedTeamId || selectedTeamId === integration.cold_email_team_id}
+                        >
+                          {savingTeam ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            'Save'
+                          )}
+                        </Button>
+                      </div>
+                      {integration.cold_email_team_id && (
+                        <p className="text-sm text-muted-foreground">
+                          Leads will be added to: <span className="font-medium">{userTeams.find(t => t.id === integration.cold_email_team_id)?.name || 'Selected team'}</span>
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Interested replies will automatically create leads in the Cold Email tab of your CRM.
+                      </p>
+                    </div>
+                    {userTeams.length === 0 && !loadingTeams && (
+                      <div className="p-3 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 rounded-lg text-sm">
+                        No teams found. Create a team in the SDR page first to enable automatic CRM sync.
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
