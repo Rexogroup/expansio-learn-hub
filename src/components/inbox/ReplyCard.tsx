@@ -22,6 +22,7 @@ interface ReplyCardProps {
   reply: LeadReply;
   onClick: () => void;
   onDismiss: () => void;
+  isActive?: boolean;
 }
 
 const getReplyTypeBadge = (type: string | null) => {
@@ -72,16 +73,16 @@ const getOutcomeBadge = (outcome: string | null | undefined) => {
   return <Badge variant="outline" className={color}>{icon}{label}</Badge>;
 };
 
-const ReplyCard = ({ reply, onClick, onDismiss }: ReplyCardProps) => {
-  const truncatedBody = reply.body.length > 150 
-    ? reply.body.substring(0, 150) + '...' 
+const ReplyCard = ({ reply, onClick, onDismiss, isActive }: ReplyCardProps) => {
+  const truncatedBody = reply.body.length > 100 
+    ? reply.body.substring(0, 100) + '...' 
     : reply.body;
 
   return (
     <Card 
       className={`cursor-pointer transition-all hover:border-primary/50 ${
         reply.status === 'pending' ? 'border-l-4 border-l-amber-500' : ''
-      }`}
+      } ${isActive ? 'ring-2 ring-primary bg-muted/50' : ''}`}
       onClick={onClick}
     >
       <CardContent className="p-4">
