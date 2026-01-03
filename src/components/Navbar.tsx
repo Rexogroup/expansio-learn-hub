@@ -18,7 +18,8 @@ import {
   TrendingUp,
   BookOpen,
   Video,
-  Briefcase
+  Briefcase,
+  Brain
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -407,6 +408,17 @@ export const Navbar = () => {
                 >
                   <Briefcase className="w-4 h-4 mr-2" />
                   LinkedIn CRM
+                </Button>
+              </Link>
+
+              {/* AI Brain - Direct Link */}
+              <Link to="/ai-brain">
+                <Button 
+                  variant={isActiveRoute("/ai-brain") ? "default" : "ghost"}
+                  size="sm"
+                >
+                  <Brain className="w-4 h-4 mr-2" />
+                  AI Brain
                 </Button>
               </Link>
 
