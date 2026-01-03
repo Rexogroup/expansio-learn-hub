@@ -9,6 +9,7 @@ import { StatusPills } from "@/components/growth/StatusPills";
 import { PriorityActionsStack } from "@/components/growth/PriorityActionsStack";
 import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
 import { AssetVaultScripts } from "@/components/growth/AssetVaultScripts";
+import { AIBrainSection } from "@/components/growth/AIBrainSection";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Briefcase, Settings, FolderOpen, Target, FileText, Heart, Zap, Link, GraduationCap, TrendingUp, Pause, RefreshCw, Clock } from "lucide-react";
@@ -566,6 +567,9 @@ export default function CommandCenter() {
             />
             <AssetVaultScripts />
           </div>
+
+          {/* AI Brain Section */}
+          <AIBrainSection />
         </div>
 
         {/* Quick Actions */}
