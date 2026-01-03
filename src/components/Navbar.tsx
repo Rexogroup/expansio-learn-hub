@@ -361,7 +361,7 @@ export const Navbar = () => {
                     size="sm"
                     className="gap-1"
                   >
-                    Copilots
+                    Expansio Copilot
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
