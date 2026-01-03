@@ -107,7 +107,7 @@ async function handleLeadInterested(
   // Find user by workspace_id
   const { data: integration, error: integrationError } = await supabase
     .from('user_integrations')
-    .select('user_id')
+    .select('user_id, cold_email_team_id')
     .eq('platform', 'emailbison')
     .eq('workspace_id', workspaceId)
     .eq('is_active', true)
@@ -122,13 +122,14 @@ async function handleLeadInterested(
   }
 
   const userId = (integration as any).user_id;
-  console.log(`Found user ${userId} for workspace ${workspaceId}`);
+  const coldEmailTeamId = (integration as any).cold_email_team_id;
+  console.log(`Found user ${userId} for workspace ${workspaceId}, team ${coldEmailTeamId}`);
 
   // Build lead name
   const leadName = [lead.first_name, lead.last_name].filter(Boolean).join(' ').trim() || null;
 
   // Upsert the reply into lead_replies
-  const { error: upsertError } = await supabase
+  const { data: upsertedReply, error: upsertError } = await supabase
     .from('lead_replies')
     .upsert({
       external_reply_id: reply.id.toString(),
@@ -143,7 +144,9 @@ async function handleLeadInterested(
       status: 'pending',
       reply_type: 'interested',
       company: lead.company || null,
-    } as any, { onConflict: 'external_reply_id' });
+    } as any, { onConflict: 'external_reply_id' })
+    .select('id')
+    .single();
 
   if (upsertError) {
     console.error('Error upserting lead reply:', upsertError);
@@ -154,13 +157,72 @@ async function handleLeadInterested(
   }
 
   console.log(`Successfully stored interested reply from ${lead.email}`);
+
+  // AUTO-CREATE CRM LEAD
+  let crmLeadCreated = false;
+  if (coldEmailTeamId) {
+    try {
+      // Check if CRM lead already exists for this email in this team
+      const { data: existingLead } = await supabase
+        .from('crm_leads')
+        .select('id, reply_count')
+        .eq('team_id', coldEmailTeamId)
+        .eq('lead_email', lead.email)
+        .eq('source_type', 'cold_email')
+        .maybeSingle();
+
+      if (existingLead) {
+        // Update existing lead - increment reply count and update last activity
+        await supabase
+          .from('crm_leads')
+          .update({
+            reply_count: (existingLead.reply_count || 1) + 1,
+            last_activity_at: new Date().toISOString(),
+          })
+          .eq('id', existingLead.id);
+        
+        console.log(`Updated existing CRM lead ${existingLead.id} - reply count: ${(existingLead.reply_count || 1) + 1}`);
+      } else {
+        // Create new CRM lead
+        const { error: crmError } = await supabase
+          .from('crm_leads')
+          .insert({
+            team_id: coldEmailTeamId,
+            created_by: userId,
+            lead_name: leadName || 'Unknown',
+            lead_email: lead.email,
+            company: lead.company || null,
+            source_type: 'cold_email',
+            source_id: upsertedReply?.id || null,
+            platform: 'emailbison',
+            campaign_name: campaign.name,
+            status: 'interested',
+            interested: true,
+            reply_count: 1,
+            last_activity_at: new Date().toISOString(),
+          });
+
+        if (crmError) {
+          console.error('Error creating CRM lead:', crmError);
+        } else {
+          crmLeadCreated = true;
+          console.log(`Created new CRM lead for ${lead.email}`);
+        }
+      }
+    } catch (crmErr) {
+      console.error('Error in CRM lead creation:', crmErr);
+    }
+  } else {
+    console.log('No cold_email_team_id configured, skipping CRM lead creation');
+  }
   
   return new Response(
     JSON.stringify({ 
       status: 'stored', 
       lead_email: lead.email,
       campaign_name: campaign.name,
-      reply_id: reply.id
+      reply_id: reply.id,
+      crm_lead_created: crmLeadCreated
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );

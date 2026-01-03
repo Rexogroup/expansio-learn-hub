@@ -1,13 +1,14 @@
 import { CRMLead, TeamMember } from "@/pages/CRM";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DollarSign, User, Building2 } from "lucide-react";
+import { DollarSign, Building2, Mail, MessageSquare } from "lucide-react";
 
 interface LeadPipelineProps {
   leads: CRMLead[];
   teamMembers: TeamMember[];
   onUpdate: (lead: CRMLead) => void;
+  sourceType?: 'linkedin' | 'cold_email';
 }
 
 const PIPELINE_STAGES = [
@@ -21,7 +22,7 @@ const PIPELINE_STAGES = [
   { key: 'closed_lost', label: 'Closed Lost', color: 'bg-red-500' },
 ];
 
-export const LeadPipeline = ({ leads, teamMembers, onUpdate }: LeadPipelineProps) => {
+export const LeadPipeline = ({ leads, teamMembers, onUpdate, sourceType = 'linkedin' }: LeadPipelineProps) => {
   const getLeadsByStage = (stage: string) => leads.filter((lead) => lead.status === stage);
 
   const getStageTotalValue = (stage: string) => {
@@ -59,6 +60,18 @@ export const LeadPipeline = ({ leads, teamMembers, onUpdate }: LeadPipelineProps
       maximumFractionDigits: 0,
     }).format(value);
   };
+
+  const getPlatformBadge = (platform: string | null | undefined) => {
+    if (platform === 'emailbison') {
+      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0">EB</Badge>;
+    }
+    if (platform === 'instantly') {
+      return <Badge variant="secondary" className="text-[10px] px-1.5 py-0">IN</Badge>;
+    }
+    return null;
+  };
+
+  const isColdEmail = sourceType === 'cold_email';
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
@@ -109,6 +122,14 @@ export const LeadPipeline = ({ leads, teamMembers, onUpdate }: LeadPipelineProps
                         )}
                       </div>
 
+                      {/* Email for cold email leads */}
+                      {isColdEmail && lead.lead_email && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                          <Mail className="h-3 w-3" />
+                          <span className="line-clamp-1">{lead.lead_email}</span>
+                        </div>
+                      )}
+
                       {lead.company && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                           <Building2 className="h-3 w-3" />
@@ -116,18 +137,44 @@ export const LeadPipeline = ({ leads, teamMembers, onUpdate }: LeadPipelineProps
                         </div>
                       )}
 
+                      {/* Campaign name for cold email leads */}
+                      {isColdEmail && (lead as any).campaign_name && (
+                        <div className="text-xs text-muted-foreground mb-2 truncate">
+                          {(lead as any).campaign_name}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between">
                         <div className="flex gap-1">
-                          {lead.connection_sent && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              Sent
-                            </Badge>
+                          {/* LinkedIn badges */}
+                          {!isColdEmail && (
+                            <>
+                              {lead.connection_sent && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  Sent
+                                </Badge>
+                              )}
+                              {lead.connection_accepted && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  Acc
+                                </Badge>
+                              )}
+                            </>
                           )}
-                          {lead.connection_accepted && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              Acc
-                            </Badge>
+                          
+                          {/* Cold email badges */}
+                          {isColdEmail && (
+                            <>
+                              {getPlatformBadge((lead as any).platform)}
+                              {(lead as any).reply_count > 1 && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5">
+                                  <MessageSquare className="h-2.5 w-2.5" />
+                                  {(lead as any).reply_count}
+                                </Badge>
+                              )}
+                            </>
                           )}
+
                           {lead.interested && (
                             <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500/20 text-yellow-700 dark:text-yellow-300">
                               Int

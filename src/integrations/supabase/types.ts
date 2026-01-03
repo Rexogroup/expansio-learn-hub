@@ -673,6 +673,7 @@ export type Database = {
       crm_leads: {
         Row: {
           assigned_to: string | null
+          campaign_name: string | null
           company: string | null
           connection_accepted: boolean | null
           connection_sent: boolean | null
@@ -682,6 +683,7 @@ export type Database = {
           first_reach_date: string | null
           id: string
           interested: boolean | null
+          last_activity_at: string | null
           lead_email: string | null
           lead_name: string
           linkedin_url: string | null
@@ -689,7 +691,9 @@ export type Database = {
           meeting_datetime: string | null
           meeting_status: string | null
           notes: string | null
+          platform: string | null
           proposal_status: string | null
+          reply_count: number | null
           source_id: string | null
           source_type: string | null
           status: string
@@ -698,6 +702,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          campaign_name?: string | null
           company?: string | null
           connection_accepted?: boolean | null
           connection_sent?: boolean | null
@@ -707,6 +712,7 @@ export type Database = {
           first_reach_date?: string | null
           id?: string
           interested?: boolean | null
+          last_activity_at?: string | null
           lead_email?: string | null
           lead_name: string
           linkedin_url?: string | null
@@ -714,7 +720,9 @@ export type Database = {
           meeting_datetime?: string | null
           meeting_status?: string | null
           notes?: string | null
+          platform?: string | null
           proposal_status?: string | null
+          reply_count?: number | null
           source_id?: string | null
           source_type?: string | null
           status?: string
@@ -723,6 +731,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          campaign_name?: string | null
           company?: string | null
           connection_accepted?: boolean | null
           connection_sent?: boolean | null
@@ -732,6 +741,7 @@ export type Database = {
           first_reach_date?: string | null
           id?: string
           interested?: boolean | null
+          last_activity_at?: string | null
           lead_email?: string | null
           lead_name?: string
           linkedin_url?: string | null
@@ -739,7 +749,9 @@ export type Database = {
           meeting_datetime?: string | null
           meeting_status?: string | null
           notes?: string | null
+          platform?: string | null
           proposal_status?: string | null
+          reply_count?: number | null
           source_id?: string | null
           source_type?: string | null
           status?: string
@@ -2421,6 +2433,7 @@ export type Database = {
       user_integrations: {
         Row: {
           api_key: string
+          cold_email_team_id: string | null
           created_at: string | null
           id: string
           is_active: boolean | null
@@ -2436,6 +2449,7 @@ export type Database = {
         }
         Insert: {
           api_key: string
+          cold_email_team_id?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -2451,6 +2465,7 @@ export type Database = {
         }
         Update: {
           api_key?: string
+          cold_email_team_id?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -2465,6 +2480,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "user_integrations_cold_email_team_id_fkey"
+            columns: ["cold_email_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_integrations_user_id_fkey"
             columns: ["user_id"]

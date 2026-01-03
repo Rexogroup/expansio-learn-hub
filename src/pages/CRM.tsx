@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadSpreadsheet } from "@/components/crm/LeadSpreadsheet";
+import { ColdEmailLeadSpreadsheet } from "@/components/crm/ColdEmailLeadSpreadsheet";
 import { LeadPipeline } from "@/components/crm/LeadPipeline";
 import { TeamSelector } from "@/components/crm/TeamSelector";
 import { TeamManager } from "@/components/crm/TeamManager";
@@ -12,7 +13,7 @@ import { MessageTemplates } from "@/components/crm/MessageTemplates";
 import { LinkedInBranding } from "@/components/crm/LinkedInBranding";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, Plus, FileText, Linkedin } from "lucide-react";
+import { Table2, Kanban, Settings, Plus, FileText, Linkedin, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Team {
@@ -57,6 +58,10 @@ export interface CRMLead {
   notes: string | null;
   source_type: string | null;
   source_id: string | null;
+  platform?: string | null;
+  campaign_name?: string | null;
+  reply_count?: number;
+  last_activity_at?: string | null;
   created_at: string;
   updated_at: string;
   assigned_profile?: {
@@ -77,9 +82,16 @@ const CRM = () => {
   const [showTeamManager, setShowTeamManager] = useState(false);
   const [userCalendlyLink, setUserCalendlyLink] = useState<string | null>(null);
   const [userTeamRole, setUserTeamRole] = useState<string | null>(null);
+  const [leadSource, setLeadSource] = useState<'linkedin' | 'cold_email'>('linkedin');
 
   // SDR roles can see spreadsheet, clients cannot
   const canViewSpreadsheet = userTeamRole && ['owner', 'admin', 'sdr'].includes(userTeamRole);
+
+  // Filter leads by source
+  const linkedInLeads = leads.filter(l => l.source_type !== 'cold_email');
+  const coldEmailLeads = leads.filter(l => l.source_type === 'cold_email');
+  const currentLeads = leadSource === 'linkedin' ? linkedInLeads : coldEmailLeads;
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -470,7 +482,7 @@ const CRM = () => {
           meeting_booked: lead.meeting_booked || false,
           deal_value: lead.deal_value,
           status: lead.status || 'new',
-          source_type: 'manual'
+          source_type: lead.source_type || 'manual'
         })
         .select()
         .single();
@@ -553,7 +565,31 @@ const CRM = () => {
           </div>
         ) : (
           <>
-            <QuickStats leads={leads} />
+            {/* Lead Source Tabs */}
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant={leadSource === 'linkedin' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setLeadSource('linkedin')}
+                className="gap-2"
+              >
+                <Linkedin className="h-4 w-4" />
+                LinkedIn
+                <span className="ml-1 text-xs opacity-70">({linkedInLeads.length})</span>
+              </Button>
+              <Button
+                variant={leadSource === 'cold_email' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setLeadSource('cold_email')}
+                className="gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                Cold Email
+                <span className="ml-1 text-xs opacity-70">({coldEmailLeads.length})</span>
+              </Button>
+            </div>
+
+            <QuickStats leads={currentLeads} sourceType={leadSource} />
 
             <Tabs defaultValue={canViewSpreadsheet ? "spreadsheet" : "pipeline"} className="mt-6">
               <TabsList>
@@ -571,31 +607,45 @@ const CRM = () => {
                   <FileText className="h-4 w-4" />
                   Templates
                 </TabsTrigger>
-                <TabsTrigger value="branding" className="gap-2">
-                  <Linkedin className="h-4 w-4" />
-                  Branding
-                </TabsTrigger>
+                {leadSource === 'linkedin' && (
+                  <TabsTrigger value="branding" className="gap-2">
+                    <Linkedin className="h-4 w-4" />
+                    Branding
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {canViewSpreadsheet && (
                 <TabsContent value="spreadsheet" className="mt-4">
-                  <LeadSpreadsheet
-                    leads={leads}
-                    teamMembers={teamMembers}
-                    teamId={selectedTeamId!}
-                    userCalendlyLink={userCalendlyLink}
-                    onUpdate={handleLeadUpdate}
-                    onCreate={handleLeadCreate}
-                    onDelete={handleLeadDelete}
-                  />
+                  {leadSource === 'linkedin' ? (
+                    <LeadSpreadsheet
+                      leads={linkedInLeads}
+                      teamMembers={teamMembers}
+                      teamId={selectedTeamId!}
+                      userCalendlyLink={userCalendlyLink}
+                      onUpdate={handleLeadUpdate}
+                      onCreate={handleLeadCreate}
+                      onDelete={handleLeadDelete}
+                    />
+                  ) : (
+                    <ColdEmailLeadSpreadsheet
+                      leads={leads}
+                      teamMembers={teamMembers}
+                      teamId={selectedTeamId!}
+                      onUpdate={handleLeadUpdate}
+                      onCreate={handleLeadCreate}
+                      onDelete={handleLeadDelete}
+                    />
+                  )}
                 </TabsContent>
               )}
 
               <TabsContent value="pipeline" className="mt-4">
                 <LeadPipeline
-                  leads={leads}
+                  leads={currentLeads}
                   teamMembers={teamMembers}
                   onUpdate={handleLeadUpdate}
+                  sourceType={leadSource}
                 />
               </TabsContent>
 
@@ -603,18 +653,20 @@ const CRM = () => {
                 <MessageTemplates
                   teamId={selectedTeamId!}
                   userId={user?.id}
-                  leads={leads}
+                  leads={currentLeads}
                   userCalendlyLink={userCalendlyLink}
                   onCalendlyLinkUpdate={setUserCalendlyLink}
                 />
               </TabsContent>
 
-              <TabsContent value="branding" className="mt-4">
-                <LinkedInBranding
-                  teamId={selectedTeamId!}
-                  canEdit={userTeamRole === 'owner' || userTeamRole === 'admin'}
-                />
-              </TabsContent>
+              {leadSource === 'linkedin' && (
+                <TabsContent value="branding" className="mt-4">
+                  <LinkedInBranding
+                    teamId={selectedTeamId!}
+                    canEdit={userTeamRole === 'owner' || userTeamRole === 'admin'}
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           </>
         )}
