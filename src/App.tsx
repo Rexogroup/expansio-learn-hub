@@ -26,7 +26,6 @@ import NotFound from "./pages/NotFound";
 import MasterInbox from "./pages/MasterInbox";
 import SalesCoach from "./pages/SalesCoach";
 import CRM from "./pages/CRM";
-import AIBrain from "./pages/AIBrain";
 
 const queryClient = new QueryClient();
 
@@ -64,7 +63,6 @@ const App = () => (
             <Route path="/inbox" element={<AuthenticatedLayout><MasterInbox /></AuthenticatedLayout>} />
             <Route path="/crm" element={<AuthenticatedLayout><CRM /></AuthenticatedLayout>} />
             <Route path="/sales-coach" element={<AuthenticatedLayout><SalesCoach /></AuthenticatedLayout>} />
-            <Route path="/ai-brain" element={<AuthenticatedLayout><AIBrain /></AuthenticatedLayout>} />
             <Route path="/admin" element={<AuthenticatedLayout><Admin /></AuthenticatedLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
