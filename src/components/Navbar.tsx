@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home, Users, Settings, Target, Inbox } from "lucide-react";
+import { BookOpen, LogOut, LayoutDashboard, User as UserIcon, Home, Users, Settings, Target, Inbox, Briefcase } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -336,6 +336,12 @@ export const Navbar = () => {
                 <Button variant={isActiveRoute("/inbox") ? "default" : "ghost"}>
                   <Inbox className="w-4 h-4 mr-2" />
                   Inbox
+                </Button>
+              </Link>
+              <Link to="/crm" aria-current={isActiveRoute("/crm") ? "page" : undefined}>
+                <Button variant={isActiveRoute("/crm") ? "default" : "ghost"}>
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  CRM
                 </Button>
               </Link>
               <Link to="/sales-vault" aria-current={isActiveRoute("/sales-vault") ? "page" : undefined}>

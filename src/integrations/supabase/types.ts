@@ -524,6 +524,154 @@ export type Database = {
           },
         ]
       }
+      crm_lead_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          lead_id: string
+          new_value: string | null
+          old_value: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          lead_id: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          lead_id?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_lead_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_leads: {
+        Row: {
+          assigned_to: string | null
+          company: string | null
+          connection_accepted: boolean | null
+          connection_sent: boolean | null
+          created_at: string | null
+          created_by: string
+          deal_value: number | null
+          first_reach_date: string | null
+          id: string
+          interested: boolean | null
+          lead_email: string | null
+          lead_name: string
+          linkedin_url: string | null
+          meeting_booked: boolean | null
+          meeting_datetime: string | null
+          meeting_status: string | null
+          notes: string | null
+          proposal_status: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          company?: string | null
+          connection_accepted?: boolean | null
+          connection_sent?: boolean | null
+          created_at?: string | null
+          created_by: string
+          deal_value?: number | null
+          first_reach_date?: string | null
+          id?: string
+          interested?: boolean | null
+          lead_email?: string | null
+          lead_name: string
+          linkedin_url?: string | null
+          meeting_booked?: boolean | null
+          meeting_datetime?: string | null
+          meeting_status?: string | null
+          notes?: string | null
+          proposal_status?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          company?: string | null
+          connection_accepted?: boolean | null
+          connection_sent?: boolean | null
+          created_at?: string | null
+          created_by?: string
+          deal_value?: number | null
+          first_reach_date?: string | null
+          id?: string
+          interested?: boolean | null
+          lead_email?: string | null
+          lead_name?: string
+          linkedin_url?: string | null
+          meeting_booked?: boolean | null
+          meeting_datetime?: string | null
+          meeting_status?: string | null
+          notes?: string | null
+          proposal_status?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_campaign_metrics: {
         Row: {
           created_at: string | null
@@ -1799,6 +1947,77 @@ export type Database = {
           {
             foreignKeyName: "synced_campaigns_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          role?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_owner_id_fkey"
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
