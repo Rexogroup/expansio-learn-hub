@@ -569,15 +569,7 @@ export default function CommandCenter() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Button
-            variant="outline"
-            className="h-auto py-4 flex flex-col items-center gap-2"
-            onClick={() => navigate('/script-builder')}
-          >
-            <Briefcase className="w-5 h-5" />
-            <span className="text-sm">Script Builder</span>
-          </Button>
+        <div className="grid grid-cols-2 gap-4 max-w-md">
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2 relative"
@@ -594,26 +586,10 @@ export default function CommandCenter() {
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2"
-            onClick={() => navigate('/courses')}
-          >
-            <GraduationCap className="w-5 h-5" />
-            <span className="text-sm">Courses</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto py-4 flex flex-col items-center gap-2"
             onClick={() => navigate('/integrations')}
           >
             <Settings className="w-5 h-5" />
             <span className="text-sm">Integrations</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto py-4 flex flex-col items-center gap-2"
-            onClick={() => navigate('/sales-vault')}
-          >
-            <Target className="w-5 h-5" />
-            <span className="text-sm">Sales Vault</span>
           </Button>
         </div>
 
