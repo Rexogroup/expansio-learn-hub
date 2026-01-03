@@ -555,14 +555,14 @@ export default function CommandCenter() {
         <PriorityActionsStack actions={priorityActions} maxVisible={3} />
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-4 max-w-lg">
+        <div className="grid grid-cols-3 gap-4">
           <Button
             variant="outline"
-            className="h-auto py-4 flex flex-col items-center gap-2 relative"
+            className="h-auto py-6 flex flex-col items-center gap-3 relative"
             onClick={() => navigate('/script-builder')}
           >
-            <FolderOpen className="w-5 h-5" />
-            <span className="text-sm">Asset Vault</span>
+            <FolderOpen className="w-6 h-6" />
+            <span className="text-sm font-medium">Asset Vault</span>
             {(leadMagnetsCount + scriptsCount) > 0 && (
               <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {leadMagnetsCount + scriptsCount}
@@ -571,19 +571,19 @@ export default function CommandCenter() {
           </Button>
           <Button
             variant="outline"
-            className="h-auto py-4 flex flex-col items-center gap-2"
+            className="h-auto py-6 flex flex-col items-center gap-3"
             onClick={() => navigate('/integrations')}
           >
-            <Settings className="w-5 h-5" />
-            <span className="text-sm">Integrations</span>
+            <Settings className="w-6 h-6" />
+            <span className="text-sm font-medium">Integrations</span>
           </Button>
           <Button
             variant="outline"
-            className="h-auto py-4 flex flex-col items-center gap-2"
+            className="h-auto py-6 flex flex-col items-center gap-3"
             onClick={() => navigate('/ai-brain')}
           >
-            <Brain className="w-5 h-5" />
-            <span className="text-sm">AI Brain</span>
+            <Brain className="w-6 h-6" />
+            <span className="text-sm font-medium">AI Brain</span>
           </Button>
         </div>
 
