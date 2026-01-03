@@ -408,7 +408,7 @@ export default function IntegrationSettings() {
     <div className="container max-w-4xl py-8">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Email Accounts</h1>
+          <h1 className="text-3xl font-bold">Integrations</h1>
           <p className="text-muted-foreground mt-2">
             Connect your outbound email platform to sync campaign data and enable AI-powered analysis.
           </p>

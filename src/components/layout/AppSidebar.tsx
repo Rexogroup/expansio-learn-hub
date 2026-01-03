@@ -36,6 +36,7 @@ import {
   Settings,
   LogOut,
   ChevronUp,
+  Plug,
 } from "lucide-react";
 
 const mainNavItems = [
@@ -44,7 +45,8 @@ const mainNavItems = [
   { title: "Master Inbox", url: "/inbox", icon: Mail },
   { title: "Sales Coach", url: "/sales-coach", icon: Phone },
   { title: "SDR", url: "/crm", icon: Users },
-  { title: "Email Accounts", url: "/integrations", icon: MailCheck },
+  { title: "Email Accounts", url: "/email-accounts", icon: MailCheck },
+  { title: "Integrations", url: "/integrations", icon: Plug },
   { title: "Expansio Accelerator", url: "/courses", icon: GraduationCap },
 ];
 
@@ -169,7 +171,7 @@ export function AppSidebar() {
                     <Link to={item.url} className="flex items-center gap-2">
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
-                      {item.url === "/integrations" && alertCount > 0 && (
+                      {item.url === "/email-accounts" && alertCount > 0 && (
                         <Badge variant="destructive" className="ml-auto h-5 w-5 p-0 flex items-center justify-center text-xs">
                           {alertCount}
                         </Badge>
