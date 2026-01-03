@@ -79,9 +79,9 @@ const ScriptBuilder = () => {
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Expansio Lead Magnet Agent</h1>
+          <h1 className="text-4xl font-bold mb-2">Script Copilot</h1>
           <p className="text-muted-foreground">
-            Create high-converting lead magnet scripts using our proven scriptwriting framework
+            Create high-converting lead magnets with AI-powered scriptwriting
           </p>
         </div>
 

@@ -114,9 +114,9 @@ const SalesCoach = () => {
       <Navbar />
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Sales Coach AI</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Sales Copilot</h1>
           <p className="text-muted-foreground">
-            Upload your call transcripts for AI-powered objection analysis and coaching feedback
+            Analyze call transcripts for AI-powered objection handling and coaching feedback
           </p>
         </div>
 
