@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Brain, ChevronDown, ChevronUp, Mail, Phone, FileText, RefreshCw } from "lucide-react";
+import { Brain, Mail, Phone, FileText, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { LearningCard } from "@/components/ai-brain/LearningCard";
 import { ObjectionClusterCard } from "@/components/ai-brain/ObjectionClusterCard";
@@ -41,7 +40,6 @@ interface ObjectionCluster {
 }
 
 export const AIBrainSection = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [scripts, setScripts] = useState<ScriptAsset[]>([]);
   const [replyAssets, setReplyAssets] = useState<ReplyAsset[]>([]);
@@ -90,10 +88,8 @@ export const AIBrainSection = () => {
   };
 
   useEffect(() => {
-    if (isExpanded && scripts.length === 0 && replyAssets.length === 0 && objectionClusters.length === 0) {
-      fetchData();
-    }
-  }, [isExpanded]);
+    fetchData();
+  }, []);
 
   const handleAnalyzeScripts = async () => {
     try {
@@ -139,52 +135,34 @@ export const AIBrainSection = () => {
 
   return (
     <Card className="border-border/50">
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full p-2 bg-purple-500/10">
-                <Brain className="h-5 w-5 text-purple-500" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">AI Brain</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {totalLearnings > 0 
-                    ? `${totalLearnings} patterns learned`
-                    : "What the Copilot knows about your business"
-                  }
-                </p>
-              </div>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full p-2 bg-purple-500/10">
+              <Brain className="h-5 w-5 text-purple-500" />
             </div>
-            <div className="flex items-center gap-2">
-              {isExpanded && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fetchData();
-                  }}
-                  disabled={loading}
-                >
-                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
-              )}
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
+            <div>
+              <CardTitle className="text-lg">AI Brain</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {totalLearnings > 0 
+                  ? `${totalLearnings} patterns learned`
+                  : "What the Copilot knows about your business"
+                }
+              </p>
             </div>
           </div>
-        </CardHeader>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => fetchData()}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+      </CardHeader>
 
-        <CollapsibleContent>
-          <CardContent className="pt-0">
+      <CardContent className="pt-0">
             {/* Summary Stats */}
             <div className="grid grid-cols-4 gap-3 mb-4">
               <div className="text-center p-2 rounded-lg bg-muted/50">
@@ -347,9 +325,7 @@ export const AIBrainSection = () => {
                 )}
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
+      </CardContent>
     </Card>
   );
 };
