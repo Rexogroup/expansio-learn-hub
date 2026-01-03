@@ -2411,6 +2411,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
       validate_invite_code: {
         Args: { code: string }
         Returns: {
