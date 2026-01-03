@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Brain, Mail, MessageSquare, Phone, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { LearningProgressRing } from "@/components/ai-brain/LearningProgressRing";
-import { HeadlineInsight } from "@/components/ai-brain/HeadlineInsight";
+import { LearningStageDisplay } from "@/components/ai-brain/LearningStageDisplay";
 import { QuickStatsBar } from "@/components/ai-brain/QuickStatsBar";
 import { CategorySection } from "@/components/ai-brain/CategorySection";
 import { SimpleScriptCard } from "@/components/ai-brain/SimpleScriptCard";
@@ -176,17 +175,13 @@ export const AIBrainSection = () => {
           />
         ) : (
           <>
-            {/* Hero Section */}
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <LearningProgressRing patternsLearned={totalPatterns} />
-              <div className="flex-1 w-full">
-                <HeadlineInsight 
-                  scripts={scripts}
-                  objectionClusters={objectionClusters}
-                  replyAssets={replyAssets}
-                />
-              </div>
-            </div>
+            {/* Learning Stage Display */}
+            <LearningStageDisplay
+              scriptsCount={scripts.length}
+              repliesCount={replyAssets.length}
+              objectionsCount={objectionClusters.length}
+              callCount={callCount}
+            />
 
             {/* Quick Stats */}
             <QuickStatsBar
