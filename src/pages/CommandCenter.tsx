@@ -9,10 +9,9 @@ import { StatusPills } from "@/components/growth/StatusPills";
 import { PriorityActionsStack } from "@/components/growth/PriorityActionsStack";
 import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
 import { AssetVaultScripts } from "@/components/growth/AssetVaultScripts";
-import { AIBrainSection } from "@/components/growth/AIBrainSection";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase, Settings, FolderOpen, Target, FileText, Heart, Zap, Link, GraduationCap, TrendingUp, Pause, RefreshCw, Clock } from "lucide-react";
+import { Brain, Briefcase, Settings, FolderOpen, Target, FileText, Heart, Zap, Link, GraduationCap, TrendingUp, Pause, RefreshCw, Clock } from "lucide-react";
 import { useVariantRecommendations } from "@/hooks/useVariantRecommendations";
 import { toast } from "sonner";
 
@@ -568,12 +567,10 @@ export default function CommandCenter() {
             <AssetVaultScripts />
           </div>
 
-          {/* AI Brain Section */}
-          <AIBrainSection />
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4 max-w-md">
+        <div className="grid grid-cols-3 gap-4 max-w-lg">
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2 relative"
@@ -594,6 +591,14 @@ export default function CommandCenter() {
           >
             <Settings className="w-5 h-5" />
             <span className="text-sm">Integrations</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center gap-2"
+            onClick={() => navigate('/ai-brain')}
+          >
+            <Brain className="w-5 h-5" />
+            <span className="text-sm">AI Brain</span>
           </Button>
         </div>
 

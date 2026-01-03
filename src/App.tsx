@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import CommandCenter from "./pages/CommandCenter";
+import AIBrain from "./pages/AIBrain";
 import Onboarding from "./pages/Onboarding";
 import OnboardingStep from "./pages/OnboardingStep";
 import Courses from "./pages/Courses";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<AuthenticatedLayout><CommandCenter /></AuthenticatedLayout>} />
+            <Route path="/ai-brain" element={<AuthenticatedLayout><AIBrain /></AuthenticatedLayout>} />
             <Route path="/onboarding" element={<AuthenticatedLayout><Onboarding /></AuthenticatedLayout>} />
             <Route path="/onboarding/step/:stepNumber" element={<AuthenticatedLayout><OnboardingStep /></AuthenticatedLayout>} />
             <Route path="/courses" element={<AuthenticatedLayout><Courses /></AuthenticatedLayout>} />
