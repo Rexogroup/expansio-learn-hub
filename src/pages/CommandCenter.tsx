@@ -7,8 +7,6 @@ import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { AlertsBanner } from "@/components/growth/AlertsBanner";
 import { StatusPills } from "@/components/growth/StatusPills";
 import { PriorityActionsStack } from "@/components/growth/PriorityActionsStack";
-import { AssetSummaryCard } from "@/components/growth/AssetSummaryCard";
-import { AssetVaultScripts } from "@/components/growth/AssetVaultScripts";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Brain, Briefcase, Settings, FolderOpen, Target, FileText, Heart, Zap, Link, GraduationCap, TrendingUp, Pause, RefreshCw, Clock } from "lucide-react";
@@ -553,21 +551,8 @@ export default function CommandCenter() {
           refreshKey={variantRefreshKey}
         />
 
-        {/* Priority Actions + Asset Summary Grid */}
-        <div className="space-y-6">
-          <PriorityActionsStack actions={priorityActions} maxVisible={3} />
-          
-          {/* Asset Cards Row */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <AssetSummaryCard
-              hasIcpDocument={!!icpAsset}
-              leadMagnetsCount={leadMagnetsCount}
-              scriptsCount={scriptsCount}
-            />
-            <AssetVaultScripts />
-          </div>
-
-        </div>
+        {/* Priority Actions */}
+        <PriorityActionsStack actions={priorityActions} maxVisible={3} />
 
         {/* Quick Actions */}
         <div className="grid grid-cols-3 gap-4 max-w-lg">
