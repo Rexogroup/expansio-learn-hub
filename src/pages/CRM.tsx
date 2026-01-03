@@ -8,9 +8,10 @@ import { LeadPipeline } from "@/components/crm/LeadPipeline";
 import { TeamSelector } from "@/components/crm/TeamSelector";
 import { TeamManager } from "@/components/crm/TeamManager";
 import { QuickStats } from "@/components/crm/QuickStats";
+import { MessageTemplates } from "@/components/crm/MessageTemplates";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, Plus } from "lucide-react";
+import { Table2, Kanban, Settings, Plus, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Team {
@@ -73,7 +74,7 @@ const CRM = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showTeamManager, setShowTeamManager] = useState(false);
-
+  const [userCalendlyLink, setUserCalendlyLink] = useState<string | null>(null);
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -83,9 +84,25 @@ const CRM = () => {
       }
       setUser(session.user);
       await fetchTeams(session.user.id);
+      await fetchUserCalendlyLink(session.user.id);
     };
     checkAuth();
   }, [navigate]);
+
+  const fetchUserCalendlyLink = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("calendly_link")
+        .eq("id", userId)
+        .single();
+
+      if (error) throw error;
+      setUserCalendlyLink(data?.calendly_link || null);
+    } catch (error) {
+      console.error("Error fetching calendly link:", error);
+    }
+  };
 
   const createSampleLeads = async (teamId: string, userId: string) => {
     const sampleLeads = [
@@ -533,12 +550,18 @@ const CRM = () => {
                   <Kanban className="h-4 w-4" />
                   Pipeline
                 </TabsTrigger>
+                <TabsTrigger value="templates" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Templates
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="spreadsheet" className="mt-4">
                 <LeadSpreadsheet
                   leads={leads}
                   teamMembers={teamMembers}
+                  teamId={selectedTeamId!}
+                  userCalendlyLink={userCalendlyLink}
                   onUpdate={handleLeadUpdate}
                   onCreate={handleLeadCreate}
                   onDelete={handleLeadDelete}
@@ -550,6 +573,16 @@ const CRM = () => {
                   leads={leads}
                   teamMembers={teamMembers}
                   onUpdate={handleLeadUpdate}
+                />
+              </TabsContent>
+
+              <TabsContent value="templates" className="mt-4">
+                <MessageTemplates
+                  teamId={selectedTeamId!}
+                  userId={user?.id}
+                  leads={leads}
+                  userCalendlyLink={userCalendlyLink}
+                  onCalendlyLinkUpdate={setUserCalendlyLink}
                 />
               </TabsContent>
             </Tabs>

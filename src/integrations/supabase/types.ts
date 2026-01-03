@@ -672,6 +672,50 @@ export type Database = {
           },
         ]
       }
+      crm_message_templates: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string
+          id: string
+          is_default: boolean | null
+          name: string
+          team_id: string
+          template_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          team_id: string
+          template_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          team_id?: string
+          template_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_message_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_campaign_metrics: {
         Row: {
           created_at: string | null
@@ -1407,6 +1451,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           calendar_link: string | null
+          calendly_link: string | null
           created_at: string | null
           default_meeting_duration: number | null
           email: string
@@ -1418,6 +1463,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           calendar_link?: string | null
+          calendly_link?: string | null
           created_at?: string | null
           default_meeting_duration?: number | null
           email: string
@@ -1429,6 +1475,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           calendar_link?: string | null
+          calendly_link?: string | null
           created_at?: string | null
           default_meeting_duration?: number | null
           email?: string
