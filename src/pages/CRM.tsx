@@ -342,6 +342,36 @@ const CRM = () => {
     setShowTeamManager(false);
   };
 
+  const handleClearDemoData = async () => {
+    if (!selectedTeamId || !user) return;
+    
+    const selectedTeam = teams.find(t => t.id === selectedTeamId);
+    if (!selectedTeam || selectedTeam.name !== "Demo Team") return;
+
+    try {
+      // Delete all leads for this team
+      await supabase.from("crm_leads").delete().eq("team_id", selectedTeamId);
+      
+      // Delete team members (except owner)
+      await supabase.from("team_members").delete().eq("team_id", selectedTeamId);
+      
+      // Delete the team
+      await supabase.from("teams").delete().eq("id", selectedTeamId);
+
+      // Update state
+      setTeams(prev => prev.filter(t => t.id !== selectedTeamId));
+      setSelectedTeamId(null);
+      setLeads([]);
+      setTeamMembers([]);
+      
+      toast.success("Demo data cleared! Create a new team to start fresh.");
+      setShowTeamManager(false);
+    } catch (error: any) {
+      console.error("Error clearing demo data:", error);
+      toast.error("Failed to clear demo data");
+    }
+  };
+
   const handleLeadUpdate = async (lead: CRMLead) => {
     try {
       const { error } = await supabase
@@ -534,6 +564,7 @@ const CRM = () => {
           currentUserId={user?.id}
           onTeamCreated={handleTeamCreated}
           onTeamsUpdated={() => user && fetchTeams(user.id)}
+          onClearDemoData={handleClearDemoData}
         />
       </main>
       <GrowthCopilotSheet />

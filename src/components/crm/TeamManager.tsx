@@ -8,12 +8,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Users, UserPlus } from "lucide-react";
+import { Plus, Users, UserPlus, Trash2 } from "lucide-react";
 
 interface TeamManagerProps {
   open: boolean;
@@ -23,6 +34,7 @@ interface TeamManagerProps {
   currentUserId: string | undefined;
   onTeamCreated: (team: Team) => void;
   onTeamsUpdated: () => void;
+  onClearDemoData?: () => void;
 }
 
 export const TeamManager = ({
@@ -33,6 +45,7 @@ export const TeamManager = ({
   currentUserId,
   onTeamCreated,
   onTeamsUpdated,
+  onClearDemoData,
 }: TeamManagerProps) => {
   const [newTeamName, setNewTeamName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -176,9 +189,35 @@ export const TeamManager = ({
                       key={team.id}
                       className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
                     >
-                      <span className="text-sm">{team.name}</span>
-                      {team.owner_id === currentUserId && (
-                        <span className="text-xs text-muted-foreground">Owner</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{team.name}</span>
+                        {team.owner_id === currentUserId && (
+                          <span className="text-xs text-muted-foreground">(Owner)</span>
+                        )}
+                      </div>
+                      {team.name === "Demo Team" && team.owner_id === currentUserId && onClearDemoData && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Clear Demo
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Clear Demo Data?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will delete the Demo Team and all its leads. You can create a new team to start fresh.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={onClearDemoData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Clear Demo Data
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   ))}
