@@ -87,7 +87,8 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          body: response_content,
+          message: response_content,
+          reply_all: true,
         }),
       }
     );
