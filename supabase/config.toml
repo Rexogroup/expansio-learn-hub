@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.check-handled-replies]
 verify_jwt = true
+
+[functions.read-website]
+verify_jwt = true
