@@ -19,6 +19,7 @@ import Admin from "./pages/Admin";
 import ScriptBuilder from "./pages/ScriptBuilder";
 import ImplementationGuide from "./pages/ImplementationGuide";
 import IntegrationSettings from "./pages/IntegrationSettings";
+import EmailAccounts from "./pages/EmailAccounts";
 import AffiliatePortal from "./pages/AffiliatePortal";
 import AgencyProfile from "./pages/AgencyProfile";
 import Tools from "./pages/Tools";
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/sales-call/:id" element={<AppLayout><SalesCallView /></AppLayout>} />
             <Route path="/script-builder" element={<AppLayout><ScriptBuilder /></AppLayout>} />
             <Route path="/integrations" element={<AppLayout><IntegrationSettings /></AppLayout>} />
+            <Route path="/email-accounts" element={<AppLayout><EmailAccounts /></AppLayout>} />
             <Route path="/network" element={<AppLayout><AffiliatePortal /></AppLayout>} />
             <Route path="/agency/:id" element={<AppLayout><AgencyProfile /></AppLayout>} />
             <Route path="/tools" element={<AppLayout><Tools /></AppLayout>} />
