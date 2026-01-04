@@ -153,6 +153,7 @@ export const PLATFORM_FIELDS: PlatformField[] = [
   { key: 'closed_at', label: 'Close Date', required: false, type: 'date' },
   { key: 'meeting_datetime', label: 'Meeting Date', required: false, type: 'date' },
   { key: 'first_reach_date', label: 'First Contact Date', required: false, type: 'date' },
+  { key: 'status_changed_at', label: 'Status Changed Date', required: false, type: 'date' },
 ];
 
 export type PlatformFieldKey = string;

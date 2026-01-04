@@ -28,11 +28,13 @@ interface CRMLead {
   status: string;
   meeting_booked: boolean | null;
   meeting_status: string | null;
+  meeting_datetime: string | null;
   deal_value: number | null;
   source_type: string | null;
   interested: boolean | null;
   created_at: string | null;
   closed_at: string | null;
+  status_changed_at: string | null;
   proposal_status: string | null;
 }
 
@@ -130,7 +132,7 @@ export default function RevenueCommandCenter() {
       if (teamIds.length > 0) {
         const { data: leadsData } = await supabase
           .from('crm_leads')
-          .select('id, lead_name, status, meeting_booked, meeting_status, deal_value, source_type, interested, created_at, proposal_status')
+          .select('id, lead_name, status, meeting_booked, meeting_status, meeting_datetime, deal_value, source_type, interested, created_at, closed_at, status_changed_at, proposal_status')
           .in('team_id', teamIds);
 
         setLeads((leadsData as CRMLead[]) || []);
@@ -269,7 +271,14 @@ export default function RevenueCommandCenter() {
       : prevTotalEmailsSent + prevSdrLeadsCount;
 
   // Calculate KPIs - use campaign data for cold email interested count
-  const sdrInterestedLeads = filteredLeads.filter(l => l.interested && l.source_type !== 'cold_email').length;
+  // Use status_changed_at for accurate timeline attribution when available
+  const sdrInterestedLeads = leads.filter(l => {
+    if (!l.interested || l.source_type === 'cold_email') return false;
+    const attributionDate = l.status_changed_at || l.created_at;
+    if (!attributionDate) return true;
+    const date = new Date(attributionDate);
+    return date >= dateRange.from && date <= dateRange.to;
+  }).length;
   const interestedLeads = channel === 'cold_email' 
     ? interestedFromCampaigns 
     : channel === 'sdr' 
@@ -277,7 +286,14 @@ export default function RevenueCommandCenter() {
       : interestedFromCampaigns + sdrInterestedLeads;
   
   // Previous period interested
-  const prevSdrInterestedLeads = previousFilteredLeads.filter(l => l.interested && l.source_type !== 'cold_email').length;
+  // Previous period interested - use status_changed_at for attribution
+  const prevSdrInterestedLeads = leads.filter(l => {
+    if (!l.interested || l.source_type === 'cold_email') return false;
+    const attributionDate = l.status_changed_at || l.created_at;
+    if (!attributionDate) return false;
+    const date = new Date(attributionDate);
+    return date >= previousDateRange.from && date <= previousDateRange.to;
+  }).length;
   const prevInterestedLeads = channel === 'cold_email' 
     ? prevInterestedFromCampaigns 
     : channel === 'sdr' 
@@ -285,15 +301,28 @@ export default function RevenueCommandCenter() {
       : prevInterestedFromCampaigns + prevSdrInterestedLeads;
   
   // Use campaign meetings for cold email, CRM booked for SDR
-  const sdrBookedCalls = filteredLeads.filter(l => l.meeting_booked && l.source_type !== 'cold_email').length;
+  // Use meeting_datetime or status_changed_at for accurate attribution
+  const sdrBookedCalls = leads.filter(l => {
+    if (!l.meeting_booked || l.source_type === 'cold_email') return false;
+    const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
+    if (!attributionDate) return true;
+    const date = new Date(attributionDate);
+    return date >= dateRange.from && date <= dateRange.to;
+  }).length;
   const bookedCalls = channel === 'cold_email' 
     ? meetingsFromCampaigns 
     : channel === 'sdr' 
       ? sdrBookedCalls 
       : meetingsFromCampaigns + sdrBookedCalls;
   
-  // Previous period booked
-  const prevSdrBookedCalls = previousFilteredLeads.filter(l => l.meeting_booked && l.source_type !== 'cold_email').length;
+  // Previous period booked - use meeting_datetime or status_changed_at for attribution
+  const prevSdrBookedCalls = leads.filter(l => {
+    if (!l.meeting_booked || l.source_type === 'cold_email') return false;
+    const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
+    if (!attributionDate) return false;
+    const date = new Date(attributionDate);
+    return date >= previousDateRange.from && date <= previousDateRange.to;
+  }).length;
   const prevBookedCalls = channel === 'cold_email' 
     ? prevMeetingsFromCampaigns 
     : channel === 'sdr' 
