@@ -1002,3 +1002,52 @@ p, span, div {
   animation: scale-in 0.3s ease-out;
 }
 }
+
+/* ===== Premium Funnel Animations ===== */
+
+/* Funnel stage entry animation */
+@keyframes funnel-stage-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Flow animation for arrows */
+@keyframes funnel-flow-pulse {
+  0%, 100% { 
+    opacity: 0.3;
+    transform: translateX(0);
+  }
+  50% { 
+    opacity: 1;
+    transform: translateX(3px);
+  }
+}
+
+.funnel-stage-animated {
+  animation: funnel-stage-enter 0.5s ease-out forwards;
+}
+
+.funnel-stage-animated:nth-child(1) { animation-delay: 0ms; }
+.funnel-stage-animated:nth-child(2) { animation-delay: 80ms; }
+.funnel-stage-animated:nth-child(3) { animation-delay: 160ms; }
+.funnel-stage-animated:nth-child(4) { animation-delay: 240ms; }
+.funnel-stage-animated:nth-child(5) { animation-delay: 320ms; }
+.funnel-stage-animated:nth-child(6) { animation-delay: 400ms; }
+
+.funnel-arrow {
+  animation: funnel-flow-pulse 2s ease-in-out infinite;
+}
+
+.funnel-svg {
+  transition: transform 0.3s ease;
+}
+
+.funnel-svg:hover {
+  transform: rotateX(2deg) scale(1.01);
+}
