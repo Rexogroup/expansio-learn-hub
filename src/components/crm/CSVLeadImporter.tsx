@@ -311,6 +311,7 @@ export function CSVLeadImporter({ open, onOpenChange, teamId, sourceType: propSo
         // Build lead object
         const lead: any = {
           team_id: teamId,
+          created_by: user.id,
           source_type: sourceType,
           imported_from: 'csv_import',
           import_batch_id: batchId,
