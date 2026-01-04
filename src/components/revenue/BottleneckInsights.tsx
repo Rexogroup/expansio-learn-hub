@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, ArrowRight, Calendar, Phone, Target } from "lucide-react";
+import { AlertTriangle, ArrowRight, Calendar, Lightbulb, Phone, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Bottleneck {
@@ -15,15 +15,29 @@ interface Bottleneck {
 }
 
 interface BottleneckInsightsProps {
+  interestedRate: number;
   bookRate: number;
   showRate: number;
   closeRate: number;
 }
 
-export function BottleneckInsights({ bookRate, showRate, closeRate }: BottleneckInsightsProps) {
+export function BottleneckInsights({ interestedRate, bookRate, showRate, closeRate }: BottleneckInsightsProps) {
   const navigate = useNavigate();
 
   const bottlenecks: Bottleneck[] = [];
+
+  if (interestedRate < 5) {
+    bottlenecks.push({
+      id: 'interest-rate',
+      title: 'Interest Rate Below Benchmark',
+      description: `Your interest rate is ${interestedRate.toFixed(1)}% (target: >5%). Your offer resonance is low. Consider revising your value proposition, targeting criteria, or subject lines.`,
+      currentValue: interestedRate,
+      benchmark: 5,
+      actionLabel: 'Review Offer Strategy',
+      actionPath: '/copilot',
+      icon: Lightbulb,
+    });
+  }
 
   if (bookRate < 20) {
     bottlenecks.push({
