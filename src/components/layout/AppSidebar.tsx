@@ -172,19 +172,19 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
+    <Sidebar collapsible="icon" className="sidebar-premium-bg border-r-0">
+      <SidebarHeader className="px-4 py-5 border-b border-sidebar-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link to="/dashboard" className="flex items-center gap-2">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Target className="size-4" />
+            <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
+              <Link to="/dashboard" className="flex items-center gap-3">
+                <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-md shadow-primary/20">
+                  <Target className="size-5" />
                 </div>
                 {!collapsed && (
                   <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">Expansio</span>
-                    <span className="text-xs text-muted-foreground">Growth OS</span>
+                    <span className="font-semibold text-foreground tracking-tight">Expansio</span>
+                    <span className="text-xs text-muted-foreground font-normal">Growth OS</span>
                   </div>
                 )}
               </Link>
@@ -193,26 +193,31 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-2">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => {
                 const notifKey = notificationMap[item.url];
                 const hasNotification = notifKey && notifications[notifKey];
+                const active = isActive(item.url);
                 
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      isActive={isActive(item.url)}
+                      isActive={active}
                       tooltip={item.title}
+                      className={active ? "relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary" : ""}
                     >
-                      <Link to={item.url} className="flex items-center gap-2">
-                        <item.icon className="size-4" />
+                      <Link to={item.url} className="flex items-center gap-3">
+                        <item.icon className="size-[18px]" />
                         <span>{item.title}</span>
                         {hasNotification && (
-                          <span className="ml-auto h-2.5 w-2.5 rounded-full bg-destructive" />
+                          <span 
+                            className="ml-auto h-2 w-2 rounded-full bg-destructive shadow-sm shadow-destructive/50"
+                            style={{ animation: 'sidebar-pulse 2s ease-in-out infinite' }}
+                          />
                         )}
                       </Link>
                     </SidebarMenuButton>
@@ -223,7 +228,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator />
+        <SidebarSeparator className="mx-3 my-4 bg-sidebar-border/50" />
 
         <SidebarGroup>
           <SidebarGroupContent>
@@ -233,12 +238,16 @@ export function AppSidebar() {
                   asChild
                   isActive={isActive("/network")}
                   tooltip="Network"
+                  className={isActive("/network") ? "relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary" : ""}
                 >
-                  <Link to="/network" className="flex items-center gap-2">
-                    <Network className="size-4" />
+                  <Link to="/network" className="flex items-center gap-3">
+                    <Network className="size-[18px]" />
                     <span>Network</span>
                     {notifications.network && (
-                      <span className="ml-auto h-2.5 w-2.5 rounded-full bg-destructive" />
+                      <span 
+                        className="ml-auto h-2 w-2 rounded-full bg-destructive shadow-sm shadow-destructive/50"
+                        style={{ animation: 'sidebar-pulse 2s ease-in-out infinite' }}
+                      />
                     )}
                   </Link>
                 </SidebarMenuButton>
@@ -249,9 +258,10 @@ export function AppSidebar() {
                     asChild
                     isActive={isActive("/admin")}
                     tooltip="Admin"
+                    className={isActive("/admin") ? "relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary" : ""}
                   >
-                    <Link to="/admin" className="flex items-center gap-2">
-                      <Settings className="size-4" />
+                    <Link to="/admin" className="flex items-center gap-3">
+                      <Settings className="size-[18px]" />
                       <span>Admin</span>
                     </Link>
                   </SidebarMenuButton>
@@ -262,37 +272,37 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="px-3 py-4 border-t border-sidebar-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
                 >
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  <Avatar className="h-8 w-8 ring-2 ring-primary/10">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-sm font-medium">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
                   {!collapsed && (
                     <>
                       <div className="flex flex-col gap-0.5 leading-none flex-1 text-left">
-                        <span className="truncate text-sm">{user?.email}</span>
+                        <span className="truncate text-sm font-medium">{user?.email}</span>
                       </div>
-                      <ChevronUp className="ml-auto size-4" />
+                      <ChevronUp className="ml-auto size-4 text-muted-foreground" />
                     </>
                   )}
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
                 side="top"
                 align="start"
                 sideOffset={4}
               >
-              <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild>
                   <Link to="/network" className="flex items-center gap-2 cursor-pointer">
                     <Network className="size-4" />
                     Network
