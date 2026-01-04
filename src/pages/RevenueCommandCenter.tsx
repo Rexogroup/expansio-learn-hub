@@ -258,38 +258,33 @@ export default function RevenueCommandCenter() {
       </div>
 
       {/* KPI Grid - Row 1: Top of Funnel */}
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <RevenueKPICard
           title="Contacted"
           value={totalContacted}
         />
         <RevenueKPICard
-          title="Reply Rate %"
+          title="Reply Rate"
           value={replyRate}
+          secondaryValue={totalRepliesDisplay}
           isPercentage
           showBenchmark
           benchmark={1.5}
           benchmarkLabel=">1.5%"
         />
         <RevenueKPICard
-          title="Total Replies"
-          value={totalRepliesDisplay}
-        />
-        <RevenueKPICard
-          title="Interest Rate %"
+          title="Interest Rate"
           value={interestedRate}
+          secondaryValue={interestedLeads}
           isPercentage
           showBenchmark
           benchmark={10}
           benchmarkLabel=">10%"
         />
         <RevenueKPICard
-          title="Interested"
-          value={interestedLeads}
-        />
-        <RevenueKPICard
-          title="Book Rate %"
+          title="Book Rate"
           value={bookRate}
+          secondaryValue={bookedCalls}
           isPercentage
           showBenchmark
           benchmark={20}
@@ -298,45 +293,30 @@ export default function RevenueCommandCenter() {
       </div>
 
       {/* KPI Grid - Row 2: Bottom of Funnel */}
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <RevenueKPICard
-          title="Booked Calls"
-          value={bookedCalls}
-        />
-        <RevenueKPICard
-          title="Show Rate %"
+          title="Show Rate"
           value={showRate}
+          secondaryValue={liveCalls}
           isPercentage
           showBenchmark
           benchmark={60}
           benchmarkLabel=">60%"
         />
         <RevenueKPICard
-          title="Live Calls"
-          value={liveCalls}
-        />
-        <RevenueKPICard
-          title="Close Rate %"
+          title="Close Rate"
           value={closeRate}
+          secondaryValue={closedDeals}
           isPercentage
           showBenchmark
           benchmark={15}
           benchmarkLabel=">15%"
         />
         <RevenueKPICard
-          title="Closed Deals"
-          value={closedDeals}
-        />
-        <RevenueKPICard
           title="Avg Deal Size"
           value={avgDealSize}
           isCurrency
         />
-      </div>
-
-      {/* KPI Grid - Row 3: Revenue */}
-      <div className="grid grid-cols-6 gap-4">
-        <div className="col-span-5" />
         <RevenueKPICard
           title="Total Revenue"
           value={totalRevenue}

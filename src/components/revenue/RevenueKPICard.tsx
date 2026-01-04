@@ -1,10 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { TrendingUp, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RevenueKPICardProps {
   title: string;
   value: string | number;
+  secondaryValue?: number;
   benchmark?: number;
   benchmarkLabel?: string;
   isCurrency?: boolean;
@@ -15,6 +16,7 @@ interface RevenueKPICardProps {
 export function RevenueKPICard({
   title,
   value,
+  secondaryValue,
   benchmark,
   benchmarkLabel,
   isCurrency = false,
@@ -54,12 +56,22 @@ export function RevenueKPICard({
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {title}
             </p>
-            <p className={cn(
-              "text-2xl font-bold",
-              hasBenchmark && (isAboveBenchmark ? "text-emerald-500" : "text-destructive")
-            )}>
-              {formatValue()}
-            </p>
+            <div className="flex items-center gap-3">
+              <span className={cn(
+                "text-2xl font-bold",
+                hasBenchmark && (isAboveBenchmark ? "text-emerald-500" : "text-destructive")
+              )}>
+                {formatValue()}
+              </span>
+              {secondaryValue !== undefined && (
+                <>
+                  <span className="text-muted-foreground/30 text-xl">|</span>
+                  <span className="text-xl font-semibold text-muted-foreground">
+                    {secondaryValue.toLocaleString()}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
           
           {hasBenchmark && (
