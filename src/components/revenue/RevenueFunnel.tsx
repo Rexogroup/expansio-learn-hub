@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -17,84 +17,124 @@ interface RevenueFunnelProps {
 export function RevenueFunnel({ stages }: RevenueFunnelProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const getHealthStatus = (rate: number | undefined, benchmark: number | undefined) => {
-    if (rate === undefined || benchmark === undefined) return 'neutral';
-    return rate >= benchmark ? 'healthy' : 'unhealthy';
-  };
-
-  // Glassmorphism opacity gradient - darker at top, lighter at bottom
-  const getGlassOpacity = (index: number, isHovered: boolean) => {
-    const baseOpacity = 0.12 - (index * 0.015);
-    return isHovered ? baseOpacity + 0.08 : Math.max(baseOpacity, 0.04);
-  };
-
   const width = 800;
-  const height = 160;
+  const height = 140;
   const stageCount = stages.length;
   const stageWidth = width / stageCount;
-  const startHeight = 130;
-  const endHeight = 45;
-  const heightStep = (startHeight - endHeight) / (stageCount - 1);
+  const maxHeight = 120;
+  const minHeight = 30;
 
-  const getTrapezoidPath = (index: number) => {
-    const x1 = index * stageWidth;
-    const x2 = (index + 1) * stageWidth;
-    
-    const leftHeight = startHeight - (index * heightStep);
-    const rightHeight = startHeight - ((index + 1) * heightStep);
-    
-    const y1Top = (height - leftHeight) / 2;
-    const y1Bottom = y1Top + leftHeight;
-    const y2Top = (height - rightHeight) / 2;
-    const y2Bottom = y2Top + rightHeight;
-    
-    return `
-      M ${x1} ${y1Top}
-      L ${x2} ${y2Top}
-      L ${x2} ${y2Bottom}
-      L ${x1} ${y1Bottom}
-      Z
-    `;
+  // Calculate height at each stage based on count relative to first stage
+  const getHeightAtStage = (index: number) => {
+    if (index === 0 || stages[0].count === 0) return maxHeight;
+    const ratio = stages[index].count / stages[0].count;
+    return Math.max(minHeight, maxHeight * ratio);
   };
 
+  // Build smooth bezier curve path for the funnel
+  const getFunnelPath = () => {
+    const points: { x: number; topY: number; bottomY: number }[] = [];
+    
+    for (let i = 0; i <= stageCount; i++) {
+      const x = (i / stageCount) * width;
+      const h = i === stageCount ? getHeightAtStage(stageCount - 1) : getHeightAtStage(i);
+      const topY = (height - h) / 2;
+      const bottomY = (height + h) / 2;
+      points.push({ x, topY, bottomY });
+    }
+
+    // Start top path
+    let pathTop = `M ${points[0].x} ${points[0].topY}`;
+    let pathBottom = '';
+
+    // Build top edge with smooth curves
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      const midX = (prev.x + curr.x) / 2;
+      pathTop += ` C ${midX} ${prev.topY}, ${midX} ${curr.topY}, ${curr.x} ${curr.topY}`;
+    }
+
+    // Build bottom edge with smooth curves (in reverse)
+    for (let i = points.length - 1; i >= 0; i--) {
+      const curr = points[i];
+      if (i === points.length - 1) {
+        pathBottom = `L ${curr.x} ${curr.bottomY}`;
+      } else {
+        const next = points[i + 1];
+        const midX = (curr.x + next.x) / 2;
+        pathBottom += ` C ${midX} ${next.bottomY}, ${midX} ${curr.bottomY}, ${curr.x} ${curr.bottomY}`;
+      }
+    }
+
+    return pathTop + pathBottom + ' Z';
+  };
+
+  // Get percentage relative to first stage
+  const getPercentage = (index: number) => {
+    if (index === 0 || stages[0].count === 0) return 100;
+    return Math.round((stages[index].count / stages[0].count) * 100);
+  };
+
+  // Get X position for stage center
   const getStageCenterX = (index: number) => {
     return (index * stageWidth) + (stageWidth / 2);
   };
 
+  // Get divider line coordinates
+  const getDividerY = (index: number) => {
+    const leftH = getHeightAtStage(index);
+    const rightH = getHeightAtStage(index + 1);
+    const avgH = (leftH + rightH) / 2;
+    return {
+      y1: (height - avgH) / 2,
+      y2: (height + avgH) / 2,
+    };
+  };
+
   return (
-    <Card className="relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-card via-card to-muted/30 border-border/50 hover:border-border hover:shadow-lg">
+    <Card className="relative overflow-hidden bg-slate-900 border-slate-800/60">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Activity className="h-4 w-4 text-primary" />
+          <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <Activity className="h-4 w-4 text-blue-400" />
           </div>
-          <CardTitle className="text-lg font-semibold">Conversion Funnel</CardTitle>
+          <CardTitle className="text-lg font-semibold text-white">Conversion Funnel</CardTitle>
         </div>
       </CardHeader>
       
       <CardContent className="p-4 pt-0">
-        {/* Conversion Rate Pills - Above Funnel */}
-        <div className="flex items-center justify-around px-6 py-3">
-          {stages.slice(1).map((stage, index) => {
-            const health = getHealthStatus(stage.conversionRate, stage.benchmark);
-            const isHealthy = health === 'healthy';
-            const Icon = isHealthy ? TrendingUp : TrendingDown;
+        {/* Stage Labels Above Funnel */}
+        <div className="flex items-end justify-around px-2 pb-4">
+          {stages.map((stage, index) => {
+            const isHovered = hoveredIndex === index;
+            const percentage = getPercentage(index);
             
             return (
               <div 
                 key={index} 
-                className="flex items-center gap-1.5"
+                className={cn(
+                  "flex flex-col items-center gap-1.5 transition-all duration-200",
+                  isHovered && "scale-105"
+                )}
+                style={{ width: `${100 / stageCount}%` }}
               >
-                <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
+                {/* Percentage Badge */}
                 <div className={cn(
-                  "flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full transition-all duration-300",
-                  isHealthy 
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20" 
-                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20"
+                  "px-3 py-1 rounded-lg text-sm font-semibold transition-all duration-200",
+                  isHovered 
+                    ? "bg-blue-500 text-white" 
+                    : "bg-slate-800 border border-slate-700 text-slate-200"
                 )}>
-                  <Icon className="h-3 w-3" />
-                  <span>{stage.conversionRate?.toFixed(1)}%</span>
+                  {percentage}%
                 </div>
+                {/* Stage Name */}
+                <span className={cn(
+                  "text-xs font-medium uppercase tracking-wider transition-colors duration-200",
+                  isHovered ? "text-blue-400" : "text-slate-500"
+                )}>
+                  {stage.name}
+                </span>
               </div>
             );
           })}
@@ -104,193 +144,114 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
           <svg 
             viewBox={`0 0 ${width} ${height}`} 
             className="w-full"
+            style={{ overflow: 'visible' }}
           >
-            <defs>
-              {/* Glass gradient for each stage */}
-              {stages.map((_, index) => {
-                const isHovered = hoveredIndex === index;
-                const opacity = getGlassOpacity(index, isHovered);
-                
-                return (
-                  <linearGradient
-                    key={`gradient-${index}`}
-                    id={`glass-gradient-${index}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="0%"
-                    y2="100%"
-                  >
-                    <stop 
-                      offset="0%" 
-                      stopColor="hsl(var(--primary))"
-                      stopOpacity={opacity + 0.1}
-                    />
-                    <stop 
-                      offset="50%" 
-                      stopColor="hsl(var(--primary))"
-                      stopOpacity={opacity}
-                    />
-                    <stop 
-                      offset="100%" 
-                      stopColor="hsl(var(--primary))"
-                      stopOpacity={opacity - 0.02}
-                    />
-                  </linearGradient>
-                );
-              })}
-              
-              {/* Subtle inner glow */}
-              <filter id="inner-glow" x="-10%" y="-10%" width="120%" height="120%">
-                <feGaussianBlur stdDeviation="2" result="blur"/>
-                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-              </filter>
-            </defs>
+            {/* Main funnel shape */}
+            <path
+              d={getFunnelPath()}
+              fill="#3B82F6"
+              className="transition-all duration-300"
+            />
             
-            {stages.map((stage, index) => {
-              const isHovered = hoveredIndex === index;
-              const health = getHealthStatus(stage.conversionRate, stage.benchmark);
+            {/* Vertical divider lines */}
+            {stages.slice(0, -1).map((_, index) => {
+              const x = ((index + 1) / stageCount) * width;
+              const { y1, y2 } = getDividerY(index);
               
               return (
-                <g 
-                  key={index}
+                <line
+                  key={`divider-${index}`}
+                  x1={x}
+                  y1={y1}
+                  x2={x}
+                  y2={y2}
+                  stroke="rgba(255, 255, 255, 0.2)"
+                  strokeWidth={1}
+                />
+              );
+            })}
+            
+            {/* Invisible hover zones for each stage */}
+            {stages.map((_, index) => {
+              const x = index * stageWidth;
+              return (
+                <rect
+                  key={`hover-${index}`}
+                  x={x}
+                  y={0}
+                  width={stageWidth}
+                  height={height}
+                  fill="transparent"
                   onMouseEnter={() => setHoveredIndex(index)}
                   onMouseLeave={() => setHoveredIndex(null)}
                   style={{ cursor: 'pointer' }}
-                >
-                  {/* Glass background fill */}
-                  <path
-                    d={getTrapezoidPath(index)}
-                    fill={`url(#glass-gradient-${index})`}
-                    style={{
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      transform: isHovered ? 'scale(1.01)' : 'scale(1)',
-                      transformOrigin: `${getStageCenterX(index)}px ${height / 2}px`,
-                    }}
-                  />
-                  
-                  {/* Glass border */}
-                  <path
-                    d={getTrapezoidPath(index)}
-                    fill="none"
-                    stroke="hsl(var(--primary) / 0.15)"
-                    strokeWidth={isHovered ? 1.5 : 1}
-                    style={{
-                      transition: 'all 0.3s ease',
-                    }}
-                  />
-                  
-                  {/* Top edge highlight for glass effect */}
-                  <path
-                    d={getTrapezoidPath(index)}
-                    fill="none"
-                    stroke="hsl(var(--primary) / 0.25)"
-                    strokeWidth={0.5}
-                    strokeDasharray={`${stageWidth * 0.8} 1000`}
-                    strokeDashoffset={-stageWidth * 0.1}
-                    style={{ pointerEvents: 'none' }}
-                  />
-                  
-                  {/* Health indicator ring (only for stages with conversion data) */}
-                  {index > 0 && health !== 'neutral' && (
-                    <path
-                      d={getTrapezoidPath(index)}
-                      fill="none"
-                      stroke={health === 'healthy' 
-                        ? 'hsl(var(--chart-2) / 0.3)'  
-                        : 'hsl(var(--chart-4) / 0.3)'
-                      }
-                      strokeWidth={2}
-                      strokeDasharray="4 4"
-                      style={{ 
-                        pointerEvents: 'none',
-                        opacity: isHovered ? 1 : 0.5,
-                        transition: 'opacity 0.3s ease',
-                      }}
-                    />
-                  )}
-                  
-                  {/* Hover overlay */}
-                  {isHovered && (
-                    <path
-                      d={getTrapezoidPath(index)}
-                      fill="hsl(var(--primary) / 0.08)"
-                      style={{ pointerEvents: 'none' }}
-                    />
-                  )}
-                  
-                  {/* Stage name */}
-                  <text
-                    x={getStageCenterX(index)}
-                    y={height / 2 - 10}
-                    textAnchor="middle"
-                    className="fill-foreground/60 font-medium uppercase tracking-wider"
-                    style={{ 
-                      fontSize: '9px',
-                      letterSpacing: '0.1em',
-                    }}
-                  >
-                    {stage.name}
-                  </text>
-                  
-                  {/* Stage count */}
-                  <text
-                    x={getStageCenterX(index)}
-                    y={height / 2 + 14}
-                    textAnchor="middle"
-                    className="fill-foreground font-semibold"
-                    style={{ 
-                      fontSize: '18px',
-                      letterSpacing: '-0.3px',
-                    }}
-                  >
-                    {stage.count.toLocaleString()}
-                  </text>
-                </g>
+                />
               );
+            })}
+            
+            {/* Stage count labels inside funnel */}
+            {stages.map((stage, index) => {
+              const centerX = getStageCenterX(index);
+              const stageHeight = getHeightAtStage(index);
+              const showCount = stageHeight > 40;
+              
+              return showCount ? (
+                <text
+                  key={`count-${index}`}
+                  x={centerX}
+                  y={height / 2 + 5}
+                  textAnchor="middle"
+                  className="fill-white font-bold pointer-events-none"
+                  style={{ 
+                    fontSize: stageHeight > 60 ? '16px' : '12px',
+                    opacity: 0.9,
+                  }}
+                >
+                  {stage.count.toLocaleString()}
+                </text>
+              ) : null;
             })}
           </svg>
           
           {/* Tooltip */}
           {hoveredIndex !== null && (
             <div 
-              className="absolute z-10 bg-popover/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-xl p-4 min-w-[200px] pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200"
+              className="absolute z-10 bg-slate-800/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-4 min-w-[180px] pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200"
               style={{
                 left: `${((hoveredIndex + 0.5) / stages.length) * 100}%`,
                 top: '100%',
-                transform: 'translateX(-50%) translateY(12px)',
+                transform: 'translateX(-50%) translateY(8px)',
               }}
             >
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between gap-6">
-                  <span className="font-medium text-foreground/80 text-sm uppercase tracking-wide">
+                  <span className="font-medium text-slate-400 text-xs uppercase tracking-wide">
                     {stages[hoveredIndex].name}
                   </span>
-                  <span className="text-xl font-bold text-foreground">
+                  <span className="text-lg font-bold text-white">
                     {stages[hoveredIndex].count.toLocaleString()}
                   </span>
                 </div>
                 
-                {stages[hoveredIndex].conversionRate !== undefined && (
-                  <>
-                    <div className="h-px bg-border/50" />
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-muted-foreground">Conversion</span>
-                      <span className={cn(
-                        "text-sm font-semibold",
-                        getHealthStatus(stages[hoveredIndex].conversionRate, stages[hoveredIndex].benchmark) === 'healthy'
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-amber-600 dark:text-amber-400'
-                      )}>
-                        {stages[hoveredIndex].conversionRate?.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs text-muted-foreground">Benchmark</span>
-                      <span className="text-xs text-muted-foreground">
-                        &gt;{stages[hoveredIndex].benchmark}%
-                      </span>
-                    </div>
-                  </>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-xs text-slate-500">Of total</span>
+                  <span className="text-sm font-semibold text-blue-400">
+                    {getPercentage(hoveredIndex)}%
+                  </span>
+                </div>
+                
+                {stages[hoveredIndex].conversionRate !== undefined && hoveredIndex > 0 && (
+                  <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-700">
+                    <span className="text-xs text-slate-500">Stage Conv.</span>
+                    <span className={cn(
+                      "text-sm font-semibold",
+                      (stages[hoveredIndex].conversionRate ?? 0) >= (stages[hoveredIndex].benchmark ?? 0)
+                        ? "text-emerald-400"
+                        : "text-amber-400"
+                    )}>
+                      {stages[hoveredIndex].conversionRate?.toFixed(1)}%
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
