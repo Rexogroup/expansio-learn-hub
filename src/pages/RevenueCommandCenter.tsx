@@ -32,6 +32,7 @@ interface CRMLead {
   source_type: string | null;
   interested: boolean | null;
   created_at: string | null;
+  closed_at: string | null;
   proposal_status: string | null;
 }
 
@@ -386,12 +387,28 @@ export default function RevenueCommandCenter() {
   const prevProposalRate = prevLiveCalls > 0 ? (prevProposalsSent / prevLiveCalls) * 100 : 0;
   const prevCloseRate = prevLiveCalls > 0 ? (prevClosedDeals / prevLiveCalls) * 100 : 0;
 
-  // Calculate revenue metrics
-  const closedWonLeads = filteredLeads.filter(l => l.status === 'closed_won');
+  // Calculate revenue metrics - use closed_at for proper date attribution
+  const closedWonLeads = leads.filter(l => {
+    if (l.status !== 'closed_won') return false;
+    // Use closed_at if available, fall back to created_at
+    const closeDate = l.closed_at ? new Date(l.closed_at) : (l.created_at ? new Date(l.created_at) : null);
+    if (!closeDate) return false;
+    // Apply channel filter
+    if (channel === 'cold_email' && l.source_type !== 'cold_email') return false;
+    if (channel === 'sdr' && l.source_type === 'cold_email') return false;
+    return closeDate >= dateRange.from && closeDate <= dateRange.to;
+  });
   const totalRevenue = closedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
   
-  // Previous period revenue
-  const prevClosedWonLeads = previousFilteredLeads.filter(l => l.status === 'closed_won');
+  // Previous period revenue - use closed_at for proper date attribution
+  const prevClosedWonLeads = leads.filter(l => {
+    if (l.status !== 'closed_won') return false;
+    const closeDate = l.closed_at ? new Date(l.closed_at) : (l.created_at ? new Date(l.created_at) : null);
+    if (!closeDate) return false;
+    if (channel === 'cold_email' && l.source_type !== 'cold_email') return false;
+    if (channel === 'sdr' && l.source_type === 'cold_email') return false;
+    return closeDate >= previousDateRange.from && closeDate <= previousDateRange.to;
+  });
   const prevTotalRevenue = prevClosedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
 
   // Funnel stages - now includes Replies between Contacted and Interested
