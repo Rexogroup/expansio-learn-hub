@@ -44,7 +44,45 @@ interface CRMLead {
   closed_at: string | null;
   status_changed_at: string | null;
   proposal_status: string | null;
+  imported_from: string | null;
+  first_reach_date: string | null;
 }
+
+// Smart date attribution helper for multi-source KPI accuracy
+type MetricType = 'contacted' | 'interested' | 'booked' | 'closed';
+
+const getAttributionDate = (
+  lead: CRMLead, 
+  metricType: MetricType
+): Date | null => {
+  // For CSV imports, use import date (created_at) for funnel stages
+  // since original status_changed_at is historical
+  if (lead.imported_from === 'csv_import') {
+    if (metricType === 'closed' && lead.closed_at) {
+      return new Date(lead.closed_at);
+    }
+    // Use created_at (import date) for funnel metrics
+    return lead.created_at ? new Date(lead.created_at) : null;
+  }
+  
+  // For API-synced leads, use natural progression dates
+  switch (metricType) {
+    case 'contacted':
+      return lead.first_reach_date ? new Date(lead.first_reach_date) 
+           : lead.created_at ? new Date(lead.created_at) : null;
+    case 'interested':
+    case 'booked':
+      return lead.meeting_datetime ? new Date(lead.meeting_datetime)
+           : lead.status_changed_at ? new Date(lead.status_changed_at)
+           : lead.created_at ? new Date(lead.created_at) : null;
+    case 'closed':
+      return lead.closed_at ? new Date(lead.closed_at)
+           : lead.status_changed_at ? new Date(lead.status_changed_at)
+           : lead.created_at ? new Date(lead.created_at) : null;
+    default:
+      return lead.created_at ? new Date(lead.created_at) : null;
+  }
+};
 
 export default function RevenueCommandCenter() {
   const [leads, setLeads] = useState<CRMLead[]>([]);
@@ -176,7 +214,7 @@ export default function RevenueCommandCenter() {
       if (teamIds.length > 0) {
         const { data: leadsData } = await supabase
           .from('crm_leads')
-          .select('id, lead_name, status, meeting_booked, meeting_status, meeting_datetime, deal_value, source_type, interested, created_at, closed_at, status_changed_at, proposal_status')
+          .select('id, lead_name, status, meeting_booked, meeting_status, meeting_datetime, deal_value, source_type, interested, created_at, closed_at, status_changed_at, proposal_status, imported_from, first_reach_date')
           .in('team_id', teamIds);
 
         setLeads((leadsData as CRMLead[]) || []);
@@ -376,25 +414,23 @@ export default function RevenueCommandCenter() {
   // Calculate KPIs using unified CRM-based cascading logic for ALL channels
   // This ensures consistent metrics whether data comes from imports or API sync
   
-  // SDR Interested (non-cold_email)
+  // SDR Interested (non-cold_email) - using smart attribution
   const sdrInterestedLeads = leads.filter(l => {
     if (l.source_type === 'cold_email') return false;
     const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
     if (!isInterested) return false;
-    const attributionDate = l.status_changed_at || l.created_at;
-    if (!attributionDate) return true;
-    const date = new Date(attributionDate);
+    const date = getAttributionDate(l, 'interested');
+    if (!date) return true;
     return date >= dateRange.from && date <= dateRange.to;
   }).length;
   
-  // Cold Email Interested - use CRM data with cascading logic (not external API)
+  // Cold Email Interested - use CRM data with cascading logic and smart attribution
   const coldEmailInterestedLeads = leads.filter(l => {
     if (l.source_type !== 'cold_email') return false;
     const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
     if (!isInterested) return false;
-    const attributionDate = l.status_changed_at || l.created_at;
-    if (!attributionDate) return true;
-    const date = new Date(attributionDate);
+    const date = getAttributionDate(l, 'interested');
+    if (!date) return true;
     return date >= dateRange.from && date <= dateRange.to;
   }).length;
   
@@ -404,14 +440,13 @@ export default function RevenueCommandCenter() {
       ? sdrInterestedLeads 
       : coldEmailInterestedLeads + sdrInterestedLeads;
   
-  // Previous period interested - unified CRM logic
+  // Previous period interested - unified CRM logic with smart attribution
   const prevSdrInterestedLeads = leads.filter(l => {
     if (l.source_type === 'cold_email') return false;
     const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
     if (!isInterested) return false;
-    const attributionDate = l.status_changed_at || l.created_at;
-    if (!attributionDate) return false;
-    const date = new Date(attributionDate);
+    const date = getAttributionDate(l, 'interested');
+    if (!date) return false;
     return date >= previousDateRange.from && date <= previousDateRange.to;
   }).length;
   
@@ -419,9 +454,8 @@ export default function RevenueCommandCenter() {
     if (l.source_type !== 'cold_email') return false;
     const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
     if (!isInterested) return false;
-    const attributionDate = l.status_changed_at || l.created_at;
-    if (!attributionDate) return false;
-    const date = new Date(attributionDate);
+    const date = getAttributionDate(l, 'interested');
+    if (!date) return false;
     return date >= previousDateRange.from && date <= previousDateRange.to;
   }).length;
   
@@ -431,25 +465,23 @@ export default function RevenueCommandCenter() {
       ? prevSdrInterestedLeads 
       : prevColdEmailInterestedLeads + prevSdrInterestedLeads;
   
-  // SDR Booked Calls
+  // SDR Booked Calls - using smart attribution
   const sdrBookedCalls = leads.filter(l => {
     if (l.source_type === 'cold_email') return false;
     const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
     if (!isBooked) return false;
-    const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
-    if (!attributionDate) return true;
-    const date = new Date(attributionDate);
+    const date = getAttributionDate(l, 'booked');
+    if (!date) return true;
     return date >= dateRange.from && date <= dateRange.to;
   }).length;
   
-  // Cold Email Booked - use CRM data with cascading logic (not external API)
+  // Cold Email Booked - use CRM data with cascading logic and smart attribution
   const coldEmailBookedCalls = leads.filter(l => {
     if (l.source_type !== 'cold_email') return false;
     const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
     if (!isBooked) return false;
-    const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
-    if (!attributionDate) return true;
-    const date = new Date(attributionDate);
+    const date = getAttributionDate(l, 'booked');
+    if (!date) return true;
     return date >= dateRange.from && date <= dateRange.to;
   }).length;
   
@@ -459,14 +491,13 @@ export default function RevenueCommandCenter() {
       ? sdrBookedCalls 
       : coldEmailBookedCalls + sdrBookedCalls;
   
-  // Previous period booked - unified CRM logic
+  // Previous period booked - unified CRM logic with smart attribution
   const prevSdrBookedCalls = leads.filter(l => {
     if (l.source_type === 'cold_email') return false;
     const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
     if (!isBooked) return false;
-    const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
-    if (!attributionDate) return false;
-    const date = new Date(attributionDate);
+    const date = getAttributionDate(l, 'booked');
+    if (!date) return false;
     return date >= previousDateRange.from && date <= previousDateRange.to;
   }).length;
   
@@ -474,9 +505,8 @@ export default function RevenueCommandCenter() {
     if (l.source_type !== 'cold_email') return false;
     const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
     if (!isBooked) return false;
-    const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
-    if (!attributionDate) return false;
-    const date = new Date(attributionDate);
+    const date = getAttributionDate(l, 'booked');
+    if (!date) return false;
     return date >= previousDateRange.from && date <= previousDateRange.to;
   }).length;
   
@@ -496,12 +526,12 @@ export default function RevenueCommandCenter() {
     if (l.status !== 'closed_won') return false;
     if (channel === 'cold_email' && l.source_type !== 'cold_email') return false;
     if (channel === 'sdr' && l.source_type === 'cold_email') return false;
-    const closeDate = l.closed_at ? new Date(l.closed_at) : (l.status_changed_at ? new Date(l.status_changed_at) : null);
+    const closeDate = getAttributionDate(l, 'closed');
     if (!closeDate) return true; // Include if no date (edge case)
     return closeDate >= dateRange.from && closeDate <= dateRange.to;
   }).length;
   
-  // Previous period live calls and closed deals - with cascading logic
+  // Previous period live calls and closed deals - with cascading logic and smart attribution
   const prevLiveCalls = previousFilteredLeads.filter(l => 
     l.meeting_status === 'completed' || IMPLIES_SHOWN.includes(l.status)
   ).length;
@@ -510,7 +540,7 @@ export default function RevenueCommandCenter() {
     if (l.status !== 'closed_won') return false;
     if (channel === 'cold_email' && l.source_type !== 'cold_email') return false;
     if (channel === 'sdr' && l.source_type === 'cold_email') return false;
-    const closeDate = l.closed_at ? new Date(l.closed_at) : (l.status_changed_at ? new Date(l.status_changed_at) : null);
+    const closeDate = getAttributionDate(l, 'closed');
     if (!closeDate) return true;
     return closeDate >= previousDateRange.from && closeDate <= previousDateRange.to;
   }).length;
@@ -597,26 +627,25 @@ export default function RevenueCommandCenter() {
   const prevProposalRate = prevLiveCalls > 0 ? (prevProposalsSent / prevLiveCalls) * 100 : 0;
   const prevCloseRate = prevLiveCalls > 0 ? (prevClosedDeals / prevLiveCalls) * 100 : 0;
 
-  // Calculate revenue metrics - use closed_at for proper date attribution
+  // Calculate revenue metrics - using smart date attribution
   const closedWonLeads = leads.filter(l => {
     if (l.status !== 'closed_won') return false;
-    // Use closed_at if available, fall back to created_at
-    const closeDate = l.closed_at ? new Date(l.closed_at) : (l.created_at ? new Date(l.created_at) : null);
-    if (!closeDate) return false;
     // Apply channel filter
     if (channel === 'cold_email' && l.source_type !== 'cold_email') return false;
     if (channel === 'sdr' && l.source_type === 'cold_email') return false;
+    const closeDate = getAttributionDate(l, 'closed');
+    if (!closeDate) return false;
     return closeDate >= dateRange.from && closeDate <= dateRange.to;
   });
   const totalRevenue = closedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
   
-  // Previous period revenue - use closed_at for proper date attribution
+  // Previous period revenue - using smart date attribution
   const prevClosedWonLeads = leads.filter(l => {
     if (l.status !== 'closed_won') return false;
-    const closeDate = l.closed_at ? new Date(l.closed_at) : (l.created_at ? new Date(l.created_at) : null);
-    if (!closeDate) return false;
     if (channel === 'cold_email' && l.source_type !== 'cold_email') return false;
     if (channel === 'sdr' && l.source_type === 'cold_email') return false;
+    const closeDate = getAttributionDate(l, 'closed');
+    if (!closeDate) return false;
     return closeDate >= previousDateRange.from && closeDate <= previousDateRange.to;
   });
   const prevTotalRevenue = prevClosedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
