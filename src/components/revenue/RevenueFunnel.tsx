@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, AlertTriangle, Activity, ArrowRight } from "lucide-react";
+import { Activity, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -26,21 +26,18 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
     const baseOpacity = isHovered ? 1 : 0.92;
     
     if (index === 0) {
-      // First stage - primary blue with richer gradient
       return `rgba(59, 130, 246, ${baseOpacity})`;
     }
     
     if (health === 'unhealthy') {
-      // Softer amber instead of harsh red
       return `rgba(245, 158, 11, ${baseOpacity})`;
     }
     
-    // Gradient from teal to emerald to gold
     const colors = [
-      `rgba(20, 184, 166, ${baseOpacity})`, // teal
-      `rgba(16, 185, 129, ${baseOpacity})`, // emerald
-      `rgba(34, 197, 94, ${baseOpacity})`,  // green
-      `rgba(234, 179, 8, ${baseOpacity})`,  // gold/amber
+      `rgba(20, 184, 166, ${baseOpacity})`,
+      `rgba(16, 185, 129, ${baseOpacity})`,
+      `rgba(34, 197, 94, ${baseOpacity})`,
+      `rgba(234, 179, 8, ${baseOpacity})`,
     ];
     
     return colors[Math.min(index - 1, colors.length - 1)];
@@ -66,36 +63,12 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
     const y2Top = (height - rightHeight) / 2;
     const y2Bottom = y2Top + rightHeight;
     
-    // Increased curve for smoother organic look
-    const curveOffset = 4;
-    
+    // Geometric straight lines
     return `
       M ${x1} ${y1Top}
-      Q ${x1 + stageWidth * 0.5} ${y1Top - curveOffset}, ${x2} ${y2Top}
+      L ${x2} ${y2Top}
       L ${x2} ${y2Bottom}
-      Q ${x1 + stageWidth * 0.5} ${y1Bottom + curveOffset}, ${x1} ${y1Bottom}
-      Z
-    `;
-  };
-
-  // Inner highlight path for 3D effect
-  const getHighlightPath = (index: number) => {
-    const x1 = index * stageWidth + 4;
-    const x2 = (index + 1) * stageWidth - 4;
-    
-    const leftHeight = (startHeight - (index * heightStep)) * 0.4;
-    const rightHeight = (startHeight - ((index + 1) * heightStep)) * 0.4;
-    
-    const y1Top = (height - leftHeight) / 2 - 10;
-    const y1Bottom = y1Top + leftHeight * 0.5;
-    const y2Top = (height - rightHeight) / 2 - 10;
-    const y2Bottom = y2Top + rightHeight * 0.5;
-    
-    return `
-      M ${x1} ${y1Top}
-      Q ${x1 + stageWidth * 0.5} ${y1Top - 2}, ${x2} ${y2Top}
-      L ${x2} ${y2Bottom}
-      Q ${x1 + stageWidth * 0.5} ${y1Bottom + 2}, ${x1} ${y1Bottom}
+      L ${x1} ${y1Bottom}
       Z
     `;
   };
@@ -105,33 +78,17 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
   };
 
   return (
-    <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95 backdrop-blur-xl shadow-2xl">
-      {/* Ambient glow orbs */}
-      <div className="absolute -top-20 -left-20 w-40 h-40 bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-      
-      {/* Subtle grid pattern overlay */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '32px 32px',
-        }}
-      />
-      
-      <CardHeader className="relative pb-3 border-b border-white/10">
+    <Card className="border bg-card">
+      <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <Activity className="h-4 w-4 text-primary" />
           </div>
-          <CardTitle className="text-lg font-semibold text-white">Conversion Funnel</CardTitle>
+          <CardTitle className="text-lg font-semibold">Conversion Funnel</CardTitle>
         </div>
       </CardHeader>
       
-      <CardContent className="relative p-4 pt-0">
+      <CardContent className="p-4 pt-0">
         {/* Floating Conversion Arrows - Above Funnel */}
         <div className="flex items-center justify-around px-8 py-4">
           {stages.slice(1).map((stage, index) => {
@@ -142,14 +99,13 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
               <div 
                 key={index} 
                 className="flex items-center gap-2"
-                style={{ animationDelay: `${index * 100}ms` }}
               >
-                <ArrowRight className="h-3.5 w-3.5 text-white/30 funnel-arrow" />
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50" />
                 <span className={cn(
                   "text-xs font-bold px-2.5 py-1 rounded-full transition-all duration-300",
                   isHealthy 
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                    : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                    ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" 
+                    : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30"
                 )}>
                   {stage.conversionRate?.toFixed(1)}%
                 </span>
@@ -158,18 +114,11 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
           })}
         </div>
         
-        {/* 3D Perspective Wrapper */}
-        <div 
-          className="relative"
-          style={{ perspective: '1000px' }}
-        >
+        <div className="relative">
           <svg 
             viewBox={`0 0 ${width} ${height}`} 
-            className="w-full funnel-svg"
-            style={{ 
-              transform: 'rotateX(3deg)',
-              filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.3))',
-            }}
+            className="w-full"
+            style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))' }}
           >
             <defs>
               {stages.map((stage, index) => {
@@ -198,7 +147,6 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                 );
               })}
               
-              {/* Enhanced glow filter for hover state */}
               <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
                 <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
                 <feMerge>
@@ -207,13 +155,11 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                 </feMerge>
               </filter>
               
-              {/* Enhanced shadow filter */}
               <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%">
-                <feDropShadow dx="0" dy="6" stdDeviation="6" floodOpacity="0.2"/>
+                <feDropShadow dx="0" dy="4" stdDeviation="4" floodOpacity="0.15"/>
               </filter>
             </defs>
             
-            {/* Render trapezoids */}
             {stages.map((stage, index) => {
               const isHovered = hoveredIndex === index;
               
@@ -223,9 +169,7 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                   onMouseEnter={() => setHoveredIndex(index)}
                   onMouseLeave={() => setHoveredIndex(null)}
                   style={{ cursor: 'pointer' }}
-                  className="funnel-stage-animated"
                 >
-                  {/* Main trapezoid shape */}
                   <path
                     d={getTrapezoidPath(index)}
                     fill={`url(#funnel-gradient-${index})`}
@@ -238,14 +182,6 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                     }}
                   />
                   
-                  {/* Inner highlight for 3D raised effect */}
-                  <path
-                    d={getHighlightPath(index)}
-                    fill="rgba(255,255,255,0.1)"
-                    style={{ pointerEvents: 'none' }}
-                  />
-                  
-                  {/* Hover highlight overlay */}
                   {isHovered && (
                     <path
                       d={getTrapezoidPath(index)}
@@ -254,12 +190,11 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                     />
                   )}
                   
-                  {/* Stage name - smaller, uppercase */}
                   <text
                     x={getStageCenterX(index)}
                     y={height / 2 - 12}
                     textAnchor="middle"
-                    className="fill-white/90 font-semibold uppercase tracking-wider"
+                    className="fill-white font-semibold uppercase tracking-wider"
                     style={{ 
                       textShadow: '0 2px 4px rgba(0,0,0,0.4)',
                       fontSize: '10px',
@@ -269,7 +204,6 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                     {stage.name}
                   </text>
                   
-                  {/* Stage count - BIGGER and bolder */}
                   <text
                     x={getStageCenterX(index)}
                     y={height / 2 + 16}
@@ -288,10 +222,9 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
             })}
           </svg>
           
-          {/* Hover Tooltip - Enhanced with blur */}
           {hoveredIndex !== null && (
             <div 
-              className="absolute z-10 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-4 min-w-[200px] pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200"
+              className="absolute z-10 bg-popover border rounded-xl shadow-lg p-4 min-w-[200px] pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200"
               style={{
                 left: `${((hoveredIndex + 0.5) / stages.length) * 100}%`,
                 top: '100%',
@@ -300,66 +233,39 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-6">
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-foreground">
                     {stages[hoveredIndex].name}
                   </span>
-                  <span className="text-xl font-bold text-white">
+                  <span className="text-xl font-bold text-foreground">
                     {stages[hoveredIndex].count.toLocaleString()}
                   </span>
                 </div>
                 
                 {stages[hoveredIndex].conversionRate !== undefined && (
                   <>
-                    <div className="h-px bg-white/10" />
+                    <div className="h-px bg-border" />
                     <div className="flex items-center justify-between gap-4">
-                      <span className="text-sm text-white/60">Conversion</span>
+                      <span className="text-sm text-muted-foreground">Conversion</span>
                       <span className={cn(
                         "text-sm font-semibold",
                         getHealthStatus(stages[hoveredIndex].conversionRate, stages[hoveredIndex].benchmark) === 'healthy'
-                          ? 'text-emerald-400'
-                          : 'text-amber-400'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
                       )}>
                         {stages[hoveredIndex].conversionRate?.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-4">
-                      <span className="text-sm text-white/60">Benchmark</span>
-                      <span className="text-sm text-white/60">
+                      <span className="text-sm text-muted-foreground">Benchmark</span>
+                      <span className="text-sm text-muted-foreground">
                         &gt;{stages[hoveredIndex].benchmark}%
                       </span>
                     </div>
-                    {hoveredIndex > 0 && (
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-sm text-white/60">Drop-off</span>
-                        <span className="text-sm text-rose-400 font-medium">
-                          -{(stages[hoveredIndex - 1].count - stages[hoveredIndex].count).toLocaleString()}
-                        </span>
-                      </div>
-                    )}
                   </>
                 )}
               </div>
             </div>
           )}
-        </div>
-        
-        {/* Simplified Drop-off Indicators */}
-        <div className="flex items-center justify-around mt-4 px-2">
-          {stages.slice(1).map((stage, index) => {
-            const prevCount = stages[index].count;
-            const dropOff = prevCount - stage.count;
-            
-            return (
-              <div 
-                key={index} 
-                className="flex flex-col items-center"
-              >
-                <span className="text-[10px] text-white/40">
-                  -{dropOff.toLocaleString()} lost
-                </span>
-              </div>
-            );
-          })}
         </div>
       </CardContent>
     </Card>
