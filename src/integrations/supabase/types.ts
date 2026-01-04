@@ -631,6 +631,60 @@ export type Database = {
           },
         ]
       }
+      crm_import_sessions: {
+        Row: {
+          created_at: string | null
+          field_mapping: Json | null
+          filename: string | null
+          id: string
+          imported_count: number | null
+          skipped_duplicates: number | null
+          skipped_errors: number | null
+          team_id: string
+          total_rows: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          field_mapping?: Json | null
+          filename?: string | null
+          id?: string
+          imported_count?: number | null
+          skipped_duplicates?: number | null
+          skipped_errors?: number | null
+          team_id: string
+          total_rows?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          field_mapping?: Json | null
+          filename?: string | null
+          id?: string
+          imported_count?: number | null
+          skipped_duplicates?: number | null
+          skipped_errors?: number | null
+          team_id?: string
+          total_rows?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_import_sessions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_import_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_lead_activities: {
         Row: {
           activity_type: string
@@ -683,6 +737,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           campaign_name: string | null
+          closed_at: string | null
           company: string | null
           connection_accepted: boolean | null
           connection_sent: boolean | null
@@ -691,6 +746,8 @@ export type Database = {
           deal_value: number | null
           first_reach_date: string | null
           id: string
+          import_batch_id: string | null
+          imported_from: string | null
           interested: boolean | null
           last_activity_at: string | null
           lead_email: string | null
@@ -712,6 +769,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           campaign_name?: string | null
+          closed_at?: string | null
           company?: string | null
           connection_accepted?: boolean | null
           connection_sent?: boolean | null
@@ -720,6 +778,8 @@ export type Database = {
           deal_value?: number | null
           first_reach_date?: string | null
           id?: string
+          import_batch_id?: string | null
+          imported_from?: string | null
           interested?: boolean | null
           last_activity_at?: string | null
           lead_email?: string | null
@@ -741,6 +801,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           campaign_name?: string | null
+          closed_at?: string | null
           company?: string | null
           connection_accepted?: boolean | null
           connection_sent?: boolean | null
@@ -749,6 +810,8 @@ export type Database = {
           deal_value?: number | null
           first_reach_date?: string | null
           id?: string
+          import_batch_id?: string | null
+          imported_from?: string | null
           interested?: boolean | null
           last_activity_at?: string | null
           lead_email?: string | null
