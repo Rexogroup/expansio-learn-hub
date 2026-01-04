@@ -24,15 +24,48 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
   const maxHeight = 120;
   const minHeight = 25;
 
-  // Calculate height at each stage using logarithmic scaling for better visualization
+  // Calculate cumulative heights using stage-to-stage ratios for better visualization
+  const getStageHeights = () => {
+    const heights: number[] = [maxHeight]; // First stage is full height
+    
+    for (let i = 1; i < stages.length; i++) {
+      const prevCount = stages[i - 1].count;
+      const currCount = stages[i].count;
+      
+      // Handle edge case where previous stage has 0
+      if (prevCount === 0) {
+        heights.push(minHeight);
+        continue;
+      }
+      
+      // Calculate stage-to-stage conversion ratio
+      const stageRatio = currCount / prevCount;
+      
+      // Apply this ratio to shrink from previous height
+      // Use square root for gentler curve so differences are more visible
+      const shrinkFactor = Math.pow(stageRatio, 0.5);
+      
+      // Calculate new height
+      let newHeight = heights[i - 1] * shrinkFactor;
+      
+      // If count is 0, make it nearly invisible (just a thin line)
+      if (currCount === 0) {
+        newHeight = 8;
+      } else {
+        // Ensure minimum visibility for non-zero values
+        newHeight = Math.max(minHeight, newHeight);
+      }
+      
+      heights.push(newHeight);
+    }
+    
+    return heights;
+  };
+
+  const stageHeights = getStageHeights();
+
   const getHeightAtStage = (index: number) => {
-    if (index === 0 || stages[0].count === 0) return maxHeight;
-    
-    const ratio = stages[index].count / stages[0].count;
-    // Use logarithmic scaling so small numbers are still visible
-    const visualRatio = Math.max(0.15, Math.pow(ratio, 0.35));
-    
-    return Math.max(minHeight, maxHeight * visualRatio);
+    return stageHeights[Math.min(index, stageHeights.length - 1)];
   };
 
   // Build smooth bezier curve path for the funnel
