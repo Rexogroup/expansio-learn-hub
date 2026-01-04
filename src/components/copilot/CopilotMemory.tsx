@@ -26,8 +26,7 @@ import {
   MessageSquare,
   Phone,
   X,
-  Lightbulb,
-  Gift
+  Lightbulb
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { LearningStageDisplay } from '@/components/ai-brain/LearningStageDisplay';
@@ -651,18 +650,6 @@ export function CopilotMemory() {
                                   placeholder="How you solve it..."
                                   value={pp.solution}
                                   onChange={(e) => updatePainPoint(index, ppIndex, 'solution', e.target.value)}
-                                />
-                              </div>
-                              <div className="flex items-start gap-2">
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5">
-                                  <Gift className="h-2.5 w-2.5 mr-0.5" />
-                                  Lead Magnet
-                                </Badge>
-                                <Input
-                                  className="h-7 text-sm flex-1"
-                                  placeholder="Free work offer (optional)..."
-                                  value={pp.lead_magnet_angle || ''}
-                                  onChange={(e) => updatePainPoint(index, ppIndex, 'lead_magnet_angle', e.target.value)}
                                 />
                               </div>
                             </div>
