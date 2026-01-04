@@ -270,9 +270,16 @@ This user has saved their business profile. Use this information to provide high
       }
 
       // Customer Profiles (ICPs) from copilot_memory
+      interface PainPointWithSolution {
+        pain_point?: string;
+        solution?: string;
+        lead_magnet_angle?: string;
+      }
+      
       interface CustomerProfile {
         icp_summary?: string;
-        pain_points?: string[];
+        pain_points?: string[];  // Legacy format
+        pain_points_with_solutions?: PainPointWithSolution[];  // New enhanced format
         services_to_pitch?: string[];
         key_benefits?: string[];
       }
@@ -288,7 +295,16 @@ This user has saved their business profile. Use this information to provide high
           if (icp.services_to_pitch && icp.services_to_pitch.length > 0) {
             profileSection += `Services to Pitch: ${icp.services_to_pitch.join(', ')}\n`;
           }
-          if (icp.pain_points && icp.pain_points.length > 0) {
+          // Use enhanced pain_points_with_solutions if available
+          if (icp.pain_points_with_solutions && icp.pain_points_with_solutions.length > 0) {
+            profileSection += `\nPain Points & Solutions:\n`;
+            icp.pain_points_with_solutions.forEach((pp, ppIndex) => {
+              profileSection += `  ${ppIndex + 1}. Problem: ${pp.pain_point || 'Unknown'}\n`;
+              profileSection += `     Solution: ${pp.solution || 'Not specified'}\n`;
+              profileSection += `     Lead Magnet Angle: ${pp.lead_magnet_angle || 'Not specified'}\n`;
+            });
+          } else if (icp.pain_points && icp.pain_points.length > 0) {
+            // Fallback to legacy format
             profileSection += `Pain Points: ${icp.pain_points.join(', ')}\n`;
           }
           if (icp.key_benefits && icp.key_benefits.length > 0) {
