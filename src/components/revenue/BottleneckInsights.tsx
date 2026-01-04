@@ -49,7 +49,9 @@ Please analyze my situation and provide:
 3. Recommendations for better ICP targeting criteria
 4. Quick wins I can implement this week to boost response rates
 
-Be specific and actionable based on my business context.`,
+Be specific and actionable based on my business context.
+
+**CONTEXT FOCUS**: Focus ONLY on interest rate and outreach optimization. Do not mention infrastructure alerts or other funnel stages unless directly relevant to this topic.`,
     });
   }
 
@@ -73,7 +75,9 @@ Please analyze my appointment setting process and provide:
 4. Optimal timing and cadence for follow-up messages
 5. CTA and booking link optimization tips
 
-Help me convert more interested leads into booked calls.`,
+Help me convert more interested leads into booked calls.
+
+**CONTEXT FOCUS**: Focus ONLY on appointment setting and booking optimization. Do not mention infrastructure alerts or other funnel stages unless directly relevant to this topic.`,
     });
   }
 
@@ -97,7 +101,9 @@ Please help me reduce no-shows by providing:
 4. Reschedule workflow for no-shows
 5. Calendar and scheduling tool optimization tips
 
-I need to get more booked prospects to actually show up.`,
+I need to get more booked prospects to actually show up.
+
+**CONTEXT FOCUS**: Focus ONLY on show rate and no-show reduction. Do not mention infrastructure alerts or other funnel stages unless directly relevant to this topic.`,
     });
   }
 
@@ -121,7 +127,9 @@ Please analyze my qualification and discovery process:
 4. What red flags should I look for during meetings that indicate poor fit?
 5. Meeting agenda optimization to better qualify opportunities
 
-Help me send proposals only to truly qualified prospects.`,
+Help me send proposals only to truly qualified prospects.
+
+**CONTEXT FOCUS**: Focus ONLY on proposal rate and qualification optimization. Do not mention infrastructure alerts or other funnel stages unless directly relevant to this topic.`,
     });
   }
 
@@ -146,7 +154,9 @@ Please analyze my sales closing process and provide:
 5. Which types of offers/services close best and why
 6. Negotiation frameworks for handling pushback
 
-Help me close more of my qualified proposals.`,
+Help me close more of my qualified proposals.
+
+**CONTEXT FOCUS**: Focus ONLY on close rate and sales closing optimization. Do not mention infrastructure alerts, deliverability, or other funnel stages unless directly relevant to this topic.`,
     });
   }
 

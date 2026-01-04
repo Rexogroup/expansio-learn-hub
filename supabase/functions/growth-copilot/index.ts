@@ -465,7 +465,7 @@ function buildSystemPrompt(
   let infrastructureSection = '';
   if (infrastructureAlerts.length > 0) {
     infrastructureSection = `
-### ⚠️ CURRENT INFRASTRUCTURE ALERTS (PRIORITY)
+### ⚠️ INFRASTRUCTURE ALERTS (Background Context)
 ${criticalAlerts.length > 0 ? `
 **CRITICAL ALERTS (${criticalAlerts.length}):**
 ${criticalAlerts.map(a => `- ${a.email_address}: ${a.alert_type === 'high_bounce_rate' ? `Bounce Rate ${a.current_value.toFixed(2)}%` : `Health Score ${a.current_value.toFixed(0)}%`} (threshold: ${a.threshold_value}${a.alert_type === 'high_bounce_rate' ? '%' : ''})`).join('\n')}
@@ -475,7 +475,17 @@ ${warningAlerts.length > 0 ? `
 ${warningAlerts.map(a => `- ${a.email_address}: ${a.alert_type === 'high_bounce_rate' ? `Bounce Rate ${a.current_value.toFixed(2)}%` : `Health Score ${a.current_value.toFixed(0)}%`} (threshold: ${a.threshold_value}${a.alert_type === 'high_bounce_rate' ? '%' : ''})`).join('\n')}
 ` : ''}
 
-**IMPORTANT**: When the user asks about performance or what to do next, ALWAYS mention these infrastructure alerts FIRST. Infrastructure health impacts all campaign performance and must be addressed before other optimizations.
+**CONTEXT RULE**: Only mention infrastructure alerts when:
+- The user explicitly asks about infrastructure, deliverability, or email health
+- The user asks a general "diagnose my performance" or "what should I do next" question
+- The topic is directly related to deliverability (e.g., low reply rates could be caused by infrastructure)
+
+Do NOT mention infrastructure alerts when the user asks about:
+- Close rate, sales closing, or proposal strategies
+- Objection handling or sales call improvement
+- Show rate or meeting attendance
+- Appointment setting or follow-up sequences
+- Any topic where infrastructure is not directly relevant
 `;
   }
 
@@ -593,15 +603,16 @@ ${appointmentSettingContent}
 ${salesInsightsContent}
 
 ## YOUR ROLE
-1. ${infrastructureAlerts.length > 0 ? 'FIRST: Address any infrastructure alerts - these are the highest priority' : 'Check infrastructure health is stable'}
-2. Diagnose where the user is struggling based on their data
-3. Compare their metrics to benchmarks and identify gaps
-4. **Analyze variants** and recommend which to SCALE, ITERATE, or KILL based on IR%
-5. **Reference the Knowledge Base, user's proven scripts, AND their sales call insights** to provide specific recommendations
-6. When suggesting appointment setting improvements, cite examples from their winning replies
-7. When discussing sales calls or objections, reference their objection playbook
-8. Provide ONE clear, actionable next step with a concrete example
-9. Guide them to the next step in the framework when ready
+1. **Focus on the user's specific question first** - understand what topic they're asking about and stay on-topic
+2. Only mention infrastructure alerts if the question relates to deliverability, general performance diagnosis, or low reply/interest rates
+3. Diagnose where the user is struggling based on their data
+4. Compare their metrics to benchmarks and identify gaps
+5. **Analyze variants** and recommend which to SCALE, ITERATE, or KILL based on IR%
+6. **Reference the Knowledge Base, user's proven scripts, AND their sales call insights** to provide specific recommendations
+7. When suggesting appointment setting improvements, cite examples from their winning replies
+8. When discussing sales calls or objections, reference their objection playbook
+9. Provide ONE clear, actionable next step with a concrete example
+10. Guide them to the next step in the framework when ready
 
 ## HOW TO USE APPOINTMENT SETTING INTELLIGENCE
 - When user asks "why am I not booking meetings?", reference their winning/losing reply patterns
@@ -635,7 +646,7 @@ ${salesInsightsContent}
 - Explain WHY based on the data
 - Use bullet points for clarity
 - Keep responses under 250 words unless asked for detail
-${infrastructureAlerts.length > 0 ? '- ALWAYS lead with infrastructure health concerns when they exist' : ''}`;
+- **CRITICAL**: Answer the user's specific question. Do NOT mention unrelated topics (like infrastructure alerts when asked about close rate)`;
 }
 
 serve(async (req) => {
