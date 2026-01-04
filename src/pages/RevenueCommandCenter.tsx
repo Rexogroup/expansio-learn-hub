@@ -14,7 +14,8 @@ import {
   Calendar, 
   Video, 
   Trophy, 
-  TrendingUp
+  TrendingUp,
+  FileText
 } from "lucide-react";
 import { subDays } from "date-fns";
 
@@ -28,6 +29,7 @@ interface CRMLead {
   source_type: string | null;
   interested: boolean | null;
   created_at: string | null;
+  proposal_status: string | null;
 }
 
 export default function RevenueCommandCenter() {
@@ -89,7 +91,7 @@ export default function RevenueCommandCenter() {
       if (teamIds.length > 0) {
         const { data: leadsData } = await supabase
           .from('crm_leads')
-          .select('id, lead_name, status, meeting_booked, meeting_status, deal_value, source_type, interested, created_at')
+          .select('id, lead_name, status, meeting_booked, meeting_status, deal_value, source_type, interested, created_at, proposal_status')
           .in('team_id', teamIds);
 
         setLeads((leadsData as CRMLead[]) || []);
@@ -181,6 +183,14 @@ export default function RevenueCommandCenter() {
   
   const liveCalls = filteredLeads.filter(l => l.meeting_status === 'completed').length;
   const closedDeals = filteredLeads.filter(l => l.status === 'closed_won').length;
+  
+  // Count proposals sent (leads with proposal_status sent/viewed/negotiating or status 'proposal')
+  const proposalsSent = filteredLeads.filter(l => 
+    l.proposal_status === 'sent' || 
+    l.proposal_status === 'viewed' || 
+    l.proposal_status === 'negotiating' ||
+    l.status === 'proposal'
+  ).length;
 
   // Calculate Reply Rate (Replies / Contacted) for cold email
   const coldEmailReplyRate = totalEmailsSent > 0 ? (totalReplies / totalEmailsSent) * 100 : 0;
@@ -211,6 +221,7 @@ export default function RevenueCommandCenter() {
   
   const bookRate = interestedLeads > 0 ? (bookedCalls / interestedLeads) * 100 : 0;
   const showRate = bookedCalls > 0 ? (liveCalls / bookedCalls) * 100 : 0;
+  const proposalRate = liveCalls > 0 ? (proposalsSent / liveCalls) * 100 : 0;
   const closeRate = liveCalls > 0 ? (closedDeals / liveCalls) * 100 : 0;
 
   // Calculate revenue metrics
@@ -224,6 +235,7 @@ export default function RevenueCommandCenter() {
     { name: 'Interested', count: interestedLeads, conversionRate: interestedRate, benchmark: 10 },
     { name: 'Booked', count: bookedCalls, conversionRate: bookRate, benchmark: 20 },
     { name: 'Live Calls', count: liveCalls, conversionRate: showRate, benchmark: 60 },
+    { name: 'Proposals', count: proposalsSent, conversionRate: proposalRate, benchmark: 70 },
     { name: 'Closed', count: closedDeals, conversionRate: closeRate, benchmark: 15 },
   ];
 
@@ -332,7 +344,7 @@ export default function RevenueCommandCenter() {
               icon={Calendar}
             />
           </div>
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-4 gap-5">
             <RevenueKPICard
               title="Show Rate"
               value={showRate}
@@ -342,6 +354,16 @@ export default function RevenueCommandCenter() {
               benchmark={60}
               benchmarkLabel=">60%"
               icon={Video}
+            />
+            <RevenueKPICard
+              title="Proposal Rate"
+              value={proposalRate}
+              secondaryValue={proposalsSent}
+              isPercentage
+              showBenchmark
+              benchmark={70}
+              benchmarkLabel=">70%"
+              icon={FileText}
             />
             <RevenueKPICard
               title="Close Rate"
@@ -378,6 +400,7 @@ export default function RevenueCommandCenter() {
             interestedRate={interestedRate}
             bookRate={bookRate}
             showRate={showRate}
+            proposalRate={proposalRate}
             closeRate={closeRate}
           />
         </div>
