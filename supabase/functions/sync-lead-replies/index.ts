@@ -71,7 +71,22 @@ serve(async (req) => {
       );
     }
 
-    const coldEmailTeamId = integration.cold_email_team_id;
+    let teamIdToUse = integration.cold_email_team_id;
+
+    // If no team configured, auto-select user's first owned team
+    if (!teamIdToUse) {
+      const { data: ownedTeam } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('owner_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      
+      teamIdToUse = ownedTeam?.id;
+      if (teamIdToUse) {
+        console.log(`Auto-selected team ${teamIdToUse} for user ${user.id}`);
+      }
+    }
 
     // Fetch replies from EmailBison API with pagination
     console.log('Fetching interested inbox replies from EmailBison API...');
@@ -224,13 +239,13 @@ serve(async (req) => {
       }
 
       // AUTO-CREATE/UPDATE CRM LEAD for new replies
-      if (coldEmailTeamId && replyId) {
+      if (teamIdToUse && replyId) {
         try {
           // Check if CRM lead already exists for this email in this team
           const { data: existingLead } = await supabase
             .from('crm_leads')
             .select('id, reply_count')
-            .eq('team_id', coldEmailTeamId)
+            .eq('team_id', teamIdToUse)
             .eq('lead_email', leadEmail)
             .eq('source_type', 'cold_email')
             .maybeSingle();
@@ -253,7 +268,7 @@ serve(async (req) => {
             const { error: crmError } = await supabase
               .from('crm_leads')
               .insert({
-                team_id: coldEmailTeamId,
+                team_id: teamIdToUse,
                 created_by: user.id,
                 lead_name: reply.from_name || 'Unknown',
                 lead_email: leadEmail,

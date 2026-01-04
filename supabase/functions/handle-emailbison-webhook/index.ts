@@ -122,8 +122,24 @@ async function handleLeadInterested(
   }
 
   const userId = (integration as any).user_id;
-  const coldEmailTeamId = (integration as any).cold_email_team_id;
-  console.log(`Found user ${userId} for workspace ${workspaceId}, team ${coldEmailTeamId}`);
+  let teamIdToUse = (integration as any).cold_email_team_id;
+
+  // If no team configured, auto-select user's first owned team
+  if (!teamIdToUse) {
+    const { data: ownedTeam } = await supabase
+      .from('teams')
+      .select('id')
+      .eq('owner_id', userId)
+      .limit(1)
+      .maybeSingle();
+    
+    teamIdToUse = ownedTeam?.id;
+    if (teamIdToUse) {
+      console.log(`Auto-selected team ${teamIdToUse} for user ${userId}`);
+    }
+  }
+
+  console.log(`Found user ${userId} for workspace ${workspaceId}, team ${teamIdToUse}`);
 
   // Build lead name
   const leadName = [lead.first_name, lead.last_name].filter(Boolean).join(' ').trim() || null;
@@ -160,13 +176,13 @@ async function handleLeadInterested(
 
   // AUTO-CREATE CRM LEAD
   let crmLeadCreated = false;
-  if (coldEmailTeamId) {
+  if (teamIdToUse) {
     try {
       // Check if CRM lead already exists for this email in this team
       const { data: existingLead } = await supabase
         .from('crm_leads')
         .select('id, reply_count')
-        .eq('team_id', coldEmailTeamId)
+        .eq('team_id', teamIdToUse)
         .eq('lead_email', lead.email)
         .eq('source_type', 'cold_email')
         .maybeSingle();
@@ -187,7 +203,7 @@ async function handleLeadInterested(
         const { error: crmError } = await supabase
           .from('crm_leads')
           .insert({
-            team_id: coldEmailTeamId,
+            team_id: teamIdToUse,
             created_by: userId,
             lead_name: leadName || 'Unknown',
             lead_email: lead.email,
@@ -213,7 +229,7 @@ async function handleLeadInterested(
       console.error('Error in CRM lead creation:', crmErr);
     }
   } else {
-    console.log('No cold_email_team_id configured, skipping CRM lead creation');
+    console.log('No team available for CRM lead creation');
   }
   
   return new Response(
