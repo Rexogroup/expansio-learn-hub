@@ -135,7 +135,7 @@ export default function RevenueCommandCenter() {
       {/* KPI Grid - Row 1 */}
       <div className="grid grid-cols-5 gap-4">
         <RevenueKPICard
-          title="Leads per Month"
+          title="Leads"
           value={totalLeads}
         />
         <RevenueKPICard
