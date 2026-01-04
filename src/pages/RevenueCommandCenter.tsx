@@ -173,6 +173,21 @@ export default function RevenueCommandCenter() {
   const liveCalls = filteredLeads.filter(l => l.meeting_status === 'completed').length;
   const closedDeals = filteredLeads.filter(l => l.status === 'closed_won').length;
 
+  // Calculate Reply Rate (Replies / Contacted) for cold email
+  const coldEmailReplyRate = totalEmailsSent > 0 ? (totalReplies / totalEmailsSent) * 100 : 0;
+  const replyRate = channel === 'cold_email' 
+    ? coldEmailReplyRate 
+    : channel === 'sdr' 
+      ? 0 
+      : totalEmailsSent > 0 ? (totalReplies / totalEmailsSent) * 100 : 0;
+
+  // Total Replies display by channel
+  const totalRepliesDisplay = channel === 'cold_email' 
+    ? totalReplies 
+    : channel === 'sdr' 
+      ? 0 
+      : totalReplies;
+
   // Calculate rates - use Interested / Replies for cold email (matches Campaigns page)
   const sdrInterestedRate = sdrLeadsCount > 0 ? (sdrInterestedLeads / sdrLeadsCount) * 100 : 0;
   const coldEmailInterestedRate = totalReplies > 0 ? (interestedFromCampaigns / totalReplies) * 100 : 0;
@@ -194,10 +209,11 @@ export default function RevenueCommandCenter() {
   const totalRevenue = closedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
   const avgDealSize = closedDeals > 0 ? totalRevenue / closedDeals : 0;
 
-  // Funnel stages - now includes Contacted
+  // Funnel stages - now includes Replies between Contacted and Interested
   const funnelStages = [
     { name: 'Contacted', count: totalContacted },
-    { name: 'Interested', count: interestedLeads, conversionRate: interestedRate, benchmark: 5 },
+    { name: 'Replies', count: totalRepliesDisplay, conversionRate: replyRate, benchmark: 1.5 },
+    { name: 'Interested', count: interestedLeads, conversionRate: interestedRate, benchmark: 10 },
     { name: 'Booked', count: bookedCalls, conversionRate: bookRate, benchmark: 20 },
     { name: 'Live Calls', count: liveCalls, conversionRate: showRate, benchmark: 60 },
     { name: 'Closed', count: closedDeals, conversionRate: closeRate, benchmark: 15 },
@@ -241,19 +257,31 @@ export default function RevenueCommandCenter() {
         </div>
       </div>
 
-      {/* KPI Grid - Row 1 */}
-      <div className="grid grid-cols-5 gap-4">
+      {/* KPI Grid - Row 1: Top of Funnel */}
+      <div className="grid grid-cols-6 gap-4">
         <RevenueKPICard
           title="Contacted"
           value={totalContacted}
+        />
+        <RevenueKPICard
+          title="Reply Rate %"
+          value={replyRate}
+          isPercentage
+          showBenchmark
+          benchmark={1.5}
+          benchmarkLabel=">1.5%"
+        />
+        <RevenueKPICard
+          title="Total Replies"
+          value={totalRepliesDisplay}
         />
         <RevenueKPICard
           title="Interest Rate %"
           value={interestedRate}
           isPercentage
           showBenchmark
-          benchmark={5}
-          benchmarkLabel=">5%"
+          benchmark={10}
+          benchmarkLabel=">10%"
         />
         <RevenueKPICard
           title="Interested"
@@ -267,14 +295,14 @@ export default function RevenueCommandCenter() {
           benchmark={20}
           benchmarkLabel=">20%"
         />
+      </div>
+
+      {/* KPI Grid - Row 2: Bottom of Funnel */}
+      <div className="grid grid-cols-6 gap-4">
         <RevenueKPICard
           title="Booked Calls"
           value={bookedCalls}
         />
-      </div>
-
-      {/* KPI Grid - Row 2 */}
-      <div className="grid grid-cols-5 gap-4">
         <RevenueKPICard
           title="Show Rate %"
           value={showRate}
@@ -302,6 +330,16 @@ export default function RevenueCommandCenter() {
         <RevenueKPICard
           title="Avg Deal Size"
           value={avgDealSize}
+          isCurrency
+        />
+      </div>
+
+      {/* KPI Grid - Row 3: Revenue */}
+      <div className="grid grid-cols-6 gap-4">
+        <div className="col-span-5" />
+        <RevenueKPICard
+          title="Total Revenue"
+          value={totalRevenue}
           isCurrency
         />
       </div>
