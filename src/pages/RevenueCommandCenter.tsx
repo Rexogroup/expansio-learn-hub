@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RevenueKPICard } from "@/components/revenue/RevenueKPICard";
 import { RevenueFunnel } from "@/components/revenue/RevenueFunnel";
 import { ChannelFilter, Channel } from "@/components/revenue/ChannelFilter";
+import { TimePeriodFilter, TimePeriod, DateRange, getDateRange } from "@/components/revenue/TimePeriodFilter";
 import { BottleneckInsights } from "@/components/revenue/BottleneckInsights";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign } from "lucide-react";
@@ -22,6 +23,8 @@ interface CRMLead {
 export default function RevenueCommandCenter() {
   const [leads, setLeads] = useState<CRMLead[]>([]);
   const [channel, setChannel] = useState<Channel>('all');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('last_30');
+  const [dateRange, setDateRange] = useState<DateRange>(getDateRange('last_30'));
   const [loading, setLoading] = useState(true);
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [totalEmailsSent, setTotalEmailsSent] = useState(0);
@@ -80,15 +83,43 @@ export default function RevenueCommandCenter() {
     fetchData();
   }, []);
 
-  // Filter leads by channel
-  const filteredLeads = leads.filter(lead => {
-    if (channel === 'all') return true;
-    if (channel === 'cold_email') return lead.source_type === 'cold_email';
-    return lead.source_type !== 'cold_email';
-  });
+  const handleTimePeriodChange = (period: TimePeriod, range: DateRange) => {
+    setTimePeriod(period);
+    setDateRange(range);
+  };
 
-  // Calculate Total Contacted
-  const sdrLeadsCount = leads.filter(l => l.source_type !== 'cold_email').length;
+  // Filter leads by date range and channel
+  const filteredLeads = useMemo(() => {
+    return leads.filter(lead => {
+      // Date filter
+      if (lead.created_at) {
+        const leadDate = new Date(lead.created_at);
+        if (leadDate < dateRange.from || leadDate > dateRange.to) {
+          return false;
+        }
+      }
+      
+      // Channel filter
+      if (channel === 'all') return true;
+      if (channel === 'cold_email') return lead.source_type === 'cold_email';
+      return lead.source_type !== 'cold_email';
+    });
+  }, [leads, channel, dateRange]);
+
+  // Filter SDR leads by date for contacted count
+  const filteredSdrLeads = useMemo(() => {
+    return leads.filter(lead => {
+      if (lead.source_type === 'cold_email') return false;
+      if (lead.created_at) {
+        const leadDate = new Date(lead.created_at);
+        return leadDate >= dateRange.from && leadDate <= dateRange.to;
+      }
+      return true;
+    });
+  }, [leads, dateRange]);
+
+  // Calculate Total Contacted (note: emails_sent doesn't have date filter as it's aggregate)
+  const sdrLeadsCount = filteredSdrLeads.length;
   const totalContacted = channel === 'cold_email' 
     ? totalEmailsSent 
     : channel === 'sdr' 
@@ -153,7 +184,14 @@ export default function RevenueCommandCenter() {
           </div>
         </div>
         
-        <ChannelFilter value={channel} onChange={setChannel} />
+        <div className="flex items-center gap-3">
+          <TimePeriodFilter 
+            value={timePeriod} 
+            customRange={timePeriod === 'custom' ? dateRange : undefined}
+            onChange={handleTimePeriodChange} 
+          />
+          <ChannelFilter value={channel} onChange={setChannel} />
+        </div>
       </div>
 
       {/* KPI Grid - Row 1 */}
