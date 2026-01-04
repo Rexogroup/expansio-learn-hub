@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { RevenueKPICardWithComparison } from "@/components/revenue/RevenueKPICardWithComparison";
 import { RevenueFunnel } from "@/components/revenue/RevenueFunnel";
 import { ChannelFilter, Channel } from "@/components/revenue/ChannelFilter";
-import { TimePeriodFilter, TimePeriod, DateRange as PeriodDateRange, getDateRange } from "@/components/revenue/TimePeriodFilter";
+import { RevenueTimelineFilter, DateRange as TimelineDateRange } from "@/components/revenue/RevenueTimelineFilter";
 import { BottleneckInsights } from "@/components/revenue/BottleneckInsights";
 import { ComparisonPeriodPicker, ComparisonType, DateRange } from "@/components/revenue/ComparisonPeriodPicker";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +21,7 @@ import {
   FileText,
   RefreshCw
 } from "lucide-react";
-import { subDays, subMonths, subYears } from "date-fns";
+import { subDays, subMonths, subYears, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface Integration {
@@ -87,8 +87,8 @@ const getAttributionDate = (
 export default function RevenueCommandCenter() {
   const [leads, setLeads] = useState<CRMLead[]>([]);
   const [channel, setChannel] = useState<Channel>('all');
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('last_30');
-  const [customDateRange, setCustomDateRange] = useState<PeriodDateRange | null>(null);
+  const [timelineDays, setTimelineDays] = useState(30);
+  const [customDateRange, setCustomDateRange] = useState<TimelineDateRange | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [teamIds, setTeamIds] = useState<string[]>([]);
@@ -109,26 +109,26 @@ export default function RevenueCommandCenter() {
   const [prevInterestedFromCampaigns, setPrevInterestedFromCampaigns] = useState(0);
   const [prevMeetingsFromCampaigns, setPrevMeetingsFromCampaigns] = useState(0);
 
-  // Calculate date range from timePeriod
+  // Calculate date range from timelineDays
   const dateRange = useMemo(() => {
-    if (timePeriod === 'custom' && customDateRange) {
+    if (timelineDays === 0 && customDateRange) {
       return customDateRange;
     }
-    return getDateRange(timePeriod);
-  }, [timePeriod, customDateRange]);
+    const today = new Date();
+    return { from: subDays(today, timelineDays), to: today };
+  }, [timelineDays, customDateRange]);
   
-  // Calculate timelineDays for comparison period and campaign sync
-  const timelineDays = useMemo(() => {
-    const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  }, [dateRange]);
+  // Calculate periodDays for comparison period calculations
+  const periodDays = useMemo(() => {
+    return differenceInDays(dateRange.to, dateRange.from) || timelineDays;
+  }, [dateRange, timelineDays]);
   
   // Calculate previous period date range based on comparison type
   const previousDateRange = useMemo(() => {
     switch (comparisonType) {
       case 'previous':
         const previousEnd = subDays(dateRange.from, 1);
-        const previousStart = subDays(previousEnd, timelineDays - 1);
+        const previousStart = subDays(previousEnd, periodDays - 1);
         return { from: previousStart, to: previousEnd };
       case 'last_month':
         return { 
@@ -141,11 +141,11 @@ export default function RevenueCommandCenter() {
           to: subYears(dateRange.to, 1) 
         };
       case 'custom':
-        return customComparisonRange || { from: subDays(dateRange.from, timelineDays), to: subDays(dateRange.from, 1) };
+        return customComparisonRange || { from: subDays(dateRange.from, periodDays), to: subDays(dateRange.from, 1) };
       default:
-        return { from: subDays(dateRange.from, timelineDays), to: subDays(dateRange.from, 1) };
+        return { from: subDays(dateRange.from, periodDays), to: subDays(dateRange.from, 1) };
     }
-  }, [dateRange, timelineDays, comparisonType, customComparisonRange]);
+  }, [dateRange, periodDays, comparisonType, customComparisonRange]);
 
   // Fetch teams and integration on mount
   useEffect(() => {
@@ -750,14 +750,14 @@ export default function RevenueCommandCenter() {
               customRange={customComparisonRange}
               onCustomRangeChange={setCustomComparisonRange}
               currentDateRange={dateRange}
-              periodDays={timelineDays}
+              periodDays={periodDays}
             />
-            <TimePeriodFilter 
-              value={timePeriod} 
-              customRange={customDateRange ?? undefined}
-              onChange={(period, range) => {
-                setTimePeriod(period);
-                if (period === 'custom') {
+            <RevenueTimelineFilter 
+              value={timelineDays} 
+              customRange={customDateRange}
+              onChange={(days, range) => {
+                setTimelineDays(days);
+                if (days === 0) {
                   setCustomDateRange(range);
                 }
               }}
