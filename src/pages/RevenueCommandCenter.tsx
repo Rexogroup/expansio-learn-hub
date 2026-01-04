@@ -291,11 +291,11 @@ export default function RevenueCommandCenter() {
       </div>
 
       <div className="px-6 space-y-8 pb-8">
-        {/* Section: Top of Funnel */}
+        {/* Section: Overview */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <div className="h-1 w-1 rounded-full bg-primary" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Top of Funnel</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Overview</h2>
           </div>
           <div className="grid grid-cols-4 gap-5">
             <RevenueKPICard
@@ -333,14 +333,6 @@ export default function RevenueCommandCenter() {
               benchmarkLabel=">20%"
               icon={Calendar}
             />
-          </div>
-        </div>
-
-        {/* Section: Bottom of Funnel & Revenue */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="h-1 w-1 rounded-full bg-emerald-500" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Conversion & Revenue</h2>
           </div>
           <div className="grid grid-cols-4 gap-5">
             <RevenueKPICard
