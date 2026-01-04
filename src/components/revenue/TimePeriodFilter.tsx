@@ -17,6 +17,7 @@ interface TimePeriodFilterProps {
   value: TimePeriod;
   customRange?: DateRange;
   onChange: (period: TimePeriod, range: DateRange) => void;
+  variant?: 'default' | 'dark';
 }
 
 const getDateRange = (period: TimePeriod): DateRange => {
@@ -36,8 +37,9 @@ const getDateRange = (period: TimePeriod): DateRange => {
   }
 };
 
-export function TimePeriodFilter({ value, customRange, onChange }: TimePeriodFilterProps) {
+export function TimePeriodFilter({ value, customRange, onChange, variant = 'default' }: TimePeriodFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const isDark = variant === 'dark';
   const [tempRange, setTempRange] = useState<{ from?: Date; to?: Date }>({});
 
   const periods: { id: TimePeriod; label: string }[] = [
@@ -67,7 +69,10 @@ export function TimePeriodFilter({ value, customRange, onChange }: TimePeriodFil
   };
 
   return (
-    <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+    <div className={cn(
+      "flex items-center gap-1 p-1 rounded-lg",
+      isDark ? "bg-white/10" : "bg-muted"
+    )}>
       {periods.map((period) => (
         <Button
           key={period.id}
@@ -76,9 +81,13 @@ export function TimePeriodFilter({ value, customRange, onChange }: TimePeriodFil
           onClick={() => handlePeriodClick(period.id)}
           className={cn(
             "h-8 px-3 text-xs font-medium transition-all",
-            value === period.id 
-              ? "bg-background text-foreground shadow-sm" 
-              : "text-muted-foreground hover:text-foreground"
+            isDark
+              ? value === period.id 
+                ? "bg-white/20 text-white shadow-sm" 
+                : "text-white/70 hover:text-white hover:bg-white/10"
+              : value === period.id 
+                ? "bg-background text-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
           )}
         >
           {period.label}
@@ -92,9 +101,13 @@ export function TimePeriodFilter({ value, customRange, onChange }: TimePeriodFil
             size="sm"
             className={cn(
               "h-8 px-3 text-xs font-medium transition-all gap-1.5",
-              value === 'custom' 
-                ? "bg-background text-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
+              isDark
+                ? value === 'custom' 
+                  ? "bg-white/20 text-white shadow-sm" 
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+                : value === 'custom' 
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Calendar className="h-3.5 w-3.5" />
