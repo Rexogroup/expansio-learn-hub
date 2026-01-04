@@ -22,13 +22,17 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
   const stageCount = stages.length;
   const stageWidth = width / stageCount;
   const maxHeight = 120;
-  const minHeight = 30;
+  const minHeight = 25;
 
-  // Calculate height at each stage based on count relative to first stage
+  // Calculate height at each stage using logarithmic scaling for better visualization
   const getHeightAtStage = (index: number) => {
     if (index === 0 || stages[0].count === 0) return maxHeight;
+    
     const ratio = stages[index].count / stages[0].count;
-    return Math.max(minHeight, maxHeight * ratio);
+    // Use logarithmic scaling so small numbers are still visible
+    const visualRatio = Math.max(0.15, Math.pow(ratio, 0.35));
+    
+    return Math.max(minHeight, maxHeight * visualRatio);
   };
 
   // Build smooth bezier curve path for the funnel
@@ -70,12 +74,6 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
     return pathTop + pathBottom + ' Z';
   };
 
-  // Get percentage relative to first stage
-  const getPercentage = (index: number) => {
-    if (index === 0 || stages[0].count === 0) return 100;
-    return Math.round((stages[index].count / stages[0].count) * 100);
-  };
-
   // Get X position for stage center
   const getStageCenterX = (index: number) => {
     return (index * stageWidth) + (stageWidth / 2);
@@ -93,13 +91,13 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
   };
 
   return (
-    <Card className="relative overflow-hidden bg-slate-900 border-slate-800/60">
+    <Card className="relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-card via-card to-muted/30 border-border/50">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-            <Activity className="h-4 w-4 text-blue-400" />
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Activity className="h-4 w-4 text-primary" />
           </div>
-          <CardTitle className="text-lg font-semibold text-white">Conversion Funnel</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Conversion Funnel</CardTitle>
         </div>
       </CardHeader>
       
@@ -108,7 +106,8 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
         <div className="flex items-end justify-around px-2 pb-4">
           {stages.map((stage, index) => {
             const isHovered = hoveredIndex === index;
-            const percentage = getPercentage(index);
+            // Display the conversionRate passed from props (matching KPI cards)
+            const displayRate = stage.conversionRate;
             
             return (
               <div 
@@ -119,19 +118,19 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                 )}
                 style={{ width: `${100 / stageCount}%` }}
               >
-                {/* Percentage Badge */}
+                {/* Conversion Rate Badge - only show if there's a rate */}
                 <div className={cn(
                   "px-3 py-1 rounded-lg text-sm font-semibold transition-all duration-200",
                   isHovered 
-                    ? "bg-blue-500 text-white" 
-                    : "bg-slate-800 border border-slate-700 text-slate-200"
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted border border-border text-foreground"
                 )}>
-                  {percentage}%
+                  {displayRate !== undefined ? `${displayRate.toFixed(1)}%` : stage.count.toLocaleString()}
                 </div>
                 {/* Stage Name */}
                 <span className={cn(
                   "text-xs font-medium uppercase tracking-wider transition-colors duration-200",
-                  isHovered ? "text-blue-400" : "text-slate-500"
+                  isHovered ? "text-primary" : "text-muted-foreground"
                 )}>
                   {stage.name}
                 </span>
@@ -149,7 +148,8 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
             {/* Main funnel shape */}
             <path
               d={getFunnelPath()}
-              fill="#3B82F6"
+              fill="hsl(var(--primary))"
+              opacity={0.85}
               className="transition-all duration-300"
             />
             
@@ -165,7 +165,7 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                   y1={y1}
                   x2={x}
                   y2={y2}
-                  stroke="rgba(255, 255, 255, 0.2)"
+                  stroke="hsl(var(--primary-foreground) / 0.3)"
                   strokeWidth={1}
                 />
               );
@@ -193,7 +193,7 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
             {stages.map((stage, index) => {
               const centerX = getStageCenterX(index);
               const stageHeight = getHeightAtStage(index);
-              const showCount = stageHeight > 40;
+              const showCount = stageHeight > 35;
               
               return showCount ? (
                 <text
@@ -201,10 +201,10 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                   x={centerX}
                   y={height / 2 + 5}
                   textAnchor="middle"
-                  className="fill-white font-bold pointer-events-none"
+                  className="fill-primary-foreground font-bold pointer-events-none"
                   style={{ 
                     fontSize: stageHeight > 60 ? '16px' : '12px',
-                    opacity: 0.9,
+                    opacity: 0.95,
                   }}
                 >
                   {stage.count.toLocaleString()}
@@ -216,7 +216,7 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
           {/* Tooltip */}
           {hoveredIndex !== null && (
             <div 
-              className="absolute z-10 bg-slate-800/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-4 min-w-[180px] pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200"
+              className="absolute z-10 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-lg p-4 min-w-[180px] pointer-events-none animate-in fade-in-0 zoom-in-95 duration-200"
               style={{
                 left: `${((hoveredIndex + 0.5) / stages.length) * 100}%`,
                 top: '100%',
@@ -225,29 +225,22 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-6">
-                  <span className="font-medium text-slate-400 text-xs uppercase tracking-wide">
+                  <span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                     {stages[hoveredIndex].name}
                   </span>
-                  <span className="text-lg font-bold text-white">
+                  <span className="text-lg font-bold text-foreground">
                     {stages[hoveredIndex].count.toLocaleString()}
                   </span>
                 </div>
                 
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-xs text-slate-500">Of total</span>
-                  <span className="text-sm font-semibold text-blue-400">
-                    {getPercentage(hoveredIndex)}%
-                  </span>
-                </div>
-                
-                {stages[hoveredIndex].conversionRate !== undefined && hoveredIndex > 0 && (
-                  <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-700">
-                    <span className="text-xs text-slate-500">Stage Conv.</span>
+                {stages[hoveredIndex].conversionRate !== undefined && (
+                  <div className="flex items-center justify-between gap-4 pt-1 border-t border-border">
+                    <span className="text-xs text-muted-foreground">Conversion Rate</span>
                     <span className={cn(
                       "text-sm font-semibold",
                       (stages[hoveredIndex].conversionRate ?? 0) >= (stages[hoveredIndex].benchmark ?? 0)
-                        ? "text-emerald-400"
-                        : "text-amber-400"
+                        ? "text-emerald-600"
+                        : "text-amber-600"
                     )}>
                       {stages[hoveredIndex].conversionRate?.toFixed(1)}%
                     </span>
