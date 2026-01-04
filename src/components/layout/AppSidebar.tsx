@@ -36,6 +36,7 @@ import {
   LogOut,
   ChevronUp,
   Plug,
+  MailPlus,
 } from "lucide-react";
 
 const mainNavItems = [
@@ -44,6 +45,7 @@ const mainNavItems = [
   { title: "Master Inbox", url: "/inbox", icon: Mail },
   { title: "Sales Coach", url: "/sales-coach", icon: Phone },
   { title: "SDR", url: "/crm", icon: Users },
+  { title: "Cold Email CRM", url: "/cold-email-crm", icon: MailPlus },
   { title: "Email Accounts", url: "/email-accounts", icon: MailCheck },
   { title: "Integrations", url: "/integrations", icon: Plug },
   { title: "Expansio Accelerator", url: "/courses", icon: GraduationCap },

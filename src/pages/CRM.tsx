@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadSpreadsheet } from "@/components/crm/LeadSpreadsheet";
-import { ColdEmailLeadSpreadsheet } from "@/components/crm/ColdEmailLeadSpreadsheet";
 import { LeadPipeline } from "@/components/crm/LeadPipeline";
 import { TeamSelector } from "@/components/crm/TeamSelector";
 import { TeamManager } from "@/components/crm/TeamManager";
@@ -13,7 +12,7 @@ import { MessageTemplates } from "@/components/crm/MessageTemplates";
 import { LinkedInBranding } from "@/components/crm/LinkedInBranding";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, Plus, FileText, Linkedin, Mail } from "lucide-react";
+import { Table2, Kanban, Settings, Plus, FileText, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Team {
@@ -82,15 +81,12 @@ const CRM = () => {
   const [showTeamManager, setShowTeamManager] = useState(false);
   const [userCalendlyLink, setUserCalendlyLink] = useState<string | null>(null);
   const [userTeamRole, setUserTeamRole] = useState<string | null>(null);
-  const [leadSource, setLeadSource] = useState<'linkedin' | 'cold_email'>('linkedin');
 
   // SDR roles can see spreadsheet, clients cannot
   const canViewSpreadsheet = userTeamRole && ['owner', 'admin', 'sdr'].includes(userTeamRole);
 
-  // Filter leads by source
+  // Filter to show only LinkedIn leads (exclude cold email)
   const linkedInLeads = leads.filter(l => l.source_type !== 'cold_email');
-  const coldEmailLeads = leads.filter(l => l.source_type === 'cold_email');
-  const currentLeads = leadSource === 'linkedin' ? linkedInLeads : coldEmailLeads;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -534,142 +530,105 @@ const CRM = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">SDR</h1>
-          <p className="text-muted-foreground">Track your outbound leads and deals</p>
+          <p className="text-muted-foreground">Track your LinkedIn outbound leads and deals</p>
         </div>
-          <div className="flex items-center gap-3">
-            <TeamSelector
-              teams={teams}
-              selectedTeamId={selectedTeamId}
-              onSelect={setSelectedTeamId}
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowTeamManager(true)}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex items-center gap-3">
+          <TeamSelector
+            teams={teams}
+            selectedTeamId={selectedTeamId}
+            onSelect={setSelectedTeamId}
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowTeamManager(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
         </div>
+      </div>
 
-        {teams.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 border rounded-lg bg-muted/20">
-            <h2 className="text-xl font-semibold mb-2">Create Your First Team</h2>
-            <p className="text-muted-foreground mb-4">
-              Get started by creating a team to track your leads
-            </p>
-            <Button onClick={() => setShowTeamManager(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Team
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Lead Source Tabs */}
-            <div className="flex gap-2 mb-4">
-              <Button
-                variant={leadSource === 'linkedin' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setLeadSource('linkedin')}
-                className="gap-2"
-              >
-                <Linkedin className="h-4 w-4" />
-                LinkedIn
-                <span className="ml-1 text-xs opacity-70">({linkedInLeads.length})</span>
-              </Button>
-              <Button
-                variant={leadSource === 'cold_email' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setLeadSource('cold_email')}
-                className="gap-2"
-              >
-                <Mail className="h-4 w-4" />
-                Cold Email
-                <span className="ml-1 text-xs opacity-70">({coldEmailLeads.length})</span>
-              </Button>
-            </div>
+      {teams.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 border rounded-lg bg-muted/20">
+          <h2 className="text-xl font-semibold mb-2">Create Your First Team</h2>
+          <p className="text-muted-foreground mb-4">
+            Get started by creating a team to track your leads
+          </p>
+          <Button onClick={() => setShowTeamManager(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Team
+          </Button>
+        </div>
+      ) : (
+        <>
+          <QuickStats leads={linkedInLeads} sourceType="linkedin" />
 
-            <QuickStats leads={currentLeads} sourceType={leadSource} />
-
-            <Tabs defaultValue={canViewSpreadsheet ? "spreadsheet" : "pipeline"} className="mt-6">
-              <TabsList>
-                {canViewSpreadsheet && (
-                  <TabsTrigger value="spreadsheet" className="gap-2">
-                    <Table2 className="h-4 w-4" />
-                    Spreadsheet
-                  </TabsTrigger>
-                )}
-                <TabsTrigger value="pipeline" className="gap-2">
-                  <Kanban className="h-4 w-4" />
-                  Pipeline
-                </TabsTrigger>
-                <TabsTrigger value="templates" className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Templates
-                </TabsTrigger>
-                {leadSource === 'linkedin' && (
-                  <TabsTrigger value="branding" className="gap-2">
-                    <Linkedin className="h-4 w-4" />
-                    Branding
-                  </TabsTrigger>
-                )}
-              </TabsList>
-
+          <Tabs defaultValue={canViewSpreadsheet ? "spreadsheet" : "pipeline"} className="mt-6">
+            <TabsList>
               {canViewSpreadsheet && (
-                <TabsContent value="spreadsheet" className="mt-4">
-                  {leadSource === 'linkedin' ? (
-                    <LeadSpreadsheet
-                      leads={linkedInLeads}
-                      teamMembers={teamMembers}
-                      teamId={selectedTeamId!}
-                      userCalendlyLink={userCalendlyLink}
-                      onUpdate={handleLeadUpdate}
-                      onCreate={handleLeadCreate}
-                      onDelete={handleLeadDelete}
-                    />
-                  ) : (
-                    <ColdEmailLeadSpreadsheet
-                      leads={leads}
-                      teamMembers={teamMembers}
-                      teamId={selectedTeamId!}
-                      onUpdate={handleLeadUpdate}
-                      onCreate={handleLeadCreate}
-                      onDelete={handleLeadDelete}
-                    />
-                  )}
-                </TabsContent>
+                <TabsTrigger value="spreadsheet" className="gap-2">
+                  <Table2 className="h-4 w-4" />
+                  Spreadsheet
+                </TabsTrigger>
               )}
+              <TabsTrigger value="pipeline" className="gap-2">
+                <Kanban className="h-4 w-4" />
+                Pipeline
+              </TabsTrigger>
+              <TabsTrigger value="templates" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Templates
+              </TabsTrigger>
+              <TabsTrigger value="branding" className="gap-2">
+                <Linkedin className="h-4 w-4" />
+                Branding
+              </TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="pipeline" className="mt-4">
-                <LeadPipeline
-                  leads={currentLeads}
+            {canViewSpreadsheet && (
+              <TabsContent value="spreadsheet" className="mt-4">
+                <LeadSpreadsheet
+                  leads={linkedInLeads}
                   teamMembers={teamMembers}
-                  onUpdate={handleLeadUpdate}
-                  sourceType={leadSource}
-                />
-              </TabsContent>
-
-              <TabsContent value="templates" className="mt-4">
-                <MessageTemplates
                   teamId={selectedTeamId!}
-                  userId={user?.id}
-                  leads={currentLeads}
                   userCalendlyLink={userCalendlyLink}
-                  onCalendlyLinkUpdate={setUserCalendlyLink}
+                  onUpdate={handleLeadUpdate}
+                  onCreate={handleLeadCreate}
+                  onDelete={handleLeadDelete}
                 />
               </TabsContent>
+            )}
 
-              {leadSource === 'linkedin' && (
-                <TabsContent value="branding" className="mt-4">
-                  <LinkedInBranding
-                    teamId={selectedTeamId!}
-                    canEdit={userTeamRole === 'owner' || userTeamRole === 'admin'}
-                  />
-                </TabsContent>
-              )}
-            </Tabs>
-          </>
-        )}
+            <TabsContent value="pipeline" className="mt-4">
+              <LeadPipeline
+                leads={linkedInLeads}
+                teamMembers={teamMembers}
+                onUpdate={handleLeadUpdate}
+                sourceType="linkedin"
+              />
+            </TabsContent>
+
+            <TabsContent value="templates" className="mt-4">
+              <MessageTemplates
+                teamId={selectedTeamId!}
+                userId={user?.id}
+                leads={linkedInLeads}
+                userCalendlyLink={userCalendlyLink}
+                onCalendlyLinkUpdate={setUserCalendlyLink}
+              />
+            </TabsContent>
+
+            <TabsContent value="branding" className="mt-4">
+              <LinkedInBranding
+                teamId={selectedTeamId!}
+                canEdit={userTeamRole === 'owner' || userTeamRole === 'admin'}
+              />
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+
+      <GrowthCopilotSheet />
 
       <TeamManager
         open={showTeamManager}
@@ -681,7 +640,6 @@ const CRM = () => {
         onTeamsUpdated={() => user && fetchTeams(user.id)}
         onClearDemoData={handleClearDemoData}
       />
-      <GrowthCopilotSheet />
     </main>
   );
 };
