@@ -59,8 +59,13 @@ export function AppSidebar() {
 
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [pendingRequests, setPendingRequests] = useState(0);
-  const [alertCount, setAlertCount] = useState(0);
+  const [notifications, setNotifications] = useState<Record<string, boolean>>({
+    inbox: false,
+    emailAccounts: false,
+    network: false,
+    campaigns: false,
+    integrations: false,
+  });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -68,8 +73,7 @@ export function AppSidebar() {
       if (session?.user) {
         setUser(session.user);
         checkAdminStatus(session.user.id);
-        fetchPendingRequests(session.user.id);
-        fetchAlertCount(session.user.id);
+        fetchAllNotifications(session.user.id);
       }
     };
     checkAuth();
@@ -78,8 +82,7 @@ export function AppSidebar() {
       setUser(session?.user || null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
-        fetchPendingRequests(session.user.id);
-        fetchAlertCount(session.user.id);
+        fetchAllNotifications(session.user.id);
       }
     });
 
@@ -94,29 +97,59 @@ export function AppSidebar() {
     setIsAdmin(!!data);
   };
 
-  const fetchPendingRequests = async (userId: string) => {
-    const { count } = await supabase
-      .from('connections')
-      .select('*', { count: 'exact', head: true })
-      .eq('recipient_id', userId)
-      .eq('status', 'pending');
-    setPendingRequests(count || 0);
+  const fetchAllNotifications = async (userId: string) => {
+    const [inboxResult, emailAlertsResult, atRiskResult, networkResult, campaignsResult, integrationsResult] = await Promise.all([
+      // Master Inbox: pending replies
+      supabase
+        .from('lead_replies')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'pending'),
+      // Email Accounts: active alerts
+      supabase
+        .from('email_account_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'active'),
+      // Email Accounts: at-risk accounts
+      supabase
+        .from('email_account_health')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_at_risk', true),
+      // Network: pending connection requests
+      supabase
+        .from('connections')
+        .select('*', { count: 'exact', head: true })
+        .eq('recipient_id', userId)
+        .eq('status', 'pending'),
+      // Campaigns: no synced campaigns
+      supabase
+        .from('synced_campaigns')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId),
+      // Integrations: no configured integrations
+      supabase
+        .from('user_integrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId),
+    ]);
+
+    setNotifications({
+      inbox: (inboxResult.count || 0) > 0,
+      emailAccounts: ((emailAlertsResult.count || 0) + (atRiskResult.count || 0)) > 0,
+      network: (networkResult.count || 0) > 0,
+      campaigns: (campaignsResult.count || 0) === 0,
+      integrations: (integrationsResult.count || 0) === 0,
+    });
   };
 
-  const fetchAlertCount = async (userId: string) => {
-    const { count } = await supabase
-      .from('email_account_alerts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'active');
-    
-    const { count: atRiskCount } = await supabase
-      .from('email_account_health')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('is_at_risk', true);
-    
-    setAlertCount((count || 0) + (atRiskCount || 0));
+  const notificationMap: Record<string, string> = {
+    "/inbox": "inbox",
+    "/email-accounts": "emailAccounts",
+    "/network": "network",
+    "/dashboard": "campaigns",
+    "/integrations": "integrations",
   };
 
   const handleSignOut = async () => {
@@ -162,23 +195,28 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                      {item.url === "/email-accounts" && alertCount > 0 && (
-                        <span className="ml-auto h-2.5 w-2.5 rounded-full bg-destructive" />
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {mainNavItems.map((item) => {
+                const notifKey = notificationMap[item.url];
+                const hasNotification = notifKey && notifications[notifKey];
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                    >
+                      <Link to={item.url} className="flex items-center gap-2">
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                        {hasNotification && (
+                          <span className="ml-auto h-2.5 w-2.5 rounded-full bg-destructive" />
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -197,10 +235,8 @@ export function AppSidebar() {
                   <Link to="/network" className="flex items-center gap-2">
                     <Network className="size-4" />
                     <span>Network</span>
-                    {pendingRequests > 0 && (
-                      <Badge variant="secondary" className="ml-auto h-5 w-5 p-0 flex items-center justify-center text-xs">
-                        {pendingRequests}
-                      </Badge>
+                    {notifications.network && (
+                      <span className="ml-auto h-2.5 w-2.5 rounded-full bg-destructive" />
                     )}
                   </Link>
                 </SidebarMenuButton>
@@ -258,8 +294,8 @@ export function AppSidebar() {
                   <Link to="/network" className="flex items-center gap-2 cursor-pointer">
                     <Network className="size-4" />
                     Network
-                    {pendingRequests > 0 && (
-                      <Badge variant="secondary" className="ml-auto">{pendingRequests}</Badge>
+                    {notifications.network && (
+                      <span className="ml-auto h-2 w-2 rounded-full bg-destructive" />
                     )}
                   </Link>
                 </DropdownMenuItem>
