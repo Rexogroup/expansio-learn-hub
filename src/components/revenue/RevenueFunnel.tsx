@@ -104,9 +104,8 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
       <CardContent className="p-4 pt-0">
         {/* Stage Labels Above Funnel */}
         <div className="flex items-end justify-around px-2 pb-4">
-          {stages.map((stage, index) => {
+        {stages.map((stage, index) => {
             const isHovered = hoveredIndex === index;
-            // Display the conversionRate passed from props (matching KPI cards)
             const displayRate = stage.conversionRate;
             
             return (
@@ -118,14 +117,22 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
                 )}
                 style={{ width: `${100 / stageCount}%` }}
               >
-                {/* Conversion Rate Badge - only show if there's a rate */}
+                {/* Rate Badge + Count */}
                 <div className={cn(
-                  "px-3 py-1 rounded-lg text-sm font-semibold transition-all duration-200",
+                  "px-3 py-1 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2",
                   isHovered 
                     ? "bg-primary text-primary-foreground" 
                     : "bg-muted border border-border text-foreground"
                 )}>
-                  {displayRate !== undefined ? `${displayRate.toFixed(1)}%` : stage.count.toLocaleString()}
+                  {displayRate !== undefined ? (
+                    <>
+                      <span>{displayRate.toFixed(1)}%</span>
+                      <span className="text-muted-foreground text-xs">|</span>
+                      <span className="text-xs text-muted-foreground">{stage.count.toLocaleString()}</span>
+                    </>
+                  ) : (
+                    <span>{stage.count.toLocaleString()}</span>
+                  )}
                 </div>
                 {/* Stage Name */}
                 <span className={cn(
@@ -189,28 +196,6 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
               );
             })}
             
-            {/* Stage count labels inside funnel */}
-            {stages.map((stage, index) => {
-              const centerX = getStageCenterX(index);
-              const stageHeight = getHeightAtStage(index);
-              const showCount = stageHeight > 35;
-              
-              return showCount ? (
-                <text
-                  key={`count-${index}`}
-                  x={centerX}
-                  y={height / 2 + 5}
-                  textAnchor="middle"
-                  className="fill-primary-foreground font-bold pointer-events-none"
-                  style={{ 
-                    fontSize: stageHeight > 60 ? '16px' : '12px',
-                    opacity: 0.95,
-                  }}
-                >
-                  {stage.count.toLocaleString()}
-                </text>
-              ) : null;
-            })}
           </svg>
           
           {/* Tooltip */}
