@@ -332,7 +332,7 @@ export default function RevenueCommandCenter() {
               icon={Calendar}
             />
           </div>
-          <div className="grid grid-cols-3 gap-5 max-w-3xl">
+          <div className="grid grid-cols-3 gap-5">
             <RevenueKPICard
               title="Show Rate"
               value={showRate}
