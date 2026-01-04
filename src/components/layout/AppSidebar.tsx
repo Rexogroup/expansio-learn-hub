@@ -212,8 +212,8 @@ export function AppSidebar() {
                     >
                       <Link to={item.url} className="flex items-center gap-3">
                         <item.icon className="size-[18px]" />
-                        <span>{item.title}</span>
-                        {hasNotification && (
+                        {!collapsed && <span>{item.title}</span>}
+                        {!collapsed && hasNotification && (
                           <span 
                             className="ml-auto h-2 w-2 rounded-full bg-destructive shadow-sm shadow-destructive/50"
                             style={{ animation: 'sidebar-pulse 2s ease-in-out infinite' }}
@@ -242,8 +242,8 @@ export function AppSidebar() {
                 >
                   <Link to="/network" className="flex items-center gap-3">
                     <Network className="size-[18px]" />
-                    <span>Network</span>
-                    {notifications.network && (
+                    {!collapsed && <span>Network</span>}
+                    {!collapsed && notifications.network && (
                       <span 
                         className="ml-auto h-2 w-2 rounded-full bg-destructive shadow-sm shadow-destructive/50"
                         style={{ animation: 'sidebar-pulse 2s ease-in-out infinite' }}
@@ -262,7 +262,7 @@ export function AppSidebar() {
                   >
                     <Link to="/admin" className="flex items-center gap-3">
                       <Settings className="size-[18px]" />
-                      <span>Admin</span>
+                      {!collapsed && <span>Admin</span>}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
