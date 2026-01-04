@@ -24,7 +24,10 @@ import {
   RefreshCw,
   Mail,
   MessageSquare,
-  Phone
+  Phone,
+  X,
+  Lightbulb,
+  Gift
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { LearningStageDisplay } from '@/components/ai-brain/LearningStageDisplay';
@@ -35,9 +38,16 @@ import { SimpleReplyCard } from '@/components/ai-brain/SimpleReplyCard';
 import { SimpleObjectionCard } from '@/components/ai-brain/SimpleObjectionCard';
 import { UnifiedEmptyState } from '@/components/ai-brain/UnifiedEmptyState';
 
+interface PainPointWithSolution {
+  pain_point: string;
+  solution: string;
+  lead_magnet_angle?: string;
+}
+
 interface CustomerProfile {
   icp_summary: string;
-  pain_points: string[];
+  pain_points?: string[];  // Legacy format for backward compat
+  pain_points_with_solutions?: PainPointWithSolution[];  // New enhanced format
   services_to_pitch: string[];
   key_benefits: string[];
 }
@@ -132,9 +142,17 @@ export function CopilotMemory() {
       }
 
       if (data) {
-        const profiles = Array.isArray(data.customer_profiles) 
+        const rawProfiles = Array.isArray(data.customer_profiles) 
           ? data.customer_profiles as unknown as CustomerProfile[]
           : [];
+        
+        // Normalize profiles: convert legacy pain_points to pain_points_with_solutions
+        const profiles = rawProfiles.map(p => ({
+          ...p,
+          pain_points_with_solutions: p.pain_points_with_solutions || 
+            (p.pain_points || []).map(pp => ({ pain_point: pp, solution: '', lead_magnet_angle: '' })),
+        }));
+
         setMemory({
           id: data.id,
           website_url: data.website_url || '',
@@ -312,11 +330,61 @@ export function CopilotMemory() {
   const addCustomerProfile = () => {
     const newProfile: CustomerProfile = {
       icp_summary: '',
-      pain_points: [''],
-      services_to_pitch: [''],
-      key_benefits: [''],
+      pain_points_with_solutions: [],
+      services_to_pitch: [],
+      key_benefits: [],
     };
     updateMemoryField('customer_profiles', [...(memory?.customer_profiles || []), newProfile]);
+  };
+
+  // Pain point management for a specific ICP
+  const addPainPointToProfile = (profileIndex: number) => {
+    const profiles = [...(memory?.customer_profiles || [])];
+    const profile = profiles[profileIndex];
+    const painPoints = profile.pain_points_with_solutions || [];
+    profiles[profileIndex] = {
+      ...profile,
+      pain_points_with_solutions: [...painPoints, { pain_point: '', solution: '', lead_magnet_angle: '' }],
+    };
+    updateMemoryField('customer_profiles', profiles);
+  };
+
+  const updatePainPoint = (profileIndex: number, painIndex: number, field: keyof PainPointWithSolution, value: string) => {
+    const profiles = [...(memory?.customer_profiles || [])];
+    const profile = profiles[profileIndex];
+    const painPoints = [...(profile.pain_points_with_solutions || [])];
+    painPoints[painIndex] = { ...painPoints[painIndex], [field]: value };
+    profiles[profileIndex] = { ...profile, pain_points_with_solutions: painPoints };
+    updateMemoryField('customer_profiles', profiles);
+  };
+
+  const removePainPoint = (profileIndex: number, painIndex: number) => {
+    const profiles = [...(memory?.customer_profiles || [])];
+    const profile = profiles[profileIndex];
+    const painPoints = [...(profile.pain_points_with_solutions || [])];
+    painPoints.splice(painIndex, 1);
+    profiles[profileIndex] = { ...profile, pain_points_with_solutions: painPoints };
+    updateMemoryField('customer_profiles', profiles);
+  };
+
+  // Chip array management (services, benefits)
+  const addChipToProfile = (profileIndex: number, field: 'services_to_pitch' | 'key_benefits', value: string) => {
+    if (!value.trim()) return;
+    const profiles = [...(memory?.customer_profiles || [])];
+    const profile = profiles[profileIndex];
+    const items = [...(profile[field] || [])];
+    items.push(value.trim());
+    profiles[profileIndex] = { ...profile, [field]: items };
+    updateMemoryField('customer_profiles', profiles);
+  };
+
+  const removeChipFromProfile = (profileIndex: number, field: 'services_to_pitch' | 'key_benefits', chipIndex: number) => {
+    const profiles = [...(memory?.customer_profiles || [])];
+    const profile = profiles[profileIndex];
+    const items = [...(profile[field] || [])];
+    items.splice(chipIndex, 1);
+    profiles[profileIndex] = { ...profile, [field]: items };
+    updateMemoryField('customer_profiles', profiles);
   };
 
   const updateCustomerProfile = (index: number, profile: CustomerProfile) => {
@@ -505,7 +573,8 @@ export function CopilotMemory() {
             ) : (
               memory.customer_profiles.map((profile, index) => (
                 <Card key={index} className="bg-muted/50">
-                  <CardContent className="pt-4 space-y-3">
+                  <CardContent className="pt-4 space-y-4">
+                    {/* ICP Summary */}
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <label className="text-sm font-medium mb-1.5 block">ICP Summary</label>
@@ -526,51 +595,135 @@ export function CopilotMemory() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+
+                    {/* Pain Points with Solutions */}
                     <div>
-                      <label className="text-sm font-medium mb-1.5 block">Pain Points</label>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.pain_points.map((point, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {point || 'Empty'}
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium flex items-center gap-1.5">
+                          <Target className="h-3.5 w-3.5 text-destructive" />
+                          Pain Points & Solutions
+                        </label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => addPainPointToProfile(index)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+                      
+                      {(profile.pain_points_with_solutions || []).length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic py-2">
+                          No pain points yet. Add one or analyze your website.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {(profile.pain_points_with_solutions || []).map((pp, ppIndex) => (
+                            <div key={ppIndex} className="p-3 rounded-md border bg-background space-y-2">
+                              <div className="flex items-start gap-2">
+                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5">
+                                  Problem
+                                </Badge>
+                                <Input
+                                  className="h-7 text-sm flex-1"
+                                  placeholder="Pain point..."
+                                  value={pp.pain_point}
+                                  onChange={(e) => updatePainPoint(index, ppIndex, 'pain_point', e.target.value)}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                                  onClick={() => removePainPoint(index, ppIndex)}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <Badge className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5 bg-emerald-600">
+                                  <Lightbulb className="h-2.5 w-2.5 mr-0.5" />
+                                  Solution
+                                </Badge>
+                                <Input
+                                  className="h-7 text-sm flex-1"
+                                  placeholder="How you solve it..."
+                                  value={pp.solution}
+                                  onChange={(e) => updatePainPoint(index, ppIndex, 'solution', e.target.value)}
+                                />
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5">
+                                  <Gift className="h-2.5 w-2.5 mr-0.5" />
+                                  Lead Magnet
+                                </Badge>
+                                <Input
+                                  className="h-7 text-sm flex-1"
+                                  placeholder="Free work offer (optional)..."
+                                  value={pp.lead_magnet_angle || ''}
+                                  onChange={(e) => updatePainPoint(index, ppIndex, 'lead_magnet_angle', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Services to Pitch */}
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 block">Services to Pitch</label>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {(profile.services_to_pitch || []).map((service, sIndex) => (
+                          <Badge key={sIndex} variant="secondary" className="pr-1 gap-1">
+                            {service}
+                            <button
+                              onClick={() => removeChipFromProfile(index, 'services_to_pitch', sIndex)}
+                              className="hover:bg-muted rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
                           </Badge>
                         ))}
                       </div>
                       <Input
-                        placeholder="Add pain points (comma separated)"
-                        className="mt-2"
-                        defaultValue={profile.pain_points.join(', ')}
-                        onBlur={(e) =>
-                          updateCustomerProfile(index, {
-                            ...profile,
-                            pain_points: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
-                          })
-                        }
+                        placeholder="Type and press Enter to add..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addChipToProfile(index, 'services_to_pitch', e.currentTarget.value);
+                            e.currentTarget.value = '';
+                          }
+                        }}
                       />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1.5 block">Services to Pitch</label>
-                      <Input
-                        placeholder="Add services (comma separated)"
-                        defaultValue={profile.services_to_pitch.join(', ')}
-                        onBlur={(e) =>
-                          updateCustomerProfile(index, {
-                            ...profile,
-                            services_to_pitch: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
-                          })
-                        }
-                      />
-                    </div>
+
+                    {/* Key Benefits */}
                     <div>
                       <label className="text-sm font-medium mb-1.5 block">Key Benefits</label>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {(profile.key_benefits || []).map((benefit, bIndex) => (
+                          <Badge key={bIndex} variant="outline" className="pr-1 gap-1">
+                            {benefit}
+                            <button
+                              onClick={() => removeChipFromProfile(index, 'key_benefits', bIndex)}
+                              className="hover:bg-muted rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
                       <Input
-                        placeholder="Add key benefits (comma separated)"
-                        defaultValue={profile.key_benefits.join(', ')}
-                        onBlur={(e) =>
-                          updateCustomerProfile(index, {
-                            ...profile,
-                            key_benefits: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
-                          })
-                        }
+                        placeholder="Type and press Enter to add..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addChipToProfile(index, 'key_benefits', e.currentTarget.value);
+                            e.currentTarget.value = '';
+                          }
+                        }}
                       />
                     </div>
                   </CardContent>
