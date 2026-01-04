@@ -18,6 +18,7 @@ interface Message {
 interface CopilotChatAreaProps {
   conversationId: string | null;
   onNewChat: () => void;
+  onNewChatWithCallback?: () => Promise<string | null>;
   onUpdateTitle: (id: string, title: string) => void;
   initialPrompt?: string | null;
   onClearInitialPrompt?: () => void;
@@ -26,6 +27,7 @@ interface CopilotChatAreaProps {
 export function CopilotChatArea({ 
   conversationId, 
   onNewChat, 
+  onNewChatWithCallback,
   onUpdateTitle,
   initialPrompt,
   onClearInitialPrompt,
@@ -50,16 +52,26 @@ export function CopilotChatArea({
 
   // Auto-send initial prompt when provided
   useEffect(() => {
-    if (initialPrompt && !isLoading) {
-      setInput(initialPrompt);
+    const handleInitialPrompt = async () => {
+      if (!initialPrompt || isLoading) return;
+      
+      const promptToSend = initialPrompt;
       onClearInitialPrompt?.();
-      // Auto-submit after a brief delay to ensure state is set
-      setTimeout(() => {
-        const submitBtn = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
-        submitBtn?.click();
-      }, 150);
-    }
-  }, [initialPrompt, isLoading]);
+      
+      let targetConversationId = conversationId;
+      
+      // If no conversation exists, create one first
+      if (!targetConversationId && onNewChatWithCallback) {
+        targetConversationId = await onNewChatWithCallback();
+        if (!targetConversationId) return;
+      }
+      
+      // Now send the message directly
+      await sendMessage(promptToSend, targetConversationId);
+    };
+    
+    handleInitialPrompt();
+  }, [initialPrompt]);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -88,7 +100,6 @@ export function CopilotChatArea({
   const handleQuickPrompt = async (prompt: string) => {
     if (!conversationId) {
       await onNewChat();
-      // Wait a bit for the conversation to be created
       setTimeout(() => {
         setInput(prompt);
         inputRef.current?.focus();
@@ -99,74 +110,39 @@ export function CopilotChatArea({
     }
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!input.trim() || isLoading) return;
-
-    let currentConversationId = conversationId;
-
-    // Create a new conversation if none exists
-    if (!currentConversationId) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: newConv, error: convError } = await supabase
-        .from('copilot_conversations')
-        .insert({ user_id: user.id, title: input.substring(0, 50) })
-        .select()
-        .single();
-
-      if (convError) {
-        console.error('Error creating conversation:', convError);
-        return;
-      }
-
-      currentConversationId = newConv.id;
-      window.location.reload(); // Refresh to show new conversation
-      return;
-    }
-
-    const userMessage = input.trim();
-    setInput('');
+  const sendMessage = async (message: string, targetConversationId: string | null) => {
+    if (!message.trim() || !targetConversationId) return;
+    
     setIsLoading(true);
-
-    // Add user message optimistically
+    
     const tempUserMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: userMessage,
+      content: message,
       created_at: new Date().toISOString(),
     };
     setMessages(prev => [...prev, tempUserMessage]);
 
     try {
-      // Save user message to database
-      const { error: userMsgError } = await supabase
-        .from('copilot_messages')
-        .insert({
-          conversation_id: currentConversationId,
-          role: 'user',
-          content: userMessage,
-        });
+      await supabase.from('copilot_messages').insert({
+        conversation_id: targetConversationId,
+        role: 'user',
+        content: message,
+      });
 
-      if (userMsgError) throw userMsgError;
-
-      // Update conversation title if this is the first message
       if (messages.length === 0) {
-        onUpdateTitle(currentConversationId, userMessage.substring(0, 50));
+        onUpdateTitle(targetConversationId, message.substring(0, 50));
       }
 
-      // Build conversation history for context
       const conversationHistory = messages.map(m => ({
         role: m.role,
         content: m.content,
       }));
 
-      // Call the growth-copilot function
       const { data, error } = await supabase.functions.invoke('growth-copilot', {
         body: {
-          message: userMessage,
-          conversationHistory: [...conversationHistory, { role: 'user', content: userMessage }],
+          message,
+          conversationHistory: [...conversationHistory, { role: 'user', content: message }],
         },
       });
 
@@ -174,7 +150,6 @@ export function CopilotChatArea({
 
       const assistantContent = data?.response || 'I apologize, but I encountered an issue processing your request.';
 
-      // Add assistant message
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -183,29 +158,45 @@ export function CopilotChatArea({
       };
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Save assistant message to database
-      await supabase
-        .from('copilot_messages')
-        .insert({
-          conversation_id: currentConversationId,
-          role: 'assistant',
-          content: assistantContent,
-        });
+      await supabase.from('copilot_messages').insert({
+        conversation_id: targetConversationId,
+        role: 'assistant',
+        content: assistantContent,
+      });
 
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        created_at: new Date().toISOString(),
+      }]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    let currentConversationId = conversationId;
+
+    if (!currentConversationId) {
+      if (onNewChatWithCallback) {
+        currentConversationId = await onNewChatWithCallback();
+        if (!currentConversationId) return;
+      } else {
+        return;
+      }
+    }
+
+    const userMessage = input.trim();
+    setInput('');
+    
+    await sendMessage(userMessage, currentConversationId);
+
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
