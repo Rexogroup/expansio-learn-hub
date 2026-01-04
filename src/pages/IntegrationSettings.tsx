@@ -713,7 +713,7 @@ export default function IntegrationSettings() {
                       <div>
                         <CardTitle className="text-lg">Cold Email CRM</CardTitle>
                         <CardDescription>
-                          Automatically add interested leads to your CRM team
+                          Automatically add interested leads to your Cold Email CRM
                         </CardDescription>
                       </div>
                     </div>
@@ -759,7 +759,7 @@ export default function IntegrationSettings() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Interested replies will automatically create leads in the Cold Email tab of your CRM.
+                        Interested replies will automatically create leads in your Cold Email CRM.
                       </p>
                     </div>
                     {userTeams.length === 0 && !loadingTeams && (
@@ -836,7 +836,7 @@ export default function IntegrationSettings() {
                       <div>
                         <CardTitle className="text-lg">Real-Time Interested Replies</CardTitle>
                         <CardDescription>
-                          Automatically sync interested leads to your Master Inbox
+                          Automatically sync interested leads to Master Inbox & Cold Email CRM
                         </CardDescription>
                       </div>
                     </div>
