@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Calendar, Mail, CheckCircle, Sparkles, CalendarCheck, Inbox, ScanSearch } from "lucide-react";
+import { RefreshCw, Calendar, Mail, CheckCircle, Sparkles, CalendarCheck, Inbox, ScanSearch, ChevronDown, ChevronUp } from "lucide-react";
 import ReplyCard from "@/components/inbox/ReplyCard";
 import ThreadView from "@/components/inbox/ThreadView";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -46,6 +46,7 @@ const MasterInbox = () => {
   const [activeTab, setActiveTab] = useState("pending");
   const [hasIntegration, setHasIntegration] = useState(false);
   const [showThreadOnMobile, setShowThreadOnMobile] = useState(false);
+  const [showAllReplies, setShowAllReplies] = useState(false);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -224,6 +225,10 @@ const MasterInbox = () => {
     return r.status === activeTab;
   });
 
+  // Collapsible reply list - show last 15 by default
+  const displayedReplies = showAllReplies ? filteredReplies : filteredReplies.slice(0, 15);
+  const hasMoreReplies = filteredReplies.length > 15;
+
   const pendingCount = replies.filter(r => r.status === 'pending').length;
   const repliedCount = replies.filter(r => r.status === 'replied').length;
   const meetingsBookedCount = replies.filter(r => r.outcome === 'meeting_booked').length;
@@ -256,7 +261,7 @@ const MasterInbox = () => {
   }
 
   return (
-    <main className="flex-1 container mx-auto px-4 py-6 flex flex-col overflow-hidden">
+    <main className="flex-1 px-4 py-6 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
@@ -392,10 +397,10 @@ const MasterInbox = () => {
               ) : (
                 <ResizablePanelGroup direction="horizontal">
                   {/* Reply List Panel */}
-                  <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
+                  <ResizablePanel defaultSize={30} minSize={20} maxSize={40}>
                     <ScrollArea className="h-full">
                       <div className="p-2 space-y-2">
-                        {filteredReplies.map((reply) => (
+                        {displayedReplies.map((reply) => (
                           <ReplyCard
                             key={reply.id}
                             reply={reply}
@@ -404,6 +409,27 @@ const MasterInbox = () => {
                             isActive={selectedReply?.id === reply.id}
                           />
                         ))}
+                        
+                        {/* Show All / Show Less Toggle */}
+                        {hasMoreReplies && (
+                          <Button
+                            variant="ghost"
+                            className="w-full text-muted-foreground"
+                            onClick={() => setShowAllReplies(!showAllReplies)}
+                          >
+                            {showAllReplies ? (
+                              <>
+                                <ChevronUp className="h-4 w-4 mr-2" />
+                                Show less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="h-4 w-4 mr-2" />
+                                Show all {filteredReplies.length} replies
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </ScrollArea>
                   </ResizablePanel>
@@ -411,7 +437,7 @@ const MasterInbox = () => {
                   <ResizableHandle withHandle />
 
                   {/* Thread View Panel */}
-                  <ResizablePanel defaultSize={65}>
+                  <ResizablePanel defaultSize={70}>
                     {selectedReply ? (
                       <ThreadView
                         reply={selectedReply}

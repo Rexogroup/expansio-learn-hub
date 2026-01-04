@@ -374,6 +374,18 @@ const ThreadView = ({ reply, onSuccess, onDismiss, onBack, isMobile }: ThreadVie
                 placeholder="Write your response or click 'Generate with AI' to create a draft..."
                 className="min-h-[150px] resize-none"
               />
+              
+              {/* Send Reply Button - directly below draft */}
+              <div className="flex justify-end mt-3">
+                <Button onClick={sendReply} disabled={sending || !draftContent.trim()}>
+                  {sending ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
+                  {sending ? 'Sending...' : 'Send Reply'}
+                </Button>
+              </div>
             </div>
           )}
 
@@ -423,21 +435,6 @@ const ThreadView = ({ reply, onSuccess, onDismiss, onBack, isMobile }: ThreadVie
         </div>
       </ScrollArea>
 
-      {/* Action Bar */}
-      {!isReplied && !isDismissed && (
-        <div className="flex-shrink-0 border-t p-4 bg-background">
-          <div className="flex justify-end gap-2">
-            <Button onClick={sendReply} disabled={sending || !draftContent.trim()}>
-              {sending ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
-              {sending ? 'Sending...' : 'Send Reply'}
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
