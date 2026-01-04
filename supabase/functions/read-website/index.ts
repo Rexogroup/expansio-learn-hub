@@ -43,6 +43,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check for Lovable API key
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Lovable API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check for Firecrawl API key
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!firecrawlApiKey) {
@@ -90,8 +99,6 @@ Deno.serve(async (req) => {
     console.log('Website scraped successfully, extracting business info...');
 
     // Use AI to extract structured business information
-    const aiGatewayUrl = Deno.env.get('AI_GATEWAY_URL') || 'https://ai.lovable.dev/v1/chat/completions';
-
     const extractionPrompt = `Analyze the following website content and extract structured business information.
 
 Website Content:
@@ -118,10 +125,13 @@ Extract the following information and return ONLY a valid JSON object (no markdo
 
 If you cannot find specific information, make reasonable inferences based on the content. Always return valid JSON.`;
 
-    const aiResponse = await fetch(aiGatewayUrl, {
+    console.log('Calling Lovable AI Gateway for extraction...');
+
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${lovableApiKey}`,
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
@@ -140,6 +150,18 @@ If you cannot find specific information, make reasonable inferences based on the
     });
 
     if (!aiResponse.ok) {
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again in a moment.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'AI credits depleted. Please add credits to continue.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       console.error('AI extraction failed:', await aiResponse.text());
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to analyze website content' }),
