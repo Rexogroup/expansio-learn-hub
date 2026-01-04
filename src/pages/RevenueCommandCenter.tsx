@@ -24,6 +24,7 @@ export default function RevenueCommandCenter() {
   const [channel, setChannel] = useState<Channel>('all');
   const [loading, setLoading] = useState(true);
   const [teamIds, setTeamIds] = useState<string[]>([]);
+  const [totalEmailsSent, setTotalEmailsSent] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,12 +51,27 @@ export default function RevenueCommandCenter() {
       setTeamIds(uniqueTeamIds);
 
       if (uniqueTeamIds.length > 0) {
+        // Fetch CRM leads
         const { data: leadsData } = await supabase
           .from('crm_leads')
-          .select('*')
+          .select('id, lead_name, status, meeting_booked, meeting_status, deal_value, source_type, interested, created_at')
           .in('team_id', uniqueTeamIds);
 
-        setLeads(leadsData || []);
+        setLeads((leadsData as CRMLead[]) || []);
+
+        // Fetch total emails sent from synced_campaigns for current user
+        const { data: campaignsData } = await supabase
+          .from('synced_campaigns')
+          .select('emails_sent')
+          .eq('user_id', session.user.id);
+        
+        let emailsSent = 0;
+        if (campaignsData) {
+          for (const c of campaignsData) {
+            emailsSent += c.emails_sent || 0;
+          }
+        }
+        setTotalEmailsSent(emailsSent);
       }
       
       setLoading(false);
@@ -71,27 +87,35 @@ export default function RevenueCommandCenter() {
     return lead.source_type !== 'cold_email';
   });
 
+  // Calculate Total Contacted
+  const sdrLeadsCount = leads.filter(l => l.source_type !== 'cold_email').length;
+  const totalContacted = channel === 'cold_email' 
+    ? totalEmailsSent 
+    : channel === 'sdr' 
+      ? sdrLeadsCount 
+      : totalEmailsSent + sdrLeadsCount;
+
   // Calculate KPIs
-  const totalLeads = filteredLeads.length;
   const interestedLeads = filteredLeads.filter(l => l.interested).length;
   const bookedCalls = filteredLeads.filter(l => l.meeting_booked).length;
   const liveCalls = filteredLeads.filter(l => l.meeting_status === 'completed').length;
   const closedDeals = filteredLeads.filter(l => l.status === 'closed_won').length;
 
   // Calculate rates
+  const interestedRate = totalContacted > 0 ? (interestedLeads / totalContacted) * 100 : 0;
   const bookRate = interestedLeads > 0 ? (bookedCalls / interestedLeads) * 100 : 0;
   const showRate = bookedCalls > 0 ? (liveCalls / bookedCalls) * 100 : 0;
   const closeRate = liveCalls > 0 ? (closedDeals / liveCalls) * 100 : 0;
 
   // Calculate revenue metrics
   const closedWonLeads = filteredLeads.filter(l => l.status === 'closed_won');
-  const cashCollected = closedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
-  const mrr = cashCollected; // Simplified - assumes monthly deals
-  const arr = mrr * 12;
+  const totalRevenue = closedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
+  const avgDealSize = closedDeals > 0 ? totalRevenue / closedDeals : 0;
 
-  // Funnel stages
+  // Funnel stages - now includes Contacted
   const funnelStages = [
-    { name: 'Interested', count: interestedLeads },
+    { name: 'Contacted', count: totalContacted },
+    { name: 'Interested', count: interestedLeads, conversionRate: interestedRate, benchmark: 5 },
     { name: 'Booked', count: bookedCalls, conversionRate: bookRate, benchmark: 20 },
     { name: 'Live Calls', count: liveCalls, conversionRate: showRate, benchmark: 60 },
     { name: 'Closed', count: closedDeals, conversionRate: closeRate, benchmark: 15 },
@@ -135,8 +159,20 @@ export default function RevenueCommandCenter() {
       {/* KPI Grid - Row 1 */}
       <div className="grid grid-cols-5 gap-4">
         <RevenueKPICard
-          title="Leads"
-          value={totalLeads}
+          title="Contacted"
+          value={totalContacted}
+        />
+        <RevenueKPICard
+          title="Interest Rate %"
+          value={interestedRate}
+          isPercentage
+          showBenchmark
+          benchmark={5}
+          benchmarkLabel=">5%"
+        />
+        <RevenueKPICard
+          title="Interested"
+          value={interestedLeads}
         />
         <RevenueKPICard
           title="Book Rate %"
@@ -150,6 +186,10 @@ export default function RevenueCommandCenter() {
           title="Booked Calls"
           value={bookedCalls}
         />
+      </div>
+
+      {/* KPI Grid - Row 2 */}
+      <div className="grid grid-cols-5 gap-4">
         <RevenueKPICard
           title="Show Rate %"
           value={showRate}
@@ -162,10 +202,6 @@ export default function RevenueCommandCenter() {
           title="Live Calls"
           value={liveCalls}
         />
-      </div>
-
-      {/* KPI Grid - Row 2 */}
-      <div className="grid grid-cols-5 gap-4">
         <RevenueKPICard
           title="Close Rate %"
           value={closeRate}
@@ -179,18 +215,8 @@ export default function RevenueCommandCenter() {
           value={closedDeals}
         />
         <RevenueKPICard
-          title="MRR"
-          value={mrr}
-          isCurrency
-        />
-        <RevenueKPICard
-          title="ARR"
-          value={arr}
-          isCurrency
-        />
-        <RevenueKPICard
-          title="Cash Collected"
-          value={cashCollected}
+          title="Avg Deal Size"
+          value={avgDealSize}
           isCurrency
         />
       </div>
@@ -201,6 +227,7 @@ export default function RevenueCommandCenter() {
         
         <div className="space-y-4">
           <BottleneckInsights
+            interestedRate={interestedRate}
             bookRate={bookRate}
             showRate={showRate}
             closeRate={closeRate}
