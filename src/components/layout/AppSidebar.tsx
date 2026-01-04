@@ -173,9 +173,7 @@ export function AppSidebar() {
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
                       {item.url === "/email-accounts" && alertCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto h-5 w-5 p-0 flex items-center justify-center text-xs">
-                          {alertCount}
-                        </Badge>
+                        <span className="ml-auto h-2.5 w-2.5 rounded-full bg-destructive" />
                       )}
                     </Link>
                   </SidebarMenuButton>
