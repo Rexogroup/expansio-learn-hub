@@ -276,12 +276,12 @@ export default function RevenueCommandCenter() {
   const IMPLIES_SHOWN = ['proposal', 'closed_won', 'closed_lost'];
   const IMPLIES_PROPOSAL = ['closed_won', 'closed_lost'];
 
-  // Calculate KPIs - use campaign data for cold email interested count
-  // Use status_changed_at for accurate timeline attribution when available
-  // Apply cascading logic: leads in later stages imply earlier stages completed
+  // Calculate KPIs using unified CRM-based cascading logic for ALL channels
+  // This ensures consistent metrics whether data comes from imports or API sync
+  
+  // SDR Interested (non-cold_email)
   const sdrInterestedLeads = leads.filter(l => {
     if (l.source_type === 'cold_email') return false;
-    // Cascading: interested OR in a stage that implies interest
     const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
     if (!isInterested) return false;
     const attributionDate = l.status_changed_at || l.created_at;
@@ -289,13 +289,25 @@ export default function RevenueCommandCenter() {
     const date = new Date(attributionDate);
     return date >= dateRange.from && date <= dateRange.to;
   }).length;
+  
+  // Cold Email Interested - use CRM data with cascading logic (not external API)
+  const coldEmailInterestedLeads = leads.filter(l => {
+    if (l.source_type !== 'cold_email') return false;
+    const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
+    if (!isInterested) return false;
+    const attributionDate = l.status_changed_at || l.created_at;
+    if (!attributionDate) return true;
+    const date = new Date(attributionDate);
+    return date >= dateRange.from && date <= dateRange.to;
+  }).length;
+  
   const interestedLeads = channel === 'cold_email' 
-    ? interestedFromCampaigns 
+    ? coldEmailInterestedLeads 
     : channel === 'sdr' 
       ? sdrInterestedLeads 
-      : interestedFromCampaigns + sdrInterestedLeads;
+      : coldEmailInterestedLeads + sdrInterestedLeads;
   
-  // Previous period interested - use status_changed_at for attribution with cascading logic
+  // Previous period interested - unified CRM logic
   const prevSdrInterestedLeads = leads.filter(l => {
     if (l.source_type === 'cold_email') return false;
     const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
@@ -305,17 +317,26 @@ export default function RevenueCommandCenter() {
     const date = new Date(attributionDate);
     return date >= previousDateRange.from && date <= previousDateRange.to;
   }).length;
+  
+  const prevColdEmailInterestedLeads = leads.filter(l => {
+    if (l.source_type !== 'cold_email') return false;
+    const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
+    if (!isInterested) return false;
+    const attributionDate = l.status_changed_at || l.created_at;
+    if (!attributionDate) return false;
+    const date = new Date(attributionDate);
+    return date >= previousDateRange.from && date <= previousDateRange.to;
+  }).length;
+  
   const prevInterestedLeads = channel === 'cold_email' 
-    ? prevInterestedFromCampaigns 
+    ? prevColdEmailInterestedLeads 
     : channel === 'sdr' 
       ? prevSdrInterestedLeads 
-      : prevInterestedFromCampaigns + prevSdrInterestedLeads;
+      : prevColdEmailInterestedLeads + prevSdrInterestedLeads;
   
-  // Use campaign meetings for cold email, CRM booked for SDR
-  // Use meeting_datetime or status_changed_at for accurate attribution with cascading logic
+  // SDR Booked Calls
   const sdrBookedCalls = leads.filter(l => {
     if (l.source_type === 'cold_email') return false;
-    // Cascading: meeting_booked OR in a stage that implies booking
     const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
     if (!isBooked) return false;
     const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
@@ -323,13 +344,25 @@ export default function RevenueCommandCenter() {
     const date = new Date(attributionDate);
     return date >= dateRange.from && date <= dateRange.to;
   }).length;
+  
+  // Cold Email Booked - use CRM data with cascading logic (not external API)
+  const coldEmailBookedCalls = leads.filter(l => {
+    if (l.source_type !== 'cold_email') return false;
+    const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
+    if (!isBooked) return false;
+    const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
+    if (!attributionDate) return true;
+    const date = new Date(attributionDate);
+    return date >= dateRange.from && date <= dateRange.to;
+  }).length;
+  
   const bookedCalls = channel === 'cold_email' 
-    ? meetingsFromCampaigns 
+    ? coldEmailBookedCalls 
     : channel === 'sdr' 
       ? sdrBookedCalls 
-      : meetingsFromCampaigns + sdrBookedCalls;
+      : coldEmailBookedCalls + sdrBookedCalls;
   
-  // Previous period booked - with cascading logic
+  // Previous period booked - unified CRM logic
   const prevSdrBookedCalls = leads.filter(l => {
     if (l.source_type === 'cold_email') return false;
     const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
@@ -339,11 +372,22 @@ export default function RevenueCommandCenter() {
     const date = new Date(attributionDate);
     return date >= previousDateRange.from && date <= previousDateRange.to;
   }).length;
+  
+  const prevColdEmailBookedCalls = leads.filter(l => {
+    if (l.source_type !== 'cold_email') return false;
+    const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
+    if (!isBooked) return false;
+    const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
+    if (!attributionDate) return false;
+    const date = new Date(attributionDate);
+    return date >= previousDateRange.from && date <= previousDateRange.to;
+  }).length;
+  
   const prevBookedCalls = channel === 'cold_email' 
-    ? prevMeetingsFromCampaigns 
+    ? prevColdEmailBookedCalls 
     : channel === 'sdr' 
       ? prevSdrBookedCalls 
-      : prevMeetingsFromCampaigns + prevSdrBookedCalls;
+      : prevColdEmailBookedCalls + prevSdrBookedCalls;
   
   // Live calls (shows) - cascading: meeting_status completed OR in later stage
   const liveCalls = filteredLeads.filter(l => 
@@ -404,28 +448,28 @@ export default function RevenueCommandCenter() {
       ? 0 
       : prevTotalReplies;
 
-  // Calculate rates - use Interested / Replies for cold email (matches Campaigns page)
+  // Calculate rates - use CRM-based interested counts for consistency
   const sdrInterestedRate = sdrLeadsCount > 0 ? (sdrInterestedLeads / sdrLeadsCount) * 100 : 0;
-  const coldEmailInterestedRate = totalReplies > 0 ? (interestedFromCampaigns / totalReplies) * 100 : 0;
+  const coldEmailInterestedRate = totalReplies > 0 ? (coldEmailInterestedLeads / totalReplies) * 100 : 0;
   
   const interestedRate = channel === 'cold_email' 
     ? coldEmailInterestedRate 
     : channel === 'sdr' 
       ? sdrInterestedRate 
       : (totalReplies + sdrLeadsCount) > 0 
-        ? ((interestedFromCampaigns + sdrInterestedLeads) / (totalReplies + sdrLeadsCount)) * 100 
+        ? ((coldEmailInterestedLeads + sdrInterestedLeads) / (totalReplies + sdrLeadsCount)) * 100 
         : 0;
 
-  // Previous period interest rate
+  // Previous period interest rate - use CRM-based counts
   const prevSdrInterestedRate = prevSdrLeadsCount > 0 ? (prevSdrInterestedLeads / prevSdrLeadsCount) * 100 : 0;
-  const prevColdEmailInterestedRate = prevTotalReplies > 0 ? (prevInterestedFromCampaigns / prevTotalReplies) * 100 : 0;
+  const prevColdEmailInterestedRate = prevTotalReplies > 0 ? (prevColdEmailInterestedLeads / prevTotalReplies) * 100 : 0;
   
   const prevInterestedRate = channel === 'cold_email' 
     ? prevColdEmailInterestedRate 
     : channel === 'sdr' 
       ? prevSdrInterestedRate 
       : (prevTotalReplies + prevSdrLeadsCount) > 0 
-        ? ((prevInterestedFromCampaigns + prevSdrInterestedLeads) / (prevTotalReplies + prevSdrLeadsCount)) * 100 
+        ? ((prevColdEmailInterestedLeads + prevSdrInterestedLeads) / (prevTotalReplies + prevSdrLeadsCount)) * 100 
         : 0;
   
   const bookRate = interestedLeads > 0 ? (bookedCalls / interestedLeads) * 100 : 0;
