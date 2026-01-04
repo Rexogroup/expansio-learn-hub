@@ -37,10 +37,12 @@ import {
   ChevronUp,
   Plug,
   MailPlus,
+  DollarSign,
 } from "lucide-react";
 
 const mainNavItems = [
   { title: "Expansio Copilot", url: "/copilot", icon: Target },
+  { title: "Revenue Center", url: "/revenue", icon: DollarSign },
   { title: "Campaigns", url: "/dashboard", icon: TrendingUp },
   { title: "Master Inbox", url: "/inbox", icon: Mail },
   { title: "Sales Coach", url: "/sales-coach", icon: Phone },

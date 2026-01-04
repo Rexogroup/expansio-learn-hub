@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Auth from "./pages/Auth";
 import Signup from "./pages/Signup";
 import CommandCenter from "./pages/CommandCenter";
+import RevenueCommandCenter from "./pages/RevenueCommandCenter";
 import Onboarding from "./pages/Onboarding";
 import OnboardingStep from "./pages/OnboardingStep";
 import Courses from "./pages/Courses";
@@ -53,6 +54,7 @@ const App = () => (
             
             {/* All authenticated routes use AppLayout with sidebar */}
             <Route path="/dashboard" element={<AppLayout><CommandCenter /></AppLayout>} />
+            <Route path="/revenue" element={<AppLayout><RevenueCommandCenter /></AppLayout>} />
             <Route path="/onboarding" element={<AppLayout><Onboarding /></AppLayout>} />
             <Route path="/onboarding/step/:stepNumber" element={<AppLayout><OnboardingStep /></AppLayout>} />
             <Route path="/courses" element={<AppLayout><Courses /></AppLayout>} />
