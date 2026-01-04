@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Calendar, Lightbulb, Phone, Target, CheckCircle2, Zap } from "lucide-react";
+import { ArrowRight, Calendar, Lightbulb, Phone, Target, CheckCircle2, Zap, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Bottleneck {
@@ -19,10 +19,11 @@ interface BottleneckInsightsProps {
   interestedRate: number;
   bookRate: number;
   showRate: number;
+  proposalRate: number;
   closeRate: number;
 }
 
-export function BottleneckInsights({ interestedRate, bookRate, showRate, closeRate }: BottleneckInsightsProps) {
+export function BottleneckInsights({ interestedRate, bookRate, showRate, proposalRate, closeRate }: BottleneckInsightsProps) {
   const navigate = useNavigate();
 
   const bottlenecks: Bottleneck[] = [];
@@ -66,6 +67,20 @@ export function BottleneckInsights({ interestedRate, bookRate, showRate, closeRa
       actionLabel: 'Improve Shows',
       actionPath: '/copilot',
       icon: Target,
+      priority: priority++,
+    });
+  }
+
+  if (proposalRate < 70) {
+    bottlenecks.push({
+      id: 'proposal-rate',
+      title: 'Proposal Rate Below Benchmark',
+      description: `Your proposal rate is ${proposalRate.toFixed(1)}% (target: >70%). Consider qualifying leads better before meetings.`,
+      currentValue: proposalRate,
+      benchmark: 70,
+      actionLabel: 'Review ICP',
+      actionPath: '/copilot',
+      icon: FileText,
       priority: priority++,
     });
   }
