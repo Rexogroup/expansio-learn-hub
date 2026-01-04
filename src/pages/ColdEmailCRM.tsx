@@ -11,9 +11,8 @@ import { QuickStats } from "@/components/crm/QuickStats";
 import { MessageTemplates } from "@/components/crm/MessageTemplates";
 import { FunnelDashboard } from "@/components/crm/FunnelDashboard";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, FileText, MailPlus, Download, Loader2, LayoutDashboard, Upload } from "lucide-react";
+import { Table2, Kanban, Settings, FileText, MailPlus, Download, Loader2, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
-import { CSVLeadImporter } from "@/components/crm/CSVLeadImporter";
 
 import type { Team, TeamMember, CRMLead } from "./CRM";
 
@@ -26,7 +25,6 @@ const ColdEmailCRM = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showTeamManager, setShowTeamManager] = useState(false);
-  const [showCSVImporter, setShowCSVImporter] = useState(false);
   const [userTeamRole, setUserTeamRole] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -413,14 +411,6 @@ const ColdEmailCRM = () => {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => setShowCSVImporter(true)}
-            disabled={!selectedTeamId}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV
-          </Button>
-          <Button
-            variant="outline"
             onClick={importFromMasterInbox}
             disabled={isImporting || !selectedTeamId}
           >
@@ -445,16 +435,6 @@ const ColdEmailCRM = () => {
           </Button>
         </div>
       </div>
-
-      {/* CSV Importer Dialog */}
-      {selectedTeamId && (
-        <CSVLeadImporter
-          open={showCSVImporter}
-          onOpenChange={setShowCSVImporter}
-          teamId={selectedTeamId}
-          onImportComplete={() => fetchLeads(selectedTeamId)}
-        />
-      )}
 
       {selectedTeamId && (
         <>
