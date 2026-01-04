@@ -711,7 +711,8 @@ async function fetchEmailBisonCampaigns(
         reply_rate: stats.sent > 0 ? (stats.replied / stats.sent) * 100 : 0,
         interested_rate: stats.replied > 0 ? (stats.interested / stats.replied) * 100 : 0,
         emails_per_lead: stats.interested > 0 ? Math.round(stats.sent / stats.interested) : null,
-        interested_to_meeting_rate: stats.interested > 0 ? (meetingsBooked / stats.interested) * 100 : null,
+        // Cap rate to prevent DECIMAL(7,2) overflow - max value 99999.99
+        interested_to_meeting_rate: stats.interested > 0 ? Math.min((meetingsBooked / stats.interested) * 100, 99999.99) : null,
         raw_data: { campaign, stats },
       });
     }
