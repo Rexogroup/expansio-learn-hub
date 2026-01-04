@@ -304,8 +304,8 @@ export default function CommandCenter() {
         id: `pause-${pauseVar.id}`,
         title: `Pause: Step ${pauseVar.stepNumber} - Variant ${pauseVar.variantLabel}`,
         description: `Underperforming - consider pausing to iterate.${winningPattern}`,
-        actionLabel: 'Rewrite',
-        actionPath: '/script-builder',
+        actionLabel: 'Iterate in Copilot',
+        actionPath: '/copilot',
         priority: 'high',
         icon: <Pause className="w-5 h-5" />,
       });
@@ -318,8 +318,8 @@ export default function CommandCenter() {
         id: `scale-${scaleVar.id}`,
         title: `SCALE: Step ${scaleVar.stepNumber} - Variant ${scaleVar.variantLabel}`,
         description: `${scaleVar.reason}. Add more sending domains to increase volume on this winner!`,
-        actionLabel: 'Add Domains',
-        actionPath: '/integrations',
+        actionLabel: 'View SOP',
+        actionPath: '/courses',
         priority: 'high',
         icon: <TrendingUp className="w-5 h-5" />,
       });
@@ -335,8 +335,8 @@ export default function CommandCenter() {
         id: `iterate-${iterVar.id}`,
         title: `ITERATE: Step ${iterVar.stepNumber} - Variant ${iterVar.variantLabel}`,
         description: `${iterVar.reason}${winningRef}`,
-        actionLabel: 'Create Variant',
-        actionPath: '/script-builder',
+        actionLabel: 'Iterate in Copilot',
+        actionPath: '/copilot',
         priority: 'normal',
         icon: <RefreshCw className="w-5 h-5" />,
       });
