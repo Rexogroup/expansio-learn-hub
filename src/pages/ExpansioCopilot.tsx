@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { CopilotSidebar } from '@/components/copilot/CopilotSidebar';
 import { CopilotChatArea } from '@/components/copilot/CopilotChatArea';
@@ -16,15 +16,28 @@ export interface Conversation {
 
 export default function ExpansioCopilot() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<CopilotTab>('chat');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
     loadConversations();
   }, []);
+
+  // Check for initial prompt from navigation state
+  useEffect(() => {
+    const state = location.state as { initialPrompt?: string } | null;
+    if (state?.initialPrompt) {
+      setInitialPrompt(state.initialPrompt);
+      setActiveTab('chat');
+      // Clear the state to prevent re-triggering on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -127,6 +140,8 @@ export default function ExpansioCopilot() {
             conversationId={activeConversationId}
             onNewChat={handleNewChat}
             onUpdateTitle={handleUpdateConversationTitle}
+            initialPrompt={initialPrompt}
+            onClearInitialPrompt={() => setInitialPrompt(null)}
           />
         )}
         {activeTab === 'memory' && <CopilotMemory />}

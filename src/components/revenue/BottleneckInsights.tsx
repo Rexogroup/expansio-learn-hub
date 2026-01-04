@@ -13,6 +13,7 @@ interface Bottleneck {
   actionPath: string;
   icon: React.ElementType;
   priority: number;
+  prompt: string;
 }
 
 interface BottleneckInsightsProps {
@@ -40,6 +41,15 @@ export function BottleneckInsights({ interestedRate, bookRate, showRate, proposa
       actionPath: '/copilot',
       icon: Lightbulb,
       priority: priority++,
+      prompt: `My interest rate is currently ${interestedRate.toFixed(1)}% which is below the 5% benchmark.
+
+Please analyze my situation and provide:
+1. The top 3 most likely reasons my interest rate is low
+2. Specific action items to improve my value proposition and messaging
+3. Recommendations for better ICP targeting criteria
+4. Quick wins I can implement this week to boost response rates
+
+Be specific and actionable based on my business context.`,
     });
   }
 
@@ -54,6 +64,16 @@ export function BottleneckInsights({ interestedRate, bookRate, showRate, proposa
       actionPath: '/copilot',
       icon: Calendar,
       priority: priority++,
+      prompt: `My book rate (interested leads who schedule meetings) is currently ${bookRate.toFixed(1)}% which is below the 20% benchmark.
+
+Please analyze my appointment setting process and provide:
+1. Common reasons interested leads don't book meetings
+2. Follow-up sequence improvements I should implement
+3. Objection handling strategies for scheduling resistance
+4. Optimal timing and cadence for follow-up messages
+5. CTA and booking link optimization tips
+
+Help me convert more interested leads into booked calls.`,
     });
   }
 
@@ -68,6 +88,16 @@ export function BottleneckInsights({ interestedRate, bookRate, showRate, proposa
       actionPath: '/copilot',
       icon: Target,
       priority: priority++,
+      prompt: `My show rate (booked calls that actually happen) is currently ${showRate.toFixed(1)}% which is below the 60% benchmark. Too many prospects are no-showing.
+
+Please help me reduce no-shows by providing:
+1. Pre-meeting confirmation sequence templates
+2. Reminder timing strategy (when to send reminders)
+3. Value reinforcement messaging to increase commitment
+4. Reschedule workflow for no-shows
+5. Calendar and scheduling tool optimization tips
+
+I need to get more booked prospects to actually show up.`,
     });
   }
 
@@ -82,6 +112,16 @@ export function BottleneckInsights({ interestedRate, bookRate, showRate, proposa
       actionPath: '/copilot',
       icon: FileText,
       priority: priority++,
+      prompt: `My proposal rate (live calls that receive proposals) is currently ${proposalRate.toFixed(1)}% which is below the 70% benchmark. Not enough meetings are converting to proposals.
+
+Please analyze my qualification and discovery process:
+1. What qualification criteria should I add to ensure better-fit leads?
+2. How can I improve my discovery call structure to identify proposal-ready prospects?
+3. Which ICP segments are most likely to be proposal-worthy?
+4. What red flags should I look for during meetings that indicate poor fit?
+5. Meeting agenda optimization to better qualify opportunities
+
+Help me send proposals only to truly qualified prospects.`,
     });
   }
 
@@ -93,9 +133,20 @@ export function BottleneckInsights({ interestedRate, bookRate, showRate, proposa
       currentValue: closeRate,
       benchmark: 15,
       actionLabel: 'Sales Coach',
-      actionPath: '/sales-coach',
+      actionPath: '/copilot',
       icon: Phone,
       priority: priority++,
+      prompt: `My close rate (proposals that convert to closed deals) is currently ${closeRate.toFixed(1)}% which is below the 15% benchmark.
+
+Please analyze my sales closing process and provide:
+1. Common objection patterns I should prepare for and how to handle them
+2. Pricing and packaging strategies to increase close rates
+3. Follow-up cadence after sending proposals
+4. Urgency and scarcity tactics that work ethically
+5. Which types of offers/services close best and why
+6. Negotiation frameworks for handling pushback
+
+Help me close more of my qualified proposals.`,
     });
   }
 
@@ -155,7 +206,9 @@ export function BottleneckInsights({ interestedRate, bookRate, showRate, proposa
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => navigate(bottleneck.actionPath)}
+                  onClick={() => navigate(bottleneck.actionPath, { 
+                    state: { initialPrompt: bottleneck.prompt } 
+                  })}
                   className="shrink-0 border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300"
                 >
                   {bottleneck.actionLabel}
