@@ -6,7 +6,17 @@ import { ChannelFilter, Channel } from "@/components/revenue/ChannelFilter";
 import { TimelineFilter } from "@/components/growth/TimelineFilter";
 import { BottleneckInsights } from "@/components/revenue/BottleneckInsights";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign } from "lucide-react";
+import { 
+  DollarSign, 
+  Users, 
+  MessageSquare, 
+  Sparkles, 
+  Calendar, 
+  Video, 
+  Trophy, 
+  Coins,
+  TrendingUp
+} from "lucide-react";
 import { subDays } from "date-fns";
 
 interface CRMLead {
@@ -236,105 +246,151 @@ export default function RevenueCommandCenter() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <DollarSign className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Revenue Command Center</h1>
-            <p className="text-sm text-muted-foreground">
-              Unified view of your business growth metrics
-            </p>
-          </div>
+    <div className="min-h-screen">
+      {/* Premium Hero Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/95 via-primary to-primary/90 px-6 py-8 mb-8">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+            backgroundSize: '32px 32px'
+          }} />
         </div>
         
-        <div className="flex items-center gap-3">
-          <TimelineFilter value={timelineDays} onChange={setTimelineDays} />
-          <ChannelFilter value={channel} onChange={setChannel} />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20">
+              <TrendingUp className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white tracking-tight">Revenue Command Center</h1>
+              <p className="text-primary-foreground/80 mt-1">
+                Unified view of your business growth metrics
+              </p>
+            </div>
+          </div>
+          
+          {/* Summary Stats in Hero */}
+          <div className="hidden lg:flex items-center gap-6">
+            <div className="text-right">
+              <p className="text-xs font-medium text-white/60 uppercase tracking-wider">Total Revenue</p>
+              <p className="text-2xl font-bold text-white">${totalRevenue.toLocaleString()}</p>
+            </div>
+            <div className="h-12 w-px bg-white/20" />
+            <div className="text-right">
+              <p className="text-xs font-medium text-white/60 uppercase tracking-wider">Closed Deals</p>
+              <p className="text-2xl font-bold text-white">{closedDeals}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <TimelineFilter value={timelineDays} onChange={setTimelineDays} />
+            <ChannelFilter value={channel} onChange={setChannel} />
+          </div>
         </div>
       </div>
 
-      {/* KPI Grid - Row 1: Top of Funnel */}
-      <div className="grid grid-cols-4 gap-4">
-        <RevenueKPICard
-          title="Contacted"
-          value={totalContacted}
-        />
-        <RevenueKPICard
-          title="Reply Rate"
-          value={replyRate}
-          secondaryValue={totalRepliesDisplay}
-          isPercentage
-          showBenchmark
-          benchmark={1.5}
-          benchmarkLabel=">1.5%"
-        />
-        <RevenueKPICard
-          title="Interest Rate"
-          value={interestedRate}
-          secondaryValue={interestedLeads}
-          isPercentage
-          showBenchmark
-          benchmark={10}
-          benchmarkLabel=">10%"
-        />
-        <RevenueKPICard
-          title="Book Rate"
-          value={bookRate}
-          secondaryValue={bookedCalls}
-          isPercentage
-          showBenchmark
-          benchmark={20}
-          benchmarkLabel=">20%"
-        />
-      </div>
-
-      {/* KPI Grid - Row 2: Bottom of Funnel */}
-      <div className="grid grid-cols-4 gap-4">
-        <RevenueKPICard
-          title="Show Rate"
-          value={showRate}
-          secondaryValue={liveCalls}
-          isPercentage
-          showBenchmark
-          benchmark={60}
-          benchmarkLabel=">60%"
-        />
-        <RevenueKPICard
-          title="Close Rate"
-          value={closeRate}
-          secondaryValue={closedDeals}
-          isPercentage
-          showBenchmark
-          benchmark={15}
-          benchmarkLabel=">15%"
-        />
-        <RevenueKPICard
-          title="Avg Deal Size"
-          value={avgDealSize}
-          isCurrency
-        />
-        <RevenueKPICard
-          title="Total Revenue"
-          value={totalRevenue}
-          isCurrency
-        />
-      </div>
-
-      {/* Funnel and Insights */}
-      <div className="grid grid-cols-2 gap-6">
-        <RevenueFunnel stages={funnelStages} />
-        
+      <div className="px-6 space-y-8 pb-8">
+        {/* Section: Top of Funnel */}
         <div className="space-y-4">
-          <BottleneckInsights
-            interestedRate={interestedRate}
-            bookRate={bookRate}
-            showRate={showRate}
-            closeRate={closeRate}
-          />
+          <div className="flex items-center gap-2">
+            <div className="h-1 w-1 rounded-full bg-primary" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Top of Funnel</h2>
+          </div>
+          <div className="grid grid-cols-4 gap-5">
+            <RevenueKPICard
+              title="Contacted"
+              value={totalContacted}
+              icon={Users}
+            />
+            <RevenueKPICard
+              title="Reply Rate"
+              value={replyRate}
+              secondaryValue={totalRepliesDisplay}
+              isPercentage
+              showBenchmark
+              benchmark={1.5}
+              benchmarkLabel=">1.5%"
+              icon={MessageSquare}
+            />
+            <RevenueKPICard
+              title="Interest Rate"
+              value={interestedRate}
+              secondaryValue={interestedLeads}
+              isPercentage
+              showBenchmark
+              benchmark={10}
+              benchmarkLabel=">10%"
+              icon={Sparkles}
+            />
+            <RevenueKPICard
+              title="Book Rate"
+              value={bookRate}
+              secondaryValue={bookedCalls}
+              isPercentage
+              showBenchmark
+              benchmark={20}
+              benchmarkLabel=">20%"
+              icon={Calendar}
+            />
+          </div>
+        </div>
+
+        {/* Section: Bottom of Funnel & Revenue */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="h-1 w-1 rounded-full bg-emerald-500" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Conversion & Revenue</h2>
+          </div>
+          <div className="grid grid-cols-4 gap-5">
+            <RevenueKPICard
+              title="Show Rate"
+              value={showRate}
+              secondaryValue={liveCalls}
+              isPercentage
+              showBenchmark
+              benchmark={60}
+              benchmarkLabel=">60%"
+              icon={Video}
+            />
+            <RevenueKPICard
+              title="Close Rate"
+              value={closeRate}
+              secondaryValue={closedDeals}
+              isPercentage
+              showBenchmark
+              benchmark={15}
+              benchmarkLabel=">15%"
+              icon={Trophy}
+            />
+            <RevenueKPICard
+              title="Avg Deal Size"
+              value={avgDealSize}
+              isCurrency
+              icon={Coins}
+            />
+            <RevenueKPICard
+              title="Total Revenue"
+              value={totalRevenue}
+              isCurrency
+              icon={DollarSign}
+              variant="highlight"
+            />
+          </div>
+        </div>
+
+        {/* Funnel and Insights - Improved Grid */}
+        <div className="grid grid-cols-[1.1fr_0.9fr] gap-8">
+          <RevenueFunnel stages={funnelStages} />
+          
+          <div className="space-y-4">
+            <BottleneckInsights
+              interestedRate={interestedRate}
+              bookRate={bookRate}
+              showRate={showRate}
+              closeRate={closeRate}
+            />
+          </div>
         </div>
       </div>
     </div>

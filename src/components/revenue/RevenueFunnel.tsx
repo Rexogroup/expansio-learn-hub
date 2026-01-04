@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, AlertTriangle } from "lucide-react";
+import { TrendingUp, AlertTriangle, Activity } from "lucide-react";
 import { useState } from "react";
 
 interface FunnelStage {
@@ -81,9 +81,14 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
   };
 
   return (
-    <Card className="overflow-hidden border-border/50 bg-gradient-to-br from-card via-card to-muted/20">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold">Conversion Funnel</CardTitle>
+    <Card className="overflow-hidden border-border/50 bg-gradient-to-br from-card via-card to-muted/20 shadow-lg">
+      <CardHeader className="pb-3 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Activity className="h-4 w-4 text-primary" />
+          </div>
+          <CardTitle className="text-lg font-semibold">Conversion Funnel</CardTitle>
+        </div>
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="relative">
