@@ -20,6 +20,18 @@ interface CRMLead {
   created_at: string | null;
 }
 
+// Map TimePeriod to timeline_days value used in synced_campaigns
+const getTimelineDays = (period: TimePeriod): number => {
+  switch (period) {
+    case 'this_month': return 30;
+    case 'last_30': return 30;
+    case 'last_quarter': return 120; // Use 120 as closest available
+    case 'ytd': return 120;
+    case 'custom': return 120; // Default to max available
+    default: return 30;
+  }
+};
+
 export default function RevenueCommandCenter() {
   const [leads, setLeads] = useState<CRMLead[]>([]);
   const [channel, setChannel] = useState<Channel>('all');
@@ -28,13 +40,17 @@ export default function RevenueCommandCenter() {
   const [loading, setLoading] = useState(true);
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [totalEmailsSent, setTotalEmailsSent] = useState(0);
+  const [interestedFromCampaigns, setInterestedFromCampaigns] = useState(0);
 
+  // Fetch teams on mount
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchTeams = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
 
-      // Get user's teams
       const { data: teams } = await supabase
         .from('teams')
         .select('id')
@@ -50,38 +66,54 @@ export default function RevenueCommandCenter() {
         ...(memberTeams?.map(t => t.team_id) || []),
       ];
       
-      const uniqueTeamIds = [...new Set(allTeamIds)];
-      setTeamIds(uniqueTeamIds);
+      setTeamIds([...new Set(allTeamIds)]);
+    };
 
-      if (uniqueTeamIds.length > 0) {
-        // Fetch CRM leads
+    fetchTeams();
+  }, []);
+
+  // Fetch data when teamIds or timePeriod changes
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      setLoading(true);
+
+      // Fetch CRM leads filtered by date range
+      if (teamIds.length > 0) {
         const { data: leadsData } = await supabase
           .from('crm_leads')
           .select('id, lead_name, status, meeting_booked, meeting_status, deal_value, source_type, interested, created_at')
-          .in('team_id', uniqueTeamIds);
+          .in('team_id', teamIds);
 
         setLeads((leadsData as CRMLead[]) || []);
-
-        // Fetch total emails sent from synced_campaigns for current user
-        const { data: campaignsData } = await supabase
-          .from('synced_campaigns')
-          .select('emails_sent')
-          .eq('user_id', session.user.id);
-        
-        let emailsSent = 0;
-        if (campaignsData) {
-          for (const c of campaignsData) {
-            emailsSent += c.emails_sent || 0;
-          }
-        }
-        setTotalEmailsSent(emailsSent);
       }
+
+      // Fetch campaign metrics filtered by timeline_days
+      const timelineDays = getTimelineDays(timePeriod);
+      const { data: campaignsData } = await supabase
+        .from('synced_campaigns')
+        .select('emails_sent, interested_count')
+        .eq('user_id', session.user.id)
+        .eq('timeline_days', timelineDays);
+      
+      let emailsSent = 0;
+      let interested = 0;
+      if (campaignsData) {
+        for (const c of campaignsData) {
+          emailsSent += c.emails_sent || 0;
+          interested += c.interested_count || 0;
+        }
+      }
+      setTotalEmailsSent(emailsSent);
+      setInterestedFromCampaigns(interested);
       
       setLoading(false);
     };
 
     fetchData();
-  }, []);
+  }, [teamIds, timePeriod]);
 
   const handleTimePeriodChange = (period: TimePeriod, range: DateRange) => {
     setTimePeriod(period);
@@ -118,7 +150,7 @@ export default function RevenueCommandCenter() {
     });
   }, [leads, dateRange]);
 
-  // Calculate Total Contacted (note: emails_sent doesn't have date filter as it's aggregate)
+  // Calculate Total Contacted
   const sdrLeadsCount = filteredSdrLeads.length;
   const totalContacted = channel === 'cold_email' 
     ? totalEmailsSent 
@@ -126,8 +158,14 @@ export default function RevenueCommandCenter() {
       ? sdrLeadsCount 
       : totalEmailsSent + sdrLeadsCount;
 
-  // Calculate KPIs
-  const interestedLeads = filteredLeads.filter(l => l.interested).length;
+  // Calculate KPIs - use campaign data for cold email interested count
+  const sdrInterestedLeads = filteredLeads.filter(l => l.interested && l.source_type !== 'cold_email').length;
+  const interestedLeads = channel === 'cold_email' 
+    ? interestedFromCampaigns 
+    : channel === 'sdr' 
+      ? sdrInterestedLeads 
+      : interestedFromCampaigns + sdrInterestedLeads;
+  
   const bookedCalls = filteredLeads.filter(l => l.meeting_booked).length;
   const liveCalls = filteredLeads.filter(l => l.meeting_status === 'completed').length;
   const closedDeals = filteredLeads.filter(l => l.status === 'closed_won').length;
