@@ -566,9 +566,9 @@ const CRM = () => {
           <Tabs defaultValue={canViewSpreadsheet ? "spreadsheet" : "pipeline"} className="mt-6">
             <TabsList>
               {canViewSpreadsheet && (
-                <TabsTrigger value="spreadsheet" className="gap-2">
+              <TabsTrigger value="spreadsheet" className="gap-2">
                   <Table2 className="h-4 w-4" />
-                  Spreadsheet
+                  Leads Table
                 </TabsTrigger>
               )}
               <TabsTrigger value="pipeline" className="gap-2">
