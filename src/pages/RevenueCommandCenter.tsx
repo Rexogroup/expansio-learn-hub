@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { RevenueKPICard } from "@/components/revenue/RevenueKPICard";
+import { RevenueKPICardWithComparison } from "@/components/revenue/RevenueKPICardWithComparison";
 import { RevenueFunnel } from "@/components/revenue/RevenueFunnel";
 import { ChannelFilter, Channel } from "@/components/revenue/ChannelFilter";
 import { TimelineFilter } from "@/components/growth/TimelineFilter";
 import { BottleneckInsights } from "@/components/revenue/BottleneckInsights";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { 
   DollarSign, 
   Users, 
@@ -15,9 +16,12 @@ import {
   Video, 
   Trophy, 
   TrendingUp,
-  FileText
+  TrendingDown,
+  FileText,
+  GitCompare
 } from "lucide-react";
 import { subDays } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface CRMLead {
   id: string;
@@ -38,16 +42,32 @@ export default function RevenueCommandCenter() {
   const [timelineDays, setTimelineDays] = useState(30);
   const [loading, setLoading] = useState(true);
   const [teamIds, setTeamIds] = useState<string[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
+  
+  // Current period campaign metrics
   const [totalEmailsSent, setTotalEmailsSent] = useState(0);
   const [totalReplies, setTotalReplies] = useState(0);
   const [interestedFromCampaigns, setInterestedFromCampaigns] = useState(0);
   const [meetingsFromCampaigns, setMeetingsFromCampaigns] = useState(0);
+  
+  // Previous period campaign metrics
+  const [prevTotalEmailsSent, setPrevTotalEmailsSent] = useState(0);
+  const [prevTotalReplies, setPrevTotalReplies] = useState(0);
+  const [prevInterestedFromCampaigns, setPrevInterestedFromCampaigns] = useState(0);
+  const [prevMeetingsFromCampaigns, setPrevMeetingsFromCampaigns] = useState(0);
 
   // Calculate date range from timelineDays
   const dateRange = useMemo(() => {
     const now = new Date();
     return { from: subDays(now, timelineDays), to: now };
   }, [timelineDays]);
+  
+  // Calculate previous period date range
+  const previousDateRange = useMemo(() => {
+    const previousEnd = subDays(dateRange.from, 1);
+    const previousStart = subDays(previousEnd, timelineDays - 1);
+    return { from: previousStart, to: previousEnd };
+  }, [dateRange, timelineDays]);
 
   // Fetch teams on mount
   useEffect(() => {
@@ -97,7 +117,7 @@ export default function RevenueCommandCenter() {
         setLeads((leadsData as CRMLead[]) || []);
       }
 
-      // Fetch campaign metrics filtered by timeline_days
+      // Fetch current period campaign metrics
       const { data: campaignsData } = await supabase
         .from('synced_campaigns')
         .select('emails_sent, unique_replies, interested_count, meetings_booked')
@@ -120,6 +140,35 @@ export default function RevenueCommandCenter() {
       setTotalReplies(replies);
       setInterestedFromCampaigns(interested);
       setMeetingsFromCampaigns(meetings);
+      
+      // Fetch previous period campaign metrics (double the timeline to calculate diff)
+      const { data: prevCampaignsData } = await supabase
+        .from('synced_campaigns')
+        .select('emails_sent, unique_replies, interested_count, meetings_booked')
+        .eq('user_id', session.user.id)
+        .eq('timeline_days', timelineDays * 2);
+      
+      let prevEmailsSent = 0;
+      let prevReplies = 0;
+      let prevInterested = 0;
+      let prevMeetings = 0;
+      if (prevCampaignsData) {
+        for (const c of prevCampaignsData) {
+          prevEmailsSent += c.emails_sent || 0;
+          prevReplies += c.unique_replies || 0;
+          prevInterested += c.interested_count || 0;
+          prevMeetings += c.meetings_booked || 0;
+        }
+        // Previous period = double period totals - current period totals
+        prevEmailsSent = prevEmailsSent - emailsSent;
+        prevReplies = prevReplies - replies;
+        prevInterested = prevInterested - interested;
+        prevMeetings = prevMeetings - meetings;
+      }
+      setPrevTotalEmailsSent(Math.max(0, prevEmailsSent));
+      setPrevTotalReplies(Math.max(0, prevReplies));
+      setPrevInterestedFromCampaigns(Math.max(0, prevInterested));
+      setPrevMeetingsFromCampaigns(Math.max(0, prevMeetings));
       
       setLoading(false);
     };
@@ -156,14 +205,49 @@ export default function RevenueCommandCenter() {
       return true;
     });
   }, [leads, dateRange]);
+  
+  // Filter previous period leads
+  const previousFilteredLeads = useMemo(() => {
+    return leads.filter(lead => {
+      if (lead.created_at) {
+        const leadDate = new Date(lead.created_at);
+        if (leadDate < previousDateRange.from || leadDate > previousDateRange.to) {
+          return false;
+        }
+      }
+      if (channel === 'all') return true;
+      if (channel === 'cold_email') return lead.source_type === 'cold_email';
+      return lead.source_type !== 'cold_email';
+    });
+  }, [leads, channel, previousDateRange]);
+  
+  // Filter previous period SDR leads
+  const previousFilteredSdrLeads = useMemo(() => {
+    return leads.filter(lead => {
+      if (lead.source_type === 'cold_email') return false;
+      if (lead.created_at) {
+        const leadDate = new Date(lead.created_at);
+        return leadDate >= previousDateRange.from && leadDate <= previousDateRange.to;
+      }
+      return false;
+    });
+  }, [leads, previousDateRange]);
 
-  // Calculate Total Contacted
+  // Calculate Total Contacted - Current Period
   const sdrLeadsCount = filteredSdrLeads.length;
   const totalContacted = channel === 'cold_email' 
     ? totalEmailsSent 
     : channel === 'sdr' 
       ? sdrLeadsCount 
       : totalEmailsSent + sdrLeadsCount;
+
+  // Calculate Total Contacted - Previous Period
+  const prevSdrLeadsCount = previousFilteredSdrLeads.length;
+  const prevTotalContacted = channel === 'cold_email' 
+    ? prevTotalEmailsSent 
+    : channel === 'sdr' 
+      ? prevSdrLeadsCount 
+      : prevTotalEmailsSent + prevSdrLeadsCount;
 
   // Calculate KPIs - use campaign data for cold email interested count
   const sdrInterestedLeads = filteredLeads.filter(l => l.interested && l.source_type !== 'cold_email').length;
@@ -173,6 +257,14 @@ export default function RevenueCommandCenter() {
       ? sdrInterestedLeads 
       : interestedFromCampaigns + sdrInterestedLeads;
   
+  // Previous period interested
+  const prevSdrInterestedLeads = previousFilteredLeads.filter(l => l.interested && l.source_type !== 'cold_email').length;
+  const prevInterestedLeads = channel === 'cold_email' 
+    ? prevInterestedFromCampaigns 
+    : channel === 'sdr' 
+      ? prevSdrInterestedLeads 
+      : prevInterestedFromCampaigns + prevSdrInterestedLeads;
+  
   // Use campaign meetings for cold email, CRM booked for SDR
   const sdrBookedCalls = filteredLeads.filter(l => l.meeting_booked && l.source_type !== 'cold_email').length;
   const bookedCalls = channel === 'cold_email' 
@@ -181,11 +273,31 @@ export default function RevenueCommandCenter() {
       ? sdrBookedCalls 
       : meetingsFromCampaigns + sdrBookedCalls;
   
+  // Previous period booked
+  const prevSdrBookedCalls = previousFilteredLeads.filter(l => l.meeting_booked && l.source_type !== 'cold_email').length;
+  const prevBookedCalls = channel === 'cold_email' 
+    ? prevMeetingsFromCampaigns 
+    : channel === 'sdr' 
+      ? prevSdrBookedCalls 
+      : prevMeetingsFromCampaigns + prevSdrBookedCalls;
+  
   const liveCalls = filteredLeads.filter(l => l.meeting_status === 'completed').length;
   const closedDeals = filteredLeads.filter(l => l.status === 'closed_won').length;
   
+  // Previous period live calls and closed deals
+  const prevLiveCalls = previousFilteredLeads.filter(l => l.meeting_status === 'completed').length;
+  const prevClosedDeals = previousFilteredLeads.filter(l => l.status === 'closed_won').length;
+  
   // Count proposals sent (leads with proposal_status sent/viewed/negotiating or status 'proposal')
   const proposalsSent = filteredLeads.filter(l => 
+    l.proposal_status === 'sent' || 
+    l.proposal_status === 'viewed' || 
+    l.proposal_status === 'negotiating' ||
+    l.status === 'proposal'
+  ).length;
+  
+  // Previous period proposals
+  const prevProposalsSent = previousFilteredLeads.filter(l => 
     l.proposal_status === 'sent' || 
     l.proposal_status === 'viewed' || 
     l.proposal_status === 'negotiating' ||
@@ -200,12 +312,26 @@ export default function RevenueCommandCenter() {
       ? 0 
       : totalEmailsSent > 0 ? (totalReplies / totalEmailsSent) * 100 : 0;
 
+  // Previous period reply rate
+  const prevColdEmailReplyRate = prevTotalEmailsSent > 0 ? (prevTotalReplies / prevTotalEmailsSent) * 100 : 0;
+  const prevReplyRate = channel === 'cold_email' 
+    ? prevColdEmailReplyRate 
+    : channel === 'sdr' 
+      ? 0 
+      : prevTotalEmailsSent > 0 ? (prevTotalReplies / prevTotalEmailsSent) * 100 : 0;
+
   // Total Replies display by channel
   const totalRepliesDisplay = channel === 'cold_email' 
     ? totalReplies 
     : channel === 'sdr' 
       ? 0 
       : totalReplies;
+
+  const prevTotalRepliesDisplay = channel === 'cold_email' 
+    ? prevTotalReplies 
+    : channel === 'sdr' 
+      ? 0 
+      : prevTotalReplies;
 
   // Calculate rates - use Interested / Replies for cold email (matches Campaigns page)
   const sdrInterestedRate = sdrLeadsCount > 0 ? (sdrInterestedLeads / sdrLeadsCount) * 100 : 0;
@@ -218,15 +344,37 @@ export default function RevenueCommandCenter() {
       : (totalReplies + sdrLeadsCount) > 0 
         ? ((interestedFromCampaigns + sdrInterestedLeads) / (totalReplies + sdrLeadsCount)) * 100 
         : 0;
+
+  // Previous period interest rate
+  const prevSdrInterestedRate = prevSdrLeadsCount > 0 ? (prevSdrInterestedLeads / prevSdrLeadsCount) * 100 : 0;
+  const prevColdEmailInterestedRate = prevTotalReplies > 0 ? (prevInterestedFromCampaigns / prevTotalReplies) * 100 : 0;
+  
+  const prevInterestedRate = channel === 'cold_email' 
+    ? prevColdEmailInterestedRate 
+    : channel === 'sdr' 
+      ? prevSdrInterestedRate 
+      : (prevTotalReplies + prevSdrLeadsCount) > 0 
+        ? ((prevInterestedFromCampaigns + prevSdrInterestedLeads) / (prevTotalReplies + prevSdrLeadsCount)) * 100 
+        : 0;
   
   const bookRate = interestedLeads > 0 ? (bookedCalls / interestedLeads) * 100 : 0;
   const showRate = bookedCalls > 0 ? (liveCalls / bookedCalls) * 100 : 0;
   const proposalRate = liveCalls > 0 ? (proposalsSent / liveCalls) * 100 : 0;
   const closeRate = liveCalls > 0 ? (closedDeals / liveCalls) * 100 : 0;
 
+  // Previous period rates
+  const prevBookRate = prevInterestedLeads > 0 ? (prevBookedCalls / prevInterestedLeads) * 100 : 0;
+  const prevShowRate = prevBookedCalls > 0 ? (prevLiveCalls / prevBookedCalls) * 100 : 0;
+  const prevProposalRate = prevLiveCalls > 0 ? (prevProposalsSent / prevLiveCalls) * 100 : 0;
+  const prevCloseRate = prevLiveCalls > 0 ? (prevClosedDeals / prevLiveCalls) * 100 : 0;
+
   // Calculate revenue metrics
   const closedWonLeads = filteredLeads.filter(l => l.status === 'closed_won');
   const totalRevenue = closedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
+  
+  // Previous period revenue
+  const prevClosedWonLeads = previousFilteredLeads.filter(l => l.status === 'closed_won');
+  const prevTotalRevenue = prevClosedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
 
   // Funnel stages - now includes Replies between Contacted and Interested
   const funnelStages = [
@@ -238,6 +386,14 @@ export default function RevenueCommandCenter() {
     { name: 'Proposals', count: proposalsSent, conversionRate: proposalRate, benchmark: 70 },
     { name: 'Closed', count: closedDeals, conversionRate: closeRate, benchmark: 15 },
   ];
+  
+  // Calculate percentage change helper
+  const calcChange = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+  const revenueChange = calcChange(totalRevenue, prevTotalRevenue);
+  const dealsChange = calcChange(closedDeals, prevClosedDeals);
 
   if (loading) {
     return (
@@ -285,15 +441,45 @@ export default function RevenueCommandCenter() {
             <div className="text-right">
               <p className="text-xs font-medium text-white/60 uppercase tracking-wider">Total Revenue</p>
               <p className="text-2xl font-bold text-white">${totalRevenue.toLocaleString()}</p>
+              {showComparison && prevTotalRevenue > 0 && (
+                <div className={cn(
+                  "flex items-center justify-end gap-1 text-xs mt-0.5",
+                  revenueChange >= 0 ? "text-emerald-300" : "text-red-300"
+                )}>
+                  {revenueChange >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  <span>{revenueChange >= 0 ? '+' : ''}{revenueChange.toFixed(1)}%</span>
+                </div>
+              )}
             </div>
             <div className="h-12 w-px bg-white/20" />
             <div className="text-right">
               <p className="text-xs font-medium text-white/60 uppercase tracking-wider">Closed Deals</p>
               <p className="text-2xl font-bold text-white">{closedDeals}</p>
+              {showComparison && prevClosedDeals > 0 && (
+                <div className={cn(
+                  "flex items-center justify-end gap-1 text-xs mt-0.5",
+                  dealsChange >= 0 ? "text-emerald-300" : "text-red-300"
+                )}>
+                  {dealsChange >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  <span>{dealsChange >= 0 ? '+' : ''}{dealsChange.toFixed(1)}%</span>
+                </div>
+              )}
             </div>
           </div>
           
           <div className="flex items-center gap-3">
+            <Button
+              variant={showComparison ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setShowComparison(!showComparison)}
+              className={cn(
+                "gap-2 border-white/20 text-white hover:bg-white/20",
+                showComparison && "bg-white/20"
+              )}
+            >
+              <GitCompare className="h-4 w-4" />
+              Compare
+            </Button>
             <TimelineFilter value={timelineDays} onChange={setTimelineDays} />
             <ChannelFilter value={channel} onChange={setChannel} />
           </div>
@@ -308,79 +494,101 @@ export default function RevenueCommandCenter() {
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Overview</h2>
           </div>
           <div className="grid grid-cols-4 gap-5">
-            <RevenueKPICard
+            <RevenueKPICardWithComparison
               title="Contacted"
               value={totalContacted}
+              previousValue={showComparison ? prevTotalContacted : undefined}
               icon={Users}
+              showComparison={showComparison}
             />
-            <RevenueKPICard
+            <RevenueKPICardWithComparison
               title="Reply Rate"
               value={replyRate}
+              previousValue={showComparison ? prevReplyRate : undefined}
               secondaryValue={totalRepliesDisplay}
+              previousSecondaryValue={showComparison ? prevTotalRepliesDisplay : undefined}
               isPercentage
               showBenchmark
               benchmark={1.5}
               benchmarkLabel=">1.5%"
               icon={MessageSquare}
+              showComparison={showComparison}
             />
-            <RevenueKPICard
+            <RevenueKPICardWithComparison
               title="Interest Rate"
               value={interestedRate}
+              previousValue={showComparison ? prevInterestedRate : undefined}
               secondaryValue={interestedLeads}
+              previousSecondaryValue={showComparison ? prevInterestedLeads : undefined}
               isPercentage
               showBenchmark
               benchmark={10}
               benchmarkLabel=">10%"
               icon={Sparkles}
+              showComparison={showComparison}
             />
-            <RevenueKPICard
+            <RevenueKPICardWithComparison
               title="Book Rate"
               value={bookRate}
+              previousValue={showComparison ? prevBookRate : undefined}
               secondaryValue={bookedCalls}
+              previousSecondaryValue={showComparison ? prevBookedCalls : undefined}
               isPercentage
               showBenchmark
               benchmark={20}
               benchmarkLabel=">20%"
               icon={Calendar}
+              showComparison={showComparison}
             />
           </div>
           <div className="grid grid-cols-4 gap-5">
-            <RevenueKPICard
+            <RevenueKPICardWithComparison
               title="Show Rate"
               value={showRate}
+              previousValue={showComparison ? prevShowRate : undefined}
               secondaryValue={liveCalls}
+              previousSecondaryValue={showComparison ? prevLiveCalls : undefined}
               isPercentage
               showBenchmark
               benchmark={60}
               benchmarkLabel=">60%"
               icon={Video}
+              showComparison={showComparison}
             />
-            <RevenueKPICard
+            <RevenueKPICardWithComparison
               title="Proposal Rate"
               value={proposalRate}
+              previousValue={showComparison ? prevProposalRate : undefined}
               secondaryValue={proposalsSent}
+              previousSecondaryValue={showComparison ? prevProposalsSent : undefined}
               isPercentage
               showBenchmark
               benchmark={70}
               benchmarkLabel=">70%"
               icon={FileText}
+              showComparison={showComparison}
             />
-            <RevenueKPICard
+            <RevenueKPICardWithComparison
               title="Close Rate"
               value={closeRate}
+              previousValue={showComparison ? prevCloseRate : undefined}
               secondaryValue={closedDeals}
+              previousSecondaryValue={showComparison ? prevClosedDeals : undefined}
               isPercentage
               showBenchmark
               benchmark={15}
               benchmarkLabel=">15%"
               icon={Trophy}
+              showComparison={showComparison}
             />
-            <RevenueKPICard
+            <RevenueKPICardWithComparison
               title="Total Revenue"
               value={totalRevenue}
+              previousValue={showComparison ? prevTotalRevenue : undefined}
               isCurrency
               icon={DollarSign}
               variant="highlight"
+              showComparison={showComparison}
             />
           </div>
         </div>
