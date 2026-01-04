@@ -270,10 +270,20 @@ export default function RevenueCommandCenter() {
       ? prevSdrLeadsCount 
       : prevTotalEmailsSent + prevSdrLeadsCount;
 
+  // Define stages that imply earlier stages were completed (cascading logic)
+  const IMPLIES_INTERESTED = ['meeting_booked', 'meeting_completed', 'proposal', 'closed_won', 'closed_lost'];
+  const IMPLIES_BOOKED = ['meeting_completed', 'proposal', 'closed_won', 'closed_lost'];
+  const IMPLIES_SHOWN = ['proposal', 'closed_won', 'closed_lost'];
+  const IMPLIES_PROPOSAL = ['closed_won', 'closed_lost'];
+
   // Calculate KPIs - use campaign data for cold email interested count
   // Use status_changed_at for accurate timeline attribution when available
+  // Apply cascading logic: leads in later stages imply earlier stages completed
   const sdrInterestedLeads = leads.filter(l => {
-    if (!l.interested || l.source_type === 'cold_email') return false;
+    if (l.source_type === 'cold_email') return false;
+    // Cascading: interested OR in a stage that implies interest
+    const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
+    if (!isInterested) return false;
     const attributionDate = l.status_changed_at || l.created_at;
     if (!attributionDate) return true;
     const date = new Date(attributionDate);
@@ -285,10 +295,11 @@ export default function RevenueCommandCenter() {
       ? sdrInterestedLeads 
       : interestedFromCampaigns + sdrInterestedLeads;
   
-  // Previous period interested
-  // Previous period interested - use status_changed_at for attribution
+  // Previous period interested - use status_changed_at for attribution with cascading logic
   const prevSdrInterestedLeads = leads.filter(l => {
-    if (!l.interested || l.source_type === 'cold_email') return false;
+    if (l.source_type === 'cold_email') return false;
+    const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
+    if (!isInterested) return false;
     const attributionDate = l.status_changed_at || l.created_at;
     if (!attributionDate) return false;
     const date = new Date(attributionDate);
@@ -301,9 +312,12 @@ export default function RevenueCommandCenter() {
       : prevInterestedFromCampaigns + prevSdrInterestedLeads;
   
   // Use campaign meetings for cold email, CRM booked for SDR
-  // Use meeting_datetime or status_changed_at for accurate attribution
+  // Use meeting_datetime or status_changed_at for accurate attribution with cascading logic
   const sdrBookedCalls = leads.filter(l => {
-    if (!l.meeting_booked || l.source_type === 'cold_email') return false;
+    if (l.source_type === 'cold_email') return false;
+    // Cascading: meeting_booked OR in a stage that implies booking
+    const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
+    if (!isBooked) return false;
     const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
     if (!attributionDate) return true;
     const date = new Date(attributionDate);
@@ -315,9 +329,11 @@ export default function RevenueCommandCenter() {
       ? sdrBookedCalls 
       : meetingsFromCampaigns + sdrBookedCalls;
   
-  // Previous period booked - use meeting_datetime or status_changed_at for attribution
+  // Previous period booked - with cascading logic
   const prevSdrBookedCalls = leads.filter(l => {
-    if (!l.meeting_booked || l.source_type === 'cold_email') return false;
+    if (l.source_type === 'cold_email') return false;
+    const isBooked = l.meeting_booked || IMPLIES_BOOKED.includes(l.status);
+    if (!isBooked) return false;
     const attributionDate = l.meeting_datetime || l.status_changed_at || l.created_at;
     if (!attributionDate) return false;
     const date = new Date(attributionDate);
@@ -329,27 +345,34 @@ export default function RevenueCommandCenter() {
       ? prevSdrBookedCalls 
       : prevMeetingsFromCampaigns + prevSdrBookedCalls;
   
-  const liveCalls = filteredLeads.filter(l => l.meeting_status === 'completed').length;
+  // Live calls (shows) - cascading: meeting_status completed OR in later stage
+  const liveCalls = filteredLeads.filter(l => 
+    l.meeting_status === 'completed' || IMPLIES_SHOWN.includes(l.status)
+  ).length;
   const closedDeals = filteredLeads.filter(l => l.status === 'closed_won').length;
   
-  // Previous period live calls and closed deals
-  const prevLiveCalls = previousFilteredLeads.filter(l => l.meeting_status === 'completed').length;
+  // Previous period live calls and closed deals - with cascading logic
+  const prevLiveCalls = previousFilteredLeads.filter(l => 
+    l.meeting_status === 'completed' || IMPLIES_SHOWN.includes(l.status)
+  ).length;
   const prevClosedDeals = previousFilteredLeads.filter(l => l.status === 'closed_won').length;
   
-  // Count proposals sent (leads with proposal_status sent/viewed/negotiating or status 'proposal')
+  // Count proposals sent - cascading: includes closed deals (they had proposals)
   const proposalsSent = filteredLeads.filter(l => 
     l.proposal_status === 'sent' || 
     l.proposal_status === 'viewed' || 
     l.proposal_status === 'negotiating' ||
-    l.status === 'proposal'
+    l.status === 'proposal' ||
+    IMPLIES_PROPOSAL.includes(l.status)
   ).length;
   
-  // Previous period proposals
+  // Previous period proposals - with cascading logic
   const prevProposalsSent = previousFilteredLeads.filter(l => 
     l.proposal_status === 'sent' || 
     l.proposal_status === 'viewed' || 
     l.proposal_status === 'negotiating' ||
-    l.status === 'proposal'
+    l.status === 'proposal' ||
+    IMPLIES_PROPOSAL.includes(l.status)
   ).length;
 
   // Calculate Reply Rate (Replies / Contacted) for cold email
