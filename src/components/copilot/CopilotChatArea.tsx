@@ -19,9 +19,17 @@ interface CopilotChatAreaProps {
   conversationId: string | null;
   onNewChat: () => void;
   onUpdateTitle: (id: string, title: string) => void;
+  initialPrompt?: string | null;
+  onClearInitialPrompt?: () => void;
 }
 
-export function CopilotChatArea({ conversationId, onNewChat, onUpdateTitle }: CopilotChatAreaProps) {
+export function CopilotChatArea({ 
+  conversationId, 
+  onNewChat, 
+  onUpdateTitle,
+  initialPrompt,
+  onClearInitialPrompt,
+}: CopilotChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +47,19 @@ export function CopilotChatArea({ conversationId, onNewChat, onUpdateTitle }: Co
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-send initial prompt when provided
+  useEffect(() => {
+    if (initialPrompt && !isLoading) {
+      setInput(initialPrompt);
+      onClearInitialPrompt?.();
+      // Auto-submit after a brief delay to ensure state is set
+      setTimeout(() => {
+        const submitBtn = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+        submitBtn?.click();
+      }, 150);
+    }
+  }, [initialPrompt, isLoading]);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
