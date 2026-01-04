@@ -12,9 +12,8 @@ import { MessageTemplates } from "@/components/crm/MessageTemplates";
 import { LinkedInBranding } from "@/components/crm/LinkedInBranding";
 import { FunnelDashboard } from "@/components/crm/FunnelDashboard";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
-import { CSVLeadImporter } from "@/components/crm/CSVLeadImporter";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, Plus, FileText, Linkedin, LayoutDashboard, Upload } from "lucide-react";
+import { Table2, Kanban, Settings, Plus, FileText, Linkedin, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Team {
@@ -84,7 +83,6 @@ const CRM = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showTeamManager, setShowTeamManager] = useState(false);
-  const [showCSVImporter, setShowCSVImporter] = useState(false);
   const [userCalendlyLink, setUserCalendlyLink] = useState<string | null>(null);
   const [userTeamRole, setUserTeamRole] = useState<string | null>(null);
 
@@ -539,14 +537,6 @@ const CRM = () => {
           <p className="text-muted-foreground">Track your LinkedIn outbound leads and deals</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setShowCSVImporter(true)}
-            disabled={!selectedTeamId}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Import Leads
-          </Button>
           <TeamSelector
             teams={teams}
             selectedTeamId={selectedTeamId}
@@ -561,16 +551,6 @@ const CRM = () => {
           </Button>
         </div>
       </div>
-
-      {/* CSV Importer Dialog */}
-      {selectedTeamId && (
-        <CSVLeadImporter
-          open={showCSVImporter}
-          onOpenChange={setShowCSVImporter}
-          teamId={selectedTeamId}
-          onImportComplete={() => fetchLeads(selectedTeamId)}
-        />
-      )}
 
       {teams.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 border rounded-lg bg-muted/20">

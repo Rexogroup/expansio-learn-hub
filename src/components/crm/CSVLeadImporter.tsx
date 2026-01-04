@@ -27,6 +27,7 @@ interface CSVLeadImporterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   teamId: string;
+  sourceType?: 'cold_email' | 'sdr';
   onImportComplete: () => void;
 }
 
@@ -45,12 +46,12 @@ interface ImportStats {
   revenueByQuarter: Record<string, { amount: number; count: number }>;
 }
 
-export function CSVLeadImporter({ open, onOpenChange, teamId, onImportComplete }: CSVLeadImporterProps) {
+export function CSVLeadImporter({ open, onOpenChange, teamId, sourceType: propSourceType, onImportComplete }: CSVLeadImporterProps) {
   const [step, setStep] = useState<Step>('upload');
   const [parsedCSV, setParsedCSV] = useState<ParsedCSV | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [mapping, setMapping] = useState<Record<string, PlatformFieldKey | ''>>({});
-  const [sourceType, setSourceType] = useState<'cold_email' | 'linkedin'>('cold_email');
+  const [sourceType, setSourceType] = useState<'cold_email' | 'linkedin'>(propSourceType === 'sdr' ? 'linkedin' : 'cold_email');
   const [statusMapping, setStatusMapping] = useState<Record<string, string>>({});
   const [importProgress, setImportProgress] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
@@ -61,7 +62,7 @@ export function CSVLeadImporter({ open, onOpenChange, teamId, onImportComplete }
     setParsedCSV(null);
     setFileName('');
     setMapping({});
-    setSourceType('cold_email');
+    setSourceType(propSourceType === 'sdr' ? 'linkedin' : 'cold_email');
     setStatusMapping({});
     setImportProgress(0);
     setImportedCount(0);

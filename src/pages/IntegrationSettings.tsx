@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag, Webhook, Copy, Calendar, Clock, Users } from "lucide-react";
+import { ArrowLeft, Check, X, RefreshCw, Unplug, Zap, Mail, Tag, Webhook, Copy, Calendar, Clock, Users, Upload } from "lucide-react";
+import { CSVLeadImporter } from "@/components/crm/CSVLeadImporter";
 
 type Platform = 'instantly' | 'emailbison';
 type SyncStatus = 'pending' | 'syncing' | 'success' | 'error';
@@ -86,6 +87,11 @@ export default function IntegrationSettings() {
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [savingTeam, setSavingTeam] = useState(false);
+
+  // CSV Import state
+  const [showCSVImporter, setShowCSVImporter] = useState(false);
+  const [importTeamId, setImportTeamId] = useState<string>("");
+  const [importLeadType, setImportLeadType] = useState<'sdr' | 'cold_email'>('sdr');
 
   useEffect(() => {
     fetchIntegration();
@@ -586,6 +592,88 @@ export default function IntegrationSettings() {
               )}
             </CardContent>
           </Card>
+
+          {/* CSV Lead Import Card - Always visible */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-emerald-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Import Leads from CSV</CardTitle>
+                  <CardDescription>
+                    Migrate leads from another CRM using a CSV export file
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Lead Type</Label>
+                  <Select value={importLeadType} onValueChange={(v: 'sdr' | 'cold_email') => setImportLeadType(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sdr">SDR (LinkedIn Leads)</SelectItem>
+                      <SelectItem value="cold_email">Cold Email Leads</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Destination Team</Label>
+                  <Select value={importTeamId} onValueChange={setImportTeamId} disabled={loadingTeams}>
+                    <SelectTrigger>
+                      {loadingTeams ? (
+                        <span className="text-muted-foreground">Loading teams...</span>
+                      ) : (
+                        <SelectValue placeholder="Select a team" />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userTeams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>• Smart field mapping with auto-detection</p>
+                <p>• Historical date support for accurate KPIs</p>
+                <p>• Deduplication by email and LinkedIn URL</p>
+              </div>
+
+              <Button
+                onClick={() => setShowCSVImporter(true)}
+                disabled={!importTeamId}
+                className="w-full"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Import Leads
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* CSV Importer Dialog */}
+          {importTeamId && (
+            <CSVLeadImporter
+              open={showCSVImporter}
+              onOpenChange={setShowCSVImporter}
+              teamId={importTeamId}
+              sourceType={importLeadType}
+              onImportComplete={() => {
+                setShowCSVImporter(false);
+                toast.success("Leads imported successfully!");
+              }}
+            />
+          )}
 
           {integration ? (
             <>
