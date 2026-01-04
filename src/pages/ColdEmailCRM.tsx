@@ -443,7 +443,7 @@ const ColdEmailCRM = () => {
             <TabsList>
               <TabsTrigger value="spreadsheet" className="flex items-center gap-2">
                 <Table2 className="h-4 w-4" />
-                Spreadsheet
+                Leads Table
               </TabsTrigger>
               <TabsTrigger value="pipeline" className="flex items-center gap-2">
                 <Kanban className="h-4 w-4" />
@@ -467,7 +467,7 @@ const ColdEmailCRM = () => {
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  You don't have permission to view the spreadsheet.
+                  You don't have permission to view the leads table.
                 </div>
               )}
             </TabsContent>
