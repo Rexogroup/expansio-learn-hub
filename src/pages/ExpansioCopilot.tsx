@@ -83,6 +83,29 @@ export default function ExpansioCopilot() {
     }
   };
 
+  const handleNewChatWithCallback = async (): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('copilot_conversations')
+        .insert({ user_id: user.id, title: 'New Chat' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setConversations(prev => [data, ...prev]);
+      setActiveConversationId(data.id);
+      setActiveTab('chat');
+      return data.id;
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      return null;
+    }
+  };
+
   const handleSelectConversation = (id: string) => {
     setActiveConversationId(id);
     setActiveTab('chat');
@@ -139,6 +162,7 @@ export default function ExpansioCopilot() {
           <CopilotChatArea
             conversationId={activeConversationId}
             onNewChat={handleNewChat}
+            onNewChatWithCallback={handleNewChatWithCallback}
             onUpdateTitle={handleUpdateConversationTitle}
             initialPrompt={initialPrompt}
             onClearInitialPrompt={() => setInitialPrompt(null)}
