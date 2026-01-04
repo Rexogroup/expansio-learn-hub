@@ -393,13 +393,30 @@ export default function RevenueCommandCenter() {
   const liveCalls = filteredLeads.filter(l => 
     l.meeting_status === 'completed' || IMPLIES_SHOWN.includes(l.status)
   ).length;
-  const closedDeals = filteredLeads.filter(l => l.status === 'closed_won').length;
+  
+  // Closed deals - use closed_at for proper date attribution
+  const closedDeals = leads.filter(l => {
+    if (l.status !== 'closed_won') return false;
+    if (channel === 'cold_email' && l.source_type !== 'cold_email') return false;
+    if (channel === 'sdr' && l.source_type === 'cold_email') return false;
+    const closeDate = l.closed_at ? new Date(l.closed_at) : (l.status_changed_at ? new Date(l.status_changed_at) : null);
+    if (!closeDate) return true; // Include if no date (edge case)
+    return closeDate >= dateRange.from && closeDate <= dateRange.to;
+  }).length;
   
   // Previous period live calls and closed deals - with cascading logic
   const prevLiveCalls = previousFilteredLeads.filter(l => 
     l.meeting_status === 'completed' || IMPLIES_SHOWN.includes(l.status)
   ).length;
-  const prevClosedDeals = previousFilteredLeads.filter(l => l.status === 'closed_won').length;
+  
+  const prevClosedDeals = leads.filter(l => {
+    if (l.status !== 'closed_won') return false;
+    if (channel === 'cold_email' && l.source_type !== 'cold_email') return false;
+    if (channel === 'sdr' && l.source_type === 'cold_email') return false;
+    const closeDate = l.closed_at ? new Date(l.closed_at) : (l.status_changed_at ? new Date(l.status_changed_at) : null);
+    if (!closeDate) return true;
+    return closeDate >= previousDateRange.from && closeDate <= previousDateRange.to;
+  }).length;
   
   // Count proposals sent - cascading: includes closed deals (they had proposals)
   const proposalsSent = filteredLeads.filter(l => 
