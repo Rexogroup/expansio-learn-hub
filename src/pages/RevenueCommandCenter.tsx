@@ -14,7 +14,6 @@ import {
   Calendar, 
   Video, 
   Trophy, 
-  Coins,
   TrendingUp
 } from "lucide-react";
 import { subDays } from "date-fns";
@@ -217,7 +216,6 @@ export default function RevenueCommandCenter() {
   // Calculate revenue metrics
   const closedWonLeads = filteredLeads.filter(l => l.status === 'closed_won');
   const totalRevenue = closedWonLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
-  const avgDealSize = closedDeals > 0 ? totalRevenue / closedDeals : 0;
 
   // Funnel stages - now includes Replies between Contacted and Interested
   const funnelStages = [
@@ -334,7 +332,7 @@ export default function RevenueCommandCenter() {
               icon={Calendar}
             />
           </div>
-          <div className="grid grid-cols-4 gap-5">
+          <div className="grid grid-cols-3 gap-5 max-w-3xl">
             <RevenueKPICard
               title="Show Rate"
               value={showRate}
@@ -356,12 +354,6 @@ export default function RevenueCommandCenter() {
               icon={Trophy}
             />
             <RevenueKPICard
-              title="Avg Deal Size"
-              value={avgDealSize}
-              isCurrency
-              icon={Coins}
-            />
-            <RevenueKPICard
               title="Total Revenue"
               value={totalRevenue}
               isCurrency
@@ -371,18 +363,23 @@ export default function RevenueCommandCenter() {
           </div>
         </div>
 
-        {/* Funnel and Insights - Improved Grid */}
-        <div className="grid grid-cols-[1.1fr_0.9fr] gap-8">
-          <RevenueFunnel stages={funnelStages} />
-          
-          <div className="space-y-4">
-            <BottleneckInsights
-              interestedRate={interestedRate}
-              bookRate={bookRate}
-              showRate={showRate}
-              closeRate={closeRate}
-            />
+        {/* Section: Conversion Funnel */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="h-1 w-1 rounded-full bg-primary" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Conversion Funnel</h2>
           </div>
+          <RevenueFunnel stages={funnelStages} />
+        </div>
+
+        {/* Section: Growth Opportunities */}
+        <div className="space-y-4">
+          <BottleneckInsights
+            interestedRate={interestedRate}
+            bookRate={bookRate}
+            showRate={showRate}
+            closeRate={closeRate}
+          />
         </div>
       </div>
     </div>
