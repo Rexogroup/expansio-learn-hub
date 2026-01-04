@@ -4,12 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, ArrowRight, Zap, TrendingUp, Pause, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
-interface PriorityAction {
+export interface PriorityAction {
   id: string;
   title: string;
   description: string;
   actionLabel: string;
   actionPath?: string;
+  prompt?: string;
   onAction?: () => void;
   priority: 'critical' | 'high' | 'normal';
   icon?: React.ReactNode;
@@ -129,7 +130,9 @@ export function PriorityActionsStack({ actions, maxVisible = 3 }: PriorityAction
                     if (action.onAction) {
                       action.onAction();
                     } else if (action.actionPath) {
-                      navigate(action.actionPath);
+                      navigate(action.actionPath, {
+                        state: action.prompt ? { initialPrompt: action.prompt } : undefined
+                      });
                     }
                   }}
                   className="shrink-0"

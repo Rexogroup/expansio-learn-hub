@@ -61,6 +61,7 @@ interface PriorityAction {
   description: string;
   actionLabel: string;
   actionPath?: string;
+  prompt?: string;
   onAction?: () => void;
   priority: 'critical' | 'high' | 'normal';
   icon?: React.ReactNode;
@@ -306,6 +307,17 @@ export default function CommandCenter() {
         description: `Underperforming - consider pausing to iterate.${winningPattern}`,
         actionLabel: 'Iterate in Copilot',
         actionPath: '/copilot',
+        prompt: `My campaign variant "Step ${pauseVar.stepNumber} - Variant ${pauseVar.variantLabel}" is underperforming and I need to iterate on it.
+
+${pauseVar.reason}
+
+${winningScripts.length > 0 ? `I have winning scripts that are working well. Can you help me analyze what elements from those winners I should incorporate?` : ''}
+
+Please help me:
+1. Identify what's likely causing poor performance (subject line, opening, CTA, offer, etc.)
+2. Suggest 2-3 specific variations I could test
+3. Provide rewritten versions with improved hooks and messaging
+4. Recommend A/B testing strategy for the new variants`,
         priority: 'high',
         icon: <Pause className="w-5 h-5" />,
       });
@@ -337,6 +349,17 @@ export default function CommandCenter() {
         description: `${iterVar.reason}${winningRef}`,
         actionLabel: 'Iterate in Copilot',
         actionPath: '/copilot',
+        prompt: `My campaign variant "Step ${iterVar.stepNumber} - Variant ${iterVar.variantLabel}" is close to benchmark but needs optimization.
+
+${iterVar.reason}
+
+${winningScripts.length > 0 ? `I have winning scripts that are performing well. Can you help me borrow elements from those winners?` : ''}
+
+Please help me:
+1. Analyze what's working in this variant that I should keep
+2. Identify the 1-2 elements most likely holding back performance
+3. Suggest small tweaks that could push this into "SCALE" territory
+4. Provide 2 alternative versions with targeted improvements`,
         priority: 'normal',
         icon: <RefreshCw className="w-5 h-5" />,
       });
