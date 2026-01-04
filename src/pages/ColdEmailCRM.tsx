@@ -9,8 +9,9 @@ import { TeamSelector } from "@/components/crm/TeamSelector";
 import { TeamManager } from "@/components/crm/TeamManager";
 import { QuickStats } from "@/components/crm/QuickStats";
 import { MessageTemplates } from "@/components/crm/MessageTemplates";
+import { FunnelDashboard } from "@/components/crm/FunnelDashboard";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, FileText, MailPlus, Download, Loader2 } from "lucide-react";
+import { Table2, Kanban, Settings, FileText, MailPlus, Download, Loader2, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Team, TeamMember, CRMLead } from "./CRM";
@@ -439,8 +440,12 @@ const ColdEmailCRM = () => {
         <>
           <QuickStats leads={coldEmailLeads} sourceType="cold_email" />
 
-          <Tabs defaultValue="spreadsheet" className="space-y-4">
+          <Tabs defaultValue="dashboard" className="space-y-4">
             <TabsList>
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </TabsTrigger>
               <TabsTrigger value="spreadsheet" className="flex items-center gap-2">
                 <Table2 className="h-4 w-4" />
                 Leads Table
@@ -454,6 +459,10 @@ const ColdEmailCRM = () => {
                 Templates
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="dashboard">
+              <FunnelDashboard leads={coldEmailLeads} sourceType="cold_email" />
+            </TabsContent>
 
             <TabsContent value="spreadsheet">
               {canViewSpreadsheet ? (
