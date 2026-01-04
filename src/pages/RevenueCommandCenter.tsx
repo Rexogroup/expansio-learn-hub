@@ -424,15 +424,9 @@ export default function RevenueCommandCenter() {
     return date >= dateRange.from && date <= dateRange.to;
   }).length;
   
-  // Cold Email Interested - use CRM data with cascading logic and smart attribution
-  const coldEmailInterestedLeads = leads.filter(l => {
-    if (l.source_type !== 'cold_email') return false;
-    const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
-    if (!isInterested) return false;
-    const date = getAttributionDate(l, 'interested');
-    if (!date) return true;
-    return date >= dateRange.from && date <= dateRange.to;
-  }).length;
+  // Cold Email Interested - use Campaign API data (consistent with emails sent/replies)
+  // This ensures rates align with EmailBison dashboard for the selected period
+  const coldEmailInterestedLeads = interestedFromCampaigns;
   
   const interestedLeads = channel === 'cold_email' 
     ? coldEmailInterestedLeads 
@@ -450,14 +444,8 @@ export default function RevenueCommandCenter() {
     return date >= previousDateRange.from && date <= previousDateRange.to;
   }).length;
   
-  const prevColdEmailInterestedLeads = leads.filter(l => {
-    if (l.source_type !== 'cold_email') return false;
-    const isInterested = l.interested || IMPLIES_INTERESTED.includes(l.status);
-    if (!isInterested) return false;
-    const date = getAttributionDate(l, 'interested');
-    if (!date) return false;
-    return date >= previousDateRange.from && date <= previousDateRange.to;
-  }).length;
+  // Previous period Cold Email Interested - use Campaign API data
+  const prevColdEmailInterestedLeads = prevInterestedFromCampaigns;
   
   const prevInterestedLeads = channel === 'cold_email' 
     ? prevColdEmailInterestedLeads 
