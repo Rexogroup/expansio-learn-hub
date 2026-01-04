@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RevenueKPICardWithComparison } from "@/components/revenue/RevenueKPICardWithComparison";
 import { RevenueFunnel } from "@/components/revenue/RevenueFunnel";
@@ -7,6 +7,7 @@ import { TimePeriodFilter, TimePeriod, DateRange as PeriodDateRange, getDateRang
 import { BottleneckInsights } from "@/components/revenue/BottleneckInsights";
 import { ComparisonPeriodPicker, ComparisonType, DateRange } from "@/components/revenue/ComparisonPeriodPicker";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { 
   DollarSign, 
   Users, 
@@ -17,10 +18,17 @@ import {
   Trophy, 
   TrendingUp,
   TrendingDown,
-  FileText
+  FileText,
+  RefreshCw
 } from "lucide-react";
 import { subDays, subMonths, subYears } from "date-fns";
 import { cn } from "@/lib/utils";
+
+interface Integration {
+  id: string;
+  platform: string;
+  is_active: boolean;
+}
 
 interface CRMLead {
   id: string;
@@ -44,7 +52,9 @@ export default function RevenueCommandCenter() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('last_30');
   const [customDateRange, setCustomDateRange] = useState<PeriodDateRange | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [teamIds, setTeamIds] = useState<string[]>([]);
+  const [integration, setIntegration] = useState<Integration | null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonType, setComparisonType] = useState<ComparisonType>('previous');
   const [customComparisonRange, setCustomComparisonRange] = useState<DateRange | null>(null);
@@ -99,15 +109,16 @@ export default function RevenueCommandCenter() {
     }
   }, [dateRange, timelineDays, comparisonType, customComparisonRange]);
 
-  // Fetch teams on mount
+  // Fetch teams and integration on mount
   useEffect(() => {
-    const fetchTeams = async () => {
+    const fetchInitialData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         setLoading(false);
         return;
       }
 
+      // Fetch teams
       const { data: teams } = await supabase
         .from('teams')
         .select('id')
@@ -124,9 +135,33 @@ export default function RevenueCommandCenter() {
       ];
       
       setTeamIds([...new Set(allTeamIds)]);
+
+      // Fetch active integration
+      const { data: integrationData } = await supabase
+        .from('user_integrations')
+        .select('id, platform, is_active')
+        .eq('user_id', session.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      setIntegration(integrationData);
     };
 
-    fetchTeams();
+    fetchInitialData();
+  }, []);
+
+  // Sync campaign data function
+  const syncCampaignData = useCallback(async (days: number) => {
+    setIsSyncing(true);
+    try {
+      await supabase.functions.invoke('sync-campaign-data', {
+        body: { days },
+      });
+    } catch (error) {
+      console.error('Failed to sync campaign data:', error);
+    } finally {
+      setIsSyncing(false);
+    }
   }, []);
 
   // Fetch data when teamIds or timelineDays changes
@@ -148,11 +183,33 @@ export default function RevenueCommandCenter() {
       }
 
       // Fetch current period campaign metrics
-      const { data: campaignsData } = await supabase
+      let { data: campaignsData } = await supabase
         .from('synced_campaigns')
         .select('emails_sent, unique_replies, interested_count, meetings_booked')
         .eq('user_id', session.user.id)
         .eq('timeline_days', timelineDays);
+      
+      // If no data and we have an active integration, trigger sync
+      if ((!campaignsData || campaignsData.length === 0) && integration?.is_active) {
+        setIsSyncing(true);
+        try {
+          await supabase.functions.invoke('sync-campaign-data', {
+            body: { days: timelineDays },
+          });
+          
+          // Re-fetch after sync
+          const { data: freshData } = await supabase
+            .from('synced_campaigns')
+            .select('emails_sent, unique_replies, interested_count, meetings_booked')
+            .eq('user_id', session.user.id)
+            .eq('timeline_days', timelineDays);
+          campaignsData = freshData;
+        } catch (error) {
+          console.error('Auto-sync failed:', error);
+        } finally {
+          setIsSyncing(false);
+        }
+      }
       
       let emailsSent = 0;
       let replies = 0;
@@ -204,7 +261,38 @@ export default function RevenueCommandCenter() {
     };
 
     fetchData();
-  }, [teamIds, timelineDays]);
+  }, [teamIds, timelineDays, integration]);
+
+  // Manual sync handler
+  const handleManualSync = useCallback(async () => {
+    await syncCampaignData(timelineDays);
+    // Re-fetch data after manual sync
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    
+    const { data: campaignsData } = await supabase
+      .from('synced_campaigns')
+      .select('emails_sent, unique_replies, interested_count, meetings_booked')
+      .eq('user_id', session.user.id)
+      .eq('timeline_days', timelineDays);
+    
+    let emailsSent = 0;
+    let replies = 0;
+    let interested = 0;
+    let meetings = 0;
+    if (campaignsData) {
+      for (const c of campaignsData) {
+        emailsSent += c.emails_sent || 0;
+        replies += c.unique_replies || 0;
+        interested += c.interested_count || 0;
+        meetings += c.meetings_booked || 0;
+      }
+    }
+    setTotalEmailsSent(emailsSent);
+    setTotalReplies(replies);
+    setInterestedFromCampaigns(interested);
+    setMeetingsFromCampaigns(meetings);
+  }, [timelineDays, syncCampaignData]);
 
   // Filter leads by date range and channel
   const filteredLeads = useMemo(() => {
@@ -625,6 +713,18 @@ export default function RevenueCommandCenter() {
           </div>
           
           <div className="flex items-center gap-3">
+            {integration?.is_active && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className="text-white/80 hover:text-white hover:bg-white/10"
+              >
+                <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+                {isSyncing && <span className="ml-2 text-xs">Syncing...</span>}
+              </Button>
+            )}
             <ComparisonPeriodPicker
               enabled={showComparison}
               onToggle={setShowComparison}
