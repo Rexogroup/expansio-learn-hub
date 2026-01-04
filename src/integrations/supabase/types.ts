@@ -751,7 +751,7 @@ export type Database = {
           interested: boolean | null
           last_activity_at: string | null
           lead_email: string | null
-          lead_name: string
+          lead_name: string | null
           linkedin_url: string | null
           meeting_booked: boolean | null
           meeting_datetime: string | null
@@ -784,7 +784,7 @@ export type Database = {
           interested?: boolean | null
           last_activity_at?: string | null
           lead_email?: string | null
-          lead_name: string
+          lead_name?: string | null
           linkedin_url?: string | null
           meeting_booked?: boolean | null
           meeting_datetime?: string | null
@@ -817,7 +817,7 @@ export type Database = {
           interested?: boolean | null
           last_activity_at?: string | null
           lead_email?: string | null
-          lead_name?: string
+          lead_name?: string | null
           linkedin_url?: string | null
           meeting_booked?: boolean | null
           meeting_datetime?: string | null

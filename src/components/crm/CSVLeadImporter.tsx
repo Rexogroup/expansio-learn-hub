@@ -339,6 +339,22 @@ export function CSVLeadImporter({ open, onOpenChange, teamId, sourceType: propSo
           }
         });
         
+        // Generate fallback name if missing
+        if (!lead.lead_name) {
+          if (lead.lead_email) {
+            const emailPrefix = lead.lead_email.split('@')[0];
+            lead.lead_name = emailPrefix
+              .replace(/[._]/g, ' ')
+              .split(' ')
+              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+          } else if (lead.company) {
+            lead.lead_name = `Lead at ${lead.company}`;
+          } else {
+            lead.lead_name = 'Unknown Lead';
+          }
+        }
+        
         leadsToImport.push(lead);
       });
       

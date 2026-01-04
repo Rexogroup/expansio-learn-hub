@@ -1,0 +1,1 @@
+ALTER TABLE public.crm_leads ALTER COLUMN lead_name DROP NOT NULL;
