@@ -5,8 +5,8 @@ import { RevenueFunnel } from "@/components/revenue/RevenueFunnel";
 import { ChannelFilter, Channel } from "@/components/revenue/ChannelFilter";
 import { TimelineFilter } from "@/components/growth/TimelineFilter";
 import { BottleneckInsights } from "@/components/revenue/BottleneckInsights";
+import { ComparisonPeriodPicker, ComparisonType, DateRange } from "@/components/revenue/ComparisonPeriodPicker";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { 
   DollarSign, 
   Users, 
@@ -17,10 +17,9 @@ import {
   Trophy, 
   TrendingUp,
   TrendingDown,
-  FileText,
-  GitCompare
+  FileText
 } from "lucide-react";
-import { subDays } from "date-fns";
+import { subDays, subMonths, subYears } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface CRMLead {
@@ -43,6 +42,8 @@ export default function RevenueCommandCenter() {
   const [loading, setLoading] = useState(true);
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
+  const [comparisonType, setComparisonType] = useState<ComparisonType>('previous');
+  const [customComparisonRange, setCustomComparisonRange] = useState<DateRange | null>(null);
   
   // Current period campaign metrics
   const [totalEmailsSent, setTotalEmailsSent] = useState(0);
@@ -62,12 +63,29 @@ export default function RevenueCommandCenter() {
     return { from: subDays(now, timelineDays), to: now };
   }, [timelineDays]);
   
-  // Calculate previous period date range
+  // Calculate previous period date range based on comparison type
   const previousDateRange = useMemo(() => {
-    const previousEnd = subDays(dateRange.from, 1);
-    const previousStart = subDays(previousEnd, timelineDays - 1);
-    return { from: previousStart, to: previousEnd };
-  }, [dateRange, timelineDays]);
+    switch (comparisonType) {
+      case 'previous':
+        const previousEnd = subDays(dateRange.from, 1);
+        const previousStart = subDays(previousEnd, timelineDays - 1);
+        return { from: previousStart, to: previousEnd };
+      case 'last_month':
+        return { 
+          from: subMonths(dateRange.from, 1), 
+          to: subMonths(dateRange.to, 1) 
+        };
+      case 'last_year':
+        return { 
+          from: subYears(dateRange.from, 1), 
+          to: subYears(dateRange.to, 1) 
+        };
+      case 'custom':
+        return customComparisonRange || { from: subDays(dateRange.from, timelineDays), to: subDays(dateRange.from, 1) };
+      default:
+        return { from: subDays(dateRange.from, timelineDays), to: subDays(dateRange.from, 1) };
+    }
+  }, [dateRange, timelineDays, comparisonType, customComparisonRange]);
 
   // Fetch teams on mount
   useEffect(() => {
@@ -468,18 +486,16 @@ export default function RevenueCommandCenter() {
           </div>
           
           <div className="flex items-center gap-3">
-            <Button
-              variant={showComparison ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setShowComparison(!showComparison)}
-              className={cn(
-                "gap-2 border-white/20 text-white hover:bg-white/20",
-                showComparison && "bg-white/20"
-              )}
-            >
-              <GitCompare className="h-4 w-4" />
-              Compare
-            </Button>
+            <ComparisonPeriodPicker
+              enabled={showComparison}
+              onToggle={setShowComparison}
+              comparisonType={comparisonType}
+              onTypeChange={setComparisonType}
+              customRange={customComparisonRange}
+              onCustomRangeChange={setCustomComparisonRange}
+              currentDateRange={dateRange}
+              periodDays={timelineDays}
+            />
             <TimelineFilter value={timelineDays} onChange={setTimelineDays} />
             <ChannelFilter value={channel} onChange={setChannel} />
           </div>
