@@ -24,42 +24,34 @@ export function RevenueFunnel({ stages }: RevenueFunnelProps) {
   const maxHeight = 120;
   const minHeight = 25;
 
-  // Calculate cumulative heights using stage-to-stage ratios for better visualization
+  // Calculate heights using logarithmic scale based on actual counts
+  // This ensures each stage has visually distinct height reflecting its count
   const getStageHeights = () => {
-    const heights: number[] = [maxHeight]; // First stage is full height
+    // Find max count for scaling
+    const maxCount = Math.max(...stages.map(s => s.count));
+    if (maxCount === 0) return stages.map(() => minHeight);
     
-    for (let i = 1; i < stages.length; i++) {
-      const prevCount = stages[i - 1].count;
-      const currCount = stages[i].count;
-      
-      // Handle edge case where previous stage has 0
-      if (prevCount === 0) {
-        heights.push(minHeight);
-        continue;
+    // Use logarithmic scale to handle large ranges (e.g., 37,121 to 0)
+    const logMax = Math.log10(maxCount + 1);
+    
+    return stages.map((stage) => {
+      if (stage.count === 0) {
+        return 8; // Very thin line for zero
       }
       
-      // Calculate stage-to-stage conversion ratio
-      const stageRatio = currCount / prevCount;
+      // Calculate logarithmic ratio
+      const logCount = Math.log10(stage.count + 1);
+      const logRatio = logCount / logMax;
       
-      // Apply this ratio to shrink from previous height
-      // Use square root for gentler curve so differences are more visible
-      const shrinkFactor = Math.pow(stageRatio, 0.5);
+      // Apply a power curve to spread out the visual range
+      // 0.7 exponent gives good visual difference between stages
+      const visualRatio = Math.pow(logRatio, 0.7);
       
-      // Calculate new height
-      let newHeight = heights[i - 1] * shrinkFactor;
+      // Map to height range, ensuring non-zero values have minimum visibility
+      const calculatedHeight = minHeight + (maxHeight - minHeight) * visualRatio;
       
-      // If count is 0, make it nearly invisible (just a thin line)
-      if (currCount === 0) {
-        newHeight = 8;
-      } else {
-        // Ensure minimum visibility for non-zero values
-        newHeight = Math.max(minHeight, newHeight);
-      }
-      
-      heights.push(newHeight);
-    }
-    
-    return heights;
+      return Math.max(minHeight, calculatedHeight);
+    });
   };
 
   const stageHeights = getStageHeights();
