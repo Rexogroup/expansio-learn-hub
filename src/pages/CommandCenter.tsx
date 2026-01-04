@@ -9,7 +9,7 @@ import { StatusPills } from "@/components/growth/StatusPills";
 import { PriorityActionsStack } from "@/components/growth/PriorityActionsStack";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Brain, Briefcase, Settings, FolderOpen, Target, FileText, Heart, Zap, Link, GraduationCap, TrendingUp, Pause, RefreshCw, Clock } from "lucide-react";
+import { Briefcase, Target, Heart, Zap, Link, TrendingUp, Pause, RefreshCw } from "lucide-react";
 import { useVariantRecommendations } from "@/hooks/useVariantRecommendations";
 import { toast } from "sonner";
 
@@ -54,23 +54,6 @@ interface Integration {
   sync_status: string;
 }
 
-interface ICPAsset {
-  id: string;
-  content: {
-    company_name?: string;
-    company_description?: string;
-    services_offered?: string;
-    target_industries?: string;
-    icp_revenue_range?: string;
-    icp_employee_count?: string;
-    icp_location?: string;
-    icp_tech_stack?: string;
-    icp_additional_details?: string;
-    pain_points?: { problem: string; solution: string }[];
-    custom_notes?: string;
-  };
-  created_at: string;
-}
 
 interface PriorityAction {
   id: string;
@@ -95,9 +78,6 @@ export default function CommandCenter() {
   const [timelineDays, setTimelineDays] = useState(10);
   const [variantRefreshKey, setVariantRefreshKey] = useState(0);
   const [alertCount, setAlertCount] = useState(0);
-  const [icpAsset, setIcpAsset] = useState<ICPAsset | null>(null);
-  const [leadMagnetsCount, setLeadMagnetsCount] = useState(0);
-  const [scriptsCount, setScriptsCount] = useState(0);
 
   // Variant recommendations hook
   const { recommendations: variantRecs, winningScripts, recentVolume } = useVariantRecommendations();
@@ -143,27 +123,8 @@ export default function CommandCenter() {
       fetchCampaignMetrics(session.user.id, timelineDays),
       fetchIntegration(session.user.id),
       fetchAlertCount(session.user.id),
-      fetchICPAsset(session.user.id),
-      fetchAssetCounts(session.user.id),
     ]);
     setLoading(false);
-  };
-
-  const fetchICPAsset = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_assets')
-      .select('id, content, created_at')
-      .eq('user_id', userId)
-      .eq('asset_type', 'icp_document')
-      .maybeSingle();
-    
-    if (!error && data) {
-      setIcpAsset({
-        id: data.id,
-        content: data.content as ICPAsset['content'],
-        created_at: data.created_at,
-      });
-    }
   };
 
   const fetchAlertCount = async (userId: string) => {
@@ -180,21 +141,6 @@ export default function CommandCenter() {
       .eq('is_at_risk', true);
     
     setAlertCount((count || 0) + (atRiskCount || 0));
-  };
-
-  const fetchAssetCounts = async (userId: string) => {
-    const { count: leadMagnets } = await supabase
-      .from('saved_lead_magnets')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-
-    const { count: scripts } = await supabase
-      .from('generated_scripts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-
-    setLeadMagnetsCount(leadMagnets || 0);
-    setScriptsCount(scripts || 0);
   };
 
   const fetchGrowthSteps = async () => {
@@ -396,22 +342,6 @@ export default function CommandCenter() {
       });
     });
 
-    // Interested → Meeting Rate tracking (SOP target: 20-30%)
-    if (campaignMetrics && campaignMetrics.total_interested > 0) {
-      const interestedToMeetingRate = (campaignMetrics.total_meetings / campaignMetrics.total_interested) * 100;
-      if (interestedToMeetingRate < 20) {
-        actions.push({
-          id: 'low-meeting-rate',
-          title: 'Low Interested → Meeting Conversion',
-          description: `Only ${interestedToMeetingRate.toFixed(1)}% of interested leads are booking meetings (target: 20-30%). Speed up follow-up cadence and personalize booking links.`,
-          actionLabel: 'Improve Follow-Up',
-          actionPath: '/script-builder',
-          priority: 'high',
-          icon: <Clock className="w-5 h-5" />,
-        });
-      }
-    }
-
     // Low volume detection - campaigns may be paused
     const avgDailyVolume = recentVolume / 10; // 10-day window
     if (integration && avgDailyVolume < 300 && currentStepNumber >= 4) {
@@ -439,59 +369,18 @@ export default function CommandCenter() {
       });
     }
 
-    // High: No ICP document
-    if (!icpAsset) {
-      actions.push({
-        id: 'create-icp',
-        title: 'Complete Your ICP Document',
-        description: 'Define your ideal customer profile to personalize your outreach and unlock lead magnets.',
-        actionLabel: 'Create ICP',
-        actionPath: '/onboarding/step/2',
-        priority: 'high',
-        icon: <FileText className="w-5 h-5" />,
-      });
-    }
-
-    // Step-based recommendations (only if no variant-specific actions)
+    // Step-based recommendations (only infrastructure-related)
     const step = getCurrentStep();
-    if (step && variantRecs.length === 0) {
-      switch (step.step_number) {
-        case 1:
-          if (alertCount === 0) {
-            actions.push({
-              id: 'infrastructure-check',
-              title: 'Verify Infrastructure Setup',
-              description: 'Confirm DNS records, warm-up status, and sending reputation are properly configured.',
-              actionLabel: 'Start Checklist',
-              actionPath: '/onboarding',
-              priority: 'normal',
-              icon: <Zap className="w-5 h-5" />,
-            });
-          }
-          break;
-        case 3:
-          actions.push({
-            id: 'create-lead-magnets',
-            title: 'Create Lead Magnets',
-            description: 'Build at least 3 lead magnet variants to test different angles.',
-            actionLabel: 'Create',
-            actionPath: '/script-builder',
-            priority: 'normal',
-          });
-          break;
-        case 5:
-        case 6:
-        case 7:
-          actions.push({
-            id: 'review-sales',
-            title: 'Review Sales Performance',
-            description: 'Analyze objections and improve your sales process.',
-            actionLabel: 'Sales Vault',
-            actionPath: '/sales-vault',
-            priority: 'normal',
-          });
-          break;
-      }
+    if (step && variantRecs.length === 0 && step.step_number === 1 && alertCount === 0) {
+      actions.push({
+        id: 'infrastructure-check',
+        title: 'Verify Infrastructure Setup',
+        description: 'Confirm DNS records, warm-up status, and sending reputation are properly configured.',
+        actionLabel: 'Start Checklist',
+        actionPath: '/onboarding',
+        priority: 'normal',
+        icon: <Zap className="w-5 h-5" />,
+      });
     }
 
     return actions;
@@ -549,38 +438,6 @@ export default function CommandCenter() {
         {/* Priority Actions */}
         <PriorityActionsStack actions={priorityActions} maxVisible={3} />
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-4">
-          <Button
-            variant="outline"
-            className="h-auto py-6 flex flex-col items-center gap-3 relative"
-            onClick={() => navigate('/script-builder')}
-          >
-            <FolderOpen className="w-6 h-6" />
-            <span className="text-sm font-medium">Asset Vault</span>
-            {(leadMagnetsCount + scriptsCount) > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {leadMagnetsCount + scriptsCount}
-              </span>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto py-6 flex flex-col items-center gap-3"
-            onClick={() => navigate('/integrations')}
-          >
-            <Settings className="w-6 h-6" />
-            <span className="text-sm font-medium">Integrations</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto py-6 flex flex-col items-center gap-3"
-            onClick={() => navigate('/ai-brain')}
-          >
-            <Brain className="w-6 h-6" />
-            <span className="text-sm font-medium">AI Brain</span>
-          </Button>
-        </div>
 
       {/* Floating Growth Copilot */}
       <GrowthCopilotSheet />
