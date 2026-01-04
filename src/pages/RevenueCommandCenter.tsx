@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { RevenueKPICard } from "@/components/revenue/RevenueKPICard";
 import { RevenueFunnel } from "@/components/revenue/RevenueFunnel";
 import { ChannelFilter, Channel } from "@/components/revenue/ChannelFilter";
-import { TimePeriodFilter, TimePeriod, DateRange, getDateRange } from "@/components/revenue/TimePeriodFilter";
+import { TimelineFilter } from "@/components/growth/TimelineFilter";
 import { BottleneckInsights } from "@/components/revenue/BottleneckInsights";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign } from "lucide-react";
+import { subDays } from "date-fns";
 
 interface CRMLead {
   id: string;
@@ -20,27 +21,20 @@ interface CRMLead {
   created_at: string | null;
 }
 
-// Map TimePeriod to timeline_days value used in synced_campaigns
-const getTimelineDays = (period: TimePeriod): number => {
-  switch (period) {
-    case 'this_month': return 30;
-    case 'last_30': return 30;
-    case 'last_quarter': return 120; // Use 120 as closest available
-    case 'ytd': return 120;
-    case 'custom': return 120; // Default to max available
-    default: return 30;
-  }
-};
-
 export default function RevenueCommandCenter() {
   const [leads, setLeads] = useState<CRMLead[]>([]);
   const [channel, setChannel] = useState<Channel>('all');
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('last_30');
-  const [dateRange, setDateRange] = useState<DateRange>(getDateRange('last_30'));
+  const [timelineDays, setTimelineDays] = useState(30);
   const [loading, setLoading] = useState(true);
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [totalEmailsSent, setTotalEmailsSent] = useState(0);
   const [interestedFromCampaigns, setInterestedFromCampaigns] = useState(0);
+
+  // Calculate date range from timelineDays
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    return { from: subDays(now, timelineDays), to: now };
+  }, [timelineDays]);
 
   // Fetch teams on mount
   useEffect(() => {
@@ -72,7 +66,7 @@ export default function RevenueCommandCenter() {
     fetchTeams();
   }, []);
 
-  // Fetch data when teamIds or timePeriod changes
+  // Fetch data when teamIds or timelineDays changes
   useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -80,7 +74,7 @@ export default function RevenueCommandCenter() {
 
       setLoading(true);
 
-      // Fetch CRM leads filtered by date range
+      // Fetch CRM leads
       if (teamIds.length > 0) {
         const { data: leadsData } = await supabase
           .from('crm_leads')
@@ -91,7 +85,6 @@ export default function RevenueCommandCenter() {
       }
 
       // Fetch campaign metrics filtered by timeline_days
-      const timelineDays = getTimelineDays(timePeriod);
       const { data: campaignsData } = await supabase
         .from('synced_campaigns')
         .select('emails_sent, interested_count')
@@ -113,12 +106,7 @@ export default function RevenueCommandCenter() {
     };
 
     fetchData();
-  }, [teamIds, timePeriod]);
-
-  const handleTimePeriodChange = (period: TimePeriod, range: DateRange) => {
-    setTimePeriod(period);
-    setDateRange(range);
-  };
+  }, [teamIds, timelineDays]);
 
   // Filter leads by date range and channel
   const filteredLeads = useMemo(() => {
@@ -223,11 +211,7 @@ export default function RevenueCommandCenter() {
         </div>
         
         <div className="flex items-center gap-3">
-          <TimePeriodFilter 
-            value={timePeriod} 
-            customRange={timePeriod === 'custom' ? dateRange : undefined}
-            onChange={handleTimePeriodChange} 
-          />
+          <TimelineFilter value={timelineDays} onChange={setTimelineDays} />
           <ChannelFilter value={channel} onChange={setChannel} />
         </div>
       </div>
