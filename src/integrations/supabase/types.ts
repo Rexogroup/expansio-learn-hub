@@ -763,6 +763,7 @@ export type Database = {
           source_id: string | null
           source_type: string | null
           status: string
+          status_changed_at: string | null
           team_id: string
           updated_at: string | null
         }
@@ -795,6 +796,7 @@ export type Database = {
           source_id?: string | null
           source_type?: string | null
           status?: string
+          status_changed_at?: string | null
           team_id: string
           updated_at?: string | null
         }
@@ -827,6 +829,7 @@ export type Database = {
           source_id?: string | null
           source_type?: string | null
           status?: string
+          status_changed_at?: string | null
           team_id?: string
           updated_at?: string | null
         }
