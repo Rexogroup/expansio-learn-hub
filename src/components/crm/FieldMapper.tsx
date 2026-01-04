@@ -71,14 +71,14 @@ export function FieldMapper({ csvHeaders, sampleRow, mapping, onMappingChange }:
               <span className="text-muted-foreground">→</span>
               
               <Select
-                value={currentMapping}
-                onValueChange={(value) => onMappingChange(header, value as PlatformFieldKey | '')}
+                value={currentMapping || '__skip__'}
+                onValueChange={(value) => onMappingChange(header, value === '__skip__' ? '' : value as PlatformFieldKey | '')}
               >
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Skip this field" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Skip this field</SelectItem>
+                  <SelectItem value="__skip__">Skip this field</SelectItem>
                   {PLATFORM_FIELDS.map((field) => (
                     <SelectItem 
                       key={field.key} 
