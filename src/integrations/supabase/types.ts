@@ -217,6 +217,9 @@ export type Database = {
           created_at: string | null
           crm_overview: Json | null
           deal_analysis: Json | null
+          deal_closed_at: string | null
+          deal_outcome: string | null
+          deal_value: number | null
           gap_selling: Json | null
           id: string
           improvements: Json | null
@@ -234,6 +237,9 @@ export type Database = {
           created_at?: string | null
           crm_overview?: Json | null
           deal_analysis?: Json | null
+          deal_closed_at?: string | null
+          deal_outcome?: string | null
+          deal_value?: number | null
           gap_selling?: Json | null
           id?: string
           improvements?: Json | null
@@ -251,6 +257,9 @@ export type Database = {
           created_at?: string | null
           crm_overview?: Json | null
           deal_analysis?: Json | null
+          deal_closed_at?: string | null
+          deal_outcome?: string | null
+          deal_value?: number | null
           gap_selling?: Json | null
           id?: string
           improvements?: Json | null
