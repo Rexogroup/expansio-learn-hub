@@ -10,7 +10,7 @@ import { TeamManager } from "@/components/crm/TeamManager";
 import { QuickStats } from "@/components/crm/QuickStats";
 import { MessageTemplates } from "@/components/crm/MessageTemplates";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, FileText, MailPlus } from "lucide-react";
+import { Table2, Kanban, Settings, FileText, MailPlus, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Team, TeamMember, CRMLead } from "./CRM";
@@ -25,6 +25,7 @@ const ColdEmailCRM = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showTeamManager, setShowTeamManager] = useState(false);
   const [userTeamRole, setUserTeamRole] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const canViewSpreadsheet = userTeamRole && ['owner', 'admin', 'sdr'].includes(userTeamRole);
 
@@ -284,6 +285,86 @@ const ColdEmailCRM = () => {
     }
   };
 
+  const importFromMasterInbox = async () => {
+    if (!selectedTeamId || !user) {
+      toast.error("Please select a team first");
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      // Fetch all lead replies from Master Inbox for this user
+      const { data: replies, error: repliesError } = await supabase
+        .from("lead_replies")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (repliesError) throw repliesError;
+
+      if (!replies || replies.length === 0) {
+        toast.info("No leads found in Master Inbox");
+        return;
+      }
+
+      // Get existing lead emails to avoid duplicates
+      const { data: existingLeads, error: existingError } = await supabase
+        .from("crm_leads")
+        .select("lead_email, source_id")
+        .eq("team_id", selectedTeamId)
+        .eq("source_type", "cold_email");
+
+      if (existingError) throw existingError;
+
+      const existingEmails = new Set(existingLeads?.map(l => l.lead_email?.toLowerCase()) || []);
+      const existingSourceIds = new Set(existingLeads?.map(l => l.source_id) || []);
+
+      // Filter out already imported leads
+      const newReplies = replies.filter(reply => 
+        !existingEmails.has(reply.lead_email?.toLowerCase()) && 
+        !existingSourceIds.has(reply.id)
+      );
+
+      if (newReplies.length === 0) {
+        toast.info("All leads are already imported");
+        return;
+      }
+
+      // Map replies to CRM leads
+      const leadsToInsert = newReplies.map(reply => ({
+        team_id: selectedTeamId,
+        created_by: user.id,
+        lead_name: reply.lead_name || reply.lead_email?.split('@')[0] || 'Unknown',
+        lead_email: reply.lead_email,
+        campaign_name: reply.campaign_name,
+        source_type: 'cold_email' as const,
+        source_id: reply.id,
+        platform: 'emailbison',
+        status: 'interested' as const,
+        interested: true,
+        reply_count: 1,
+        last_activity_at: reply.created_at
+      }));
+
+      // Bulk insert
+      const { error: insertError } = await supabase
+        .from("crm_leads")
+        .insert(leadsToInsert);
+
+      if (insertError) throw insertError;
+
+      const skipped = replies.length - newReplies.length;
+      toast.success(`Imported ${newReplies.length} leads${skipped > 0 ? ` (${skipped} duplicates skipped)` : ''}`);
+      
+      // Refresh leads
+      fetchLeads(selectedTeamId);
+    } catch (error: any) {
+      console.error("Error importing leads:", error);
+      toast.error("Failed to import leads");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -327,6 +408,18 @@ const ColdEmailCRM = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={importFromMasterInbox}
+            disabled={isImporting || !selectedTeamId}
+          >
+            {isImporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Import from Master Inbox
+          </Button>
           <TeamSelector
             teams={teams}
             selectedTeamId={selectedTeamId}
