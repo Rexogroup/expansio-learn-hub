@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import MasterInbox from "./pages/MasterInbox";
 import SalesCoach from "./pages/SalesCoach";
 import CRM from "./pages/CRM";
+import ColdEmailCRM from "./pages/ColdEmailCRM";
 import ExpansioCopilot from "./pages/ExpansioCopilot";
 import ProjectManagement from "./pages/ProjectManagement";
 
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/tools" element={<AppLayout><Tools /></AppLayout>} />
             <Route path="/inbox" element={<AppLayout><MasterInbox /></AppLayout>} />
             <Route path="/crm" element={<AppLayout><CRM /></AppLayout>} />
+            <Route path="/cold-email-crm" element={<AppLayout><ColdEmailCRM /></AppLayout>} />
             <Route path="/sales-coach" element={<AppLayout><SalesCoach /></AppLayout>} />
             <Route path="/admin" element={<AppLayout><Admin /></AppLayout>} />
             <Route path="/projects" element={<AppLayout><ProjectManagement /></AppLayout>} />
