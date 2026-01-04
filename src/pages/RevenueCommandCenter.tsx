@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { RevenueKPICardWithComparison } from "@/components/revenue/RevenueKPICardWithComparison";
 import { RevenueFunnel } from "@/components/revenue/RevenueFunnel";
 import { ChannelFilter, Channel } from "@/components/revenue/ChannelFilter";
-import { TimelineFilter } from "@/components/growth/TimelineFilter";
+import { TimePeriodFilter, TimePeriod, DateRange as PeriodDateRange, getDateRange } from "@/components/revenue/TimePeriodFilter";
 import { BottleneckInsights } from "@/components/revenue/BottleneckInsights";
 import { ComparisonPeriodPicker, ComparisonType, DateRange } from "@/components/revenue/ComparisonPeriodPicker";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +41,8 @@ interface CRMLead {
 export default function RevenueCommandCenter() {
   const [leads, setLeads] = useState<CRMLead[]>([]);
   const [channel, setChannel] = useState<Channel>('all');
-  const [timelineDays, setTimelineDays] = useState(30);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('last_30');
+  const [customDateRange, setCustomDateRange] = useState<PeriodDateRange | null>(null);
   const [loading, setLoading] = useState(true);
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
@@ -60,11 +61,19 @@ export default function RevenueCommandCenter() {
   const [prevInterestedFromCampaigns, setPrevInterestedFromCampaigns] = useState(0);
   const [prevMeetingsFromCampaigns, setPrevMeetingsFromCampaigns] = useState(0);
 
-  // Calculate date range from timelineDays
+  // Calculate date range from timePeriod
   const dateRange = useMemo(() => {
-    const now = new Date();
-    return { from: subDays(now, timelineDays), to: now };
-  }, [timelineDays]);
+    if (timePeriod === 'custom' && customDateRange) {
+      return customDateRange;
+    }
+    return getDateRange(timePeriod);
+  }, [timePeriod, customDateRange]);
+  
+  // Calculate timelineDays for comparison period and campaign sync
+  const timelineDays = useMemo(() => {
+    const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }, [dateRange]);
   
   // Calculate previous period date range based on comparison type
   const previousDateRange = useMemo(() => {
@@ -626,7 +635,17 @@ export default function RevenueCommandCenter() {
               currentDateRange={dateRange}
               periodDays={timelineDays}
             />
-            <TimelineFilter value={timelineDays} onChange={setTimelineDays} />
+            <TimePeriodFilter 
+              value={timePeriod} 
+              customRange={customDateRange ?? undefined}
+              onChange={(period, range) => {
+                setTimePeriod(period);
+                if (period === 'custom') {
+                  setCustomDateRange(range);
+                }
+              }}
+              variant="dark"
+            />
             <ChannelFilter value={channel} onChange={setChannel} />
           </div>
         </div>
