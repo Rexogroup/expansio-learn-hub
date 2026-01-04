@@ -10,9 +10,10 @@ import { TeamManager } from "@/components/crm/TeamManager";
 import { QuickStats } from "@/components/crm/QuickStats";
 import { MessageTemplates } from "@/components/crm/MessageTemplates";
 import { LinkedInBranding } from "@/components/crm/LinkedInBranding";
+import { FunnelDashboard } from "@/components/crm/FunnelDashboard";
 import { GrowthCopilotSheet } from "@/components/growth/GrowthCopilotSheet";
 import { Button } from "@/components/ui/button";
-import { Table2, Kanban, Settings, Plus, FileText, Linkedin } from "lucide-react";
+import { Table2, Kanban, Settings, Plus, FileText, Linkedin, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Team {
@@ -563,8 +564,12 @@ const CRM = () => {
         <>
           <QuickStats leads={linkedInLeads} sourceType="linkedin" />
 
-          <Tabs defaultValue={canViewSpreadsheet ? "spreadsheet" : "pipeline"} className="mt-6">
+          <Tabs defaultValue="dashboard" className="mt-6">
             <TabsList>
+              <TabsTrigger value="dashboard" className="gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </TabsTrigger>
               {canViewSpreadsheet && (
               <TabsTrigger value="spreadsheet" className="gap-2">
                   <Table2 className="h-4 w-4" />
@@ -584,6 +589,10 @@ const CRM = () => {
                 Branding
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="dashboard" className="mt-4">
+              <FunnelDashboard leads={linkedInLeads} sourceType="linkedin" />
+            </TabsContent>
 
             {canViewSpreadsheet && (
               <TabsContent value="spreadsheet" className="mt-4">
