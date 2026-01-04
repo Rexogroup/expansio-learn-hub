@@ -480,14 +480,14 @@ export function CSVLeadImporter({ open, onOpenChange, teamId, sourceType: propSo
                       <span className="text-sm truncate">{status}</span>
                       <span className="text-muted-foreground">→</span>
                       <Select
-                        value={statusMapping[status] || ''}
-                        onValueChange={(v) => setStatusMapping(prev => ({ ...prev, [status]: v }))}
+                        value={statusMapping[status] || '__keep_original__'}
+                        onValueChange={(v) => setStatusMapping(prev => ({ ...prev, [status]: v === '__keep_original__' ? '' : v }))}
                       >
                         <SelectTrigger className="h-8">
                           <SelectValue placeholder="Keep original" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Keep original</SelectItem>
+                          <SelectItem value="__keep_original__">Keep original</SelectItem>
                           {PLATFORM_STATUSES.map(s => (
                             <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                           ))}
