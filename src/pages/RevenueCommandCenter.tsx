@@ -28,7 +28,9 @@ export default function RevenueCommandCenter() {
   const [loading, setLoading] = useState(true);
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [totalEmailsSent, setTotalEmailsSent] = useState(0);
+  const [totalReplies, setTotalReplies] = useState(0);
   const [interestedFromCampaigns, setInterestedFromCampaigns] = useState(0);
+  const [meetingsFromCampaigns, setMeetingsFromCampaigns] = useState(0);
 
   // Calculate date range from timelineDays
   const dateRange = useMemo(() => {
@@ -87,20 +89,26 @@ export default function RevenueCommandCenter() {
       // Fetch campaign metrics filtered by timeline_days
       const { data: campaignsData } = await supabase
         .from('synced_campaigns')
-        .select('emails_sent, interested_count')
+        .select('emails_sent, unique_replies, interested_count, meetings_booked')
         .eq('user_id', session.user.id)
         .eq('timeline_days', timelineDays);
       
       let emailsSent = 0;
+      let replies = 0;
       let interested = 0;
+      let meetings = 0;
       if (campaignsData) {
         for (const c of campaignsData) {
           emailsSent += c.emails_sent || 0;
+          replies += c.unique_replies || 0;
           interested += c.interested_count || 0;
+          meetings += c.meetings_booked || 0;
         }
       }
       setTotalEmailsSent(emailsSent);
+      setTotalReplies(replies);
       setInterestedFromCampaigns(interested);
+      setMeetingsFromCampaigns(meetings);
       
       setLoading(false);
     };
@@ -154,12 +162,29 @@ export default function RevenueCommandCenter() {
       ? sdrInterestedLeads 
       : interestedFromCampaigns + sdrInterestedLeads;
   
-  const bookedCalls = filteredLeads.filter(l => l.meeting_booked).length;
+  // Use campaign meetings for cold email, CRM booked for SDR
+  const sdrBookedCalls = filteredLeads.filter(l => l.meeting_booked && l.source_type !== 'cold_email').length;
+  const bookedCalls = channel === 'cold_email' 
+    ? meetingsFromCampaigns 
+    : channel === 'sdr' 
+      ? sdrBookedCalls 
+      : meetingsFromCampaigns + sdrBookedCalls;
+  
   const liveCalls = filteredLeads.filter(l => l.meeting_status === 'completed').length;
   const closedDeals = filteredLeads.filter(l => l.status === 'closed_won').length;
 
-  // Calculate rates
-  const interestedRate = totalContacted > 0 ? (interestedLeads / totalContacted) * 100 : 0;
+  // Calculate rates - use Interested / Replies for cold email (matches Campaigns page)
+  const sdrInterestedRate = sdrLeadsCount > 0 ? (sdrInterestedLeads / sdrLeadsCount) * 100 : 0;
+  const coldEmailInterestedRate = totalReplies > 0 ? (interestedFromCampaigns / totalReplies) * 100 : 0;
+  
+  const interestedRate = channel === 'cold_email' 
+    ? coldEmailInterestedRate 
+    : channel === 'sdr' 
+      ? sdrInterestedRate 
+      : (totalReplies + sdrLeadsCount) > 0 
+        ? ((interestedFromCampaigns + sdrInterestedLeads) / (totalReplies + sdrLeadsCount)) * 100 
+        : 0;
+  
   const bookRate = interestedLeads > 0 ? (bookedCalls / interestedLeads) * 100 : 0;
   const showRate = bookedCalls > 0 ? (liveCalls / bookedCalls) * 100 : 0;
   const closeRate = liveCalls > 0 ? (closedDeals / liveCalls) * 100 : 0;
