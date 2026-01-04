@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
 
     console.log('Website scraped successfully, extracting business info...');
 
-    // Use AI to extract structured business information
+    // Use AI to extract structured business information with pain point solutions
     const extractionPrompt = `Analyze the following website content and extract structured business information.
 
 Website Content:
@@ -116,12 +116,25 @@ Extract the following information and return ONLY a valid JSON object (no markdo
   "customer_profiles": [
     {
       "icp_summary": "Brief description of ideal customer (e.g., 'SaaS companies with 50-200 employees')",
-      "pain_points": ["Pain point 1", "Pain point 2", "Pain point 3"],
+      "pain_points_with_solutions": [
+        {
+          "pain_point": "A specific problem the ideal customer faces",
+          "solution": "How this business's services solve that problem",
+          "lead_magnet_angle": "A potential free work offer that demonstrates this solution (e.g., '5x SEO-proof product pages delivered')"
+        }
+      ],
       "services_to_pitch": ["Service 1", "Service 2"],
       "key_benefits": ["Benefit 1", "Benefit 2"]
     }
   ]
 }
+
+IMPORTANT FOR PAIN POINTS WITH SOLUTIONS:
+- Identify 3-5 specific pain points per ICP based on the business's services
+- For each pain point, explain HOW this business solves it based on their services
+- Suggest a "lead_magnet_angle" - a tangible free work offer that demonstrates the solution
+- Focus on deliverables (not audits or consultations) - things like "4x blog articles", "3x ad creatives", "5x product pages"
+- Make solutions specific to the business's actual service offerings
 
 If you cannot find specific information, make reasonable inferences based on the content. Always return valid JSON.`;
 
