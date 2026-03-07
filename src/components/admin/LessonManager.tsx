@@ -10,8 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Eye, BookOpen, Download } from "lucide-react";
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
-import { saveAs } from "file-saver";
+import { downloadLessonAsDocx } from "@/lib/html-to-docx";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { optionalUrlSchema } from "@/lib/validation";
