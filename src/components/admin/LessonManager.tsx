@@ -455,6 +455,14 @@ export const LessonManager = () => {
                   <Button
                     size="icon"
                     variant="ghost"
+                    onClick={() => downloadAsDocx(lesson)}
+                    title="Download as DOCX"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
                     onClick={() => setPreviewLesson(lesson)}
                     title="Preview lesson"
                   >
