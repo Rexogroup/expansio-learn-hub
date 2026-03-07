@@ -10,8 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Eye, BookOpen, Download } from "lucide-react";
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
-import { saveAs } from "file-saver";
+import { downloadLessonAsDocx } from "@/lib/html-to-docx";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { optionalUrlSchema } from "@/lib/validation";
@@ -203,39 +202,9 @@ export const LessonManager = () => {
 
   const downloadAsDocx = async (lesson: Lesson) => {
     try {
-      const plainText = lesson.content?.replace(/<[^>]*>/g, '') || '';
-      const paragraphs = plainText.split(/\n+/).filter(Boolean);
-
-      const doc = new Document({
-        sections: [{
-          properties: {},
-          children: [
-            new Paragraph({
-              children: [new TextRun({ text: lesson.title, bold: true, size: 32 })],
-              heading: HeadingLevel.HEADING_1,
-              spacing: { after: 200 },
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: `Course: ${getCourseName(lesson.section_id)}`, italics: true, size: 20, color: "666666" }),
-                new TextRun({ text: `  |  Section: ${getSectionName(lesson.section_id)}`, italics: true, size: 20, color: "666666" }),
-              ],
-              spacing: { after: 400 },
-            }),
-            ...(lesson.video_url ? [new Paragraph({
-              children: [new TextRun({ text: `Video: ${lesson.video_url}`, color: "0066CC", size: 20 })],
-              spacing: { after: 300 },
-            })] : []),
-            ...paragraphs.map(p => new Paragraph({
-              children: [new TextRun({ text: p.trim(), size: 24 })],
-              spacing: { after: 120 },
-            })),
-          ],
-        }],
-      });
-
-      const blob = await Packer.toBlob(doc);
-      saveAs(blob, `${lesson.title.replace(/[^a-zA-Z0-9]/g, '_')}.docx`);
+      const courseName = getCourseName(lesson.section_id);
+      const sectionName = getSectionName(lesson.section_id);
+      await downloadLessonAsDocx(lesson.title, lesson.content, lesson.video_url, courseName, sectionName);
       toast.success("Lesson downloaded as DOCX");
     } catch (error) {
       console.error("Download error:", error);
