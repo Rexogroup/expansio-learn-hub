@@ -22,34 +22,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
-  Target,
-  TrendingUp,
-  Mail,
-  Phone,
-  Users,
-  MailCheck,
   GraduationCap,
-  Network,
   Settings,
   LogOut,
   ChevronUp,
-  Plug,
-  MailPlus,
-  DollarSign,
 } from "lucide-react";
 
 const mainNavItems = [
-  { title: "Expansio Copilot", url: "/copilot", icon: Target },
-  { title: "Revenue Center", url: "/revenue", icon: DollarSign },
-  { title: "Campaigns", url: "/dashboard", icon: TrendingUp },
-  { title: "Master Inbox", url: "/inbox", icon: Mail },
-  { title: "Sales Coach", url: "/sales-coach", icon: Phone },
-  { title: "SDR", url: "/crm", icon: Users },
-  { title: "Cold Email CRM", url: "/cold-email-crm", icon: MailPlus },
-  { title: "Email Accounts", url: "/email-accounts", icon: MailCheck },
-  { title: "Integrations", url: "/integrations", icon: Plug },
   { title: "Expansio Accelerator", url: "/courses", icon: GraduationCap },
 ];
 
@@ -61,13 +41,6 @@ export function AppSidebar() {
 
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [notifications, setNotifications] = useState<Record<string, boolean>>({
-    inbox: false,
-    emailAccounts: false,
-    network: false,
-    campaigns: false,
-    integrations: false,
-  });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -75,7 +48,6 @@ export function AppSidebar() {
       if (session?.user) {
         setUser(session.user);
         checkAdminStatus(session.user.id);
-        fetchAllNotifications(session.user.id);
       }
     };
     checkAuth();
@@ -84,7 +56,6 @@ export function AppSidebar() {
       setUser(session?.user || null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
-        fetchAllNotifications(session.user.id);
       }
     });
 
@@ -99,72 +70,12 @@ export function AppSidebar() {
     setIsAdmin(!!data);
   };
 
-  const fetchAllNotifications = async (userId: string) => {
-    const [inboxResult, emailAlertsResult, atRiskResult, networkResult, campaignsResult, integrationsResult] = await Promise.all([
-      // Master Inbox: pending replies
-      supabase
-        .from('lead_replies')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('status', 'pending'),
-      // Email Accounts: active alerts
-      supabase
-        .from('email_account_alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('status', 'active'),
-      // Email Accounts: at-risk accounts
-      supabase
-        .from('email_account_health')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('is_at_risk', true),
-      // Network: pending connection requests
-      supabase
-        .from('connections')
-        .select('*', { count: 'exact', head: true })
-        .eq('recipient_id', userId)
-        .eq('status', 'pending'),
-      // Campaigns: no synced campaigns
-      supabase
-        .from('synced_campaigns')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId),
-      // Integrations: no configured integrations
-      supabase
-        .from('user_integrations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId),
-    ]);
-
-    setNotifications({
-      inbox: (inboxResult.count || 0) > 0,
-      emailAccounts: ((emailAlertsResult.count || 0) + (atRiskResult.count || 0)) > 0,
-      network: (networkResult.count || 0) > 0,
-      campaigns: (campaignsResult.count || 0) === 0,
-      integrations: (integrationsResult.count || 0) === 0,
-    });
-  };
-
-  const notificationMap: Record<string, string> = {
-    "/inbox": "inbox",
-    "/email-accounts": "emailAccounts",
-    "/network": "network",
-    "/dashboard": "campaigns",
-    "/integrations": "integrations",
-  };
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
-  const isActive = (url: string) => {
-    if (url === "/dashboard") {
-      return location.pathname === "/dashboard";
-    }
-    return location.pathname.startsWith(url);
-  };
+  const isActive = (url: string) => location.pathname.startsWith(url);
 
   const getUserInitials = () => {
     if (!user?.email) return "U";
@@ -177,14 +88,14 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
-              <Link to="/dashboard" className="flex items-center gap-3">
+              <Link to="/courses" className="flex items-center gap-3">
                 <div className="flex aspect-square size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-md shadow-primary/20">
-                  <Target className="size-5" />
+                  <GraduationCap className="size-5" />
                 </div>
                 {!collapsed && (
                   <div className="flex flex-col gap-0.5 leading-none">
                     <span className="font-semibold text-foreground tracking-tight">Expansio</span>
-                    <span className="text-xs text-muted-foreground font-normal">Growth OS</span>
+                    <span className="text-xs text-muted-foreground font-normal">Accelerator</span>
                   </div>
                 )}
               </Link>
@@ -198,10 +109,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => {
-                const notifKey = notificationMap[item.url];
-                const hasNotification = notifKey && notifications[notifKey];
                 const active = isActive(item.url);
-                
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -213,12 +121,6 @@ export function AppSidebar() {
                       <Link to={item.url} className="flex items-center gap-3">
                         <item.icon className="size-[18px]" />
                         {!collapsed && <span>{item.title}</span>}
-                        {!collapsed && hasNotification && (
-                          <span 
-                            className="ml-auto h-2 w-2 rounded-full bg-destructive shadow-sm shadow-destructive/50"
-                            style={{ animation: 'sidebar-pulse 2s ease-in-out infinite' }}
-                          />
-                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -228,48 +130,30 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator className="mx-3 my-4 bg-sidebar-border/50" />
-
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive("/network")}
-                  tooltip="Network"
-                  className={isActive("/network") ? "relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary" : ""}
-                >
-                  <Link to="/network" className="flex items-center gap-3">
-                    <Network className="size-[18px]" />
-                    {!collapsed && <span>Network</span>}
-                    {!collapsed && notifications.network && (
-                      <span 
-                        className="ml-auto h-2 w-2 rounded-full bg-destructive shadow-sm shadow-destructive/50"
-                        style={{ animation: 'sidebar-pulse 2s ease-in-out infinite' }}
-                      />
-                    )}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive("/admin")}
-                    tooltip="Admin"
-                    className={isActive("/admin") ? "relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary" : ""}
-                  >
-                    <Link to="/admin" className="flex items-center gap-3">
-                      <Settings className="size-[18px]" />
-                      {!collapsed && <span>Admin</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {isAdmin && (
+          <>
+            <SidebarSeparator className="mx-3 my-4 bg-sidebar-border/50" />
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive("/admin")}
+                      tooltip="Admin"
+                      className={isActive("/admin") ? "relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-full before:bg-primary" : ""}
+                    >
+                      <Link to="/admin" className="flex items-center gap-3">
+                        <Settings className="size-[18px]" />
+                        {!collapsed && <span>Admin</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="px-3 py-4 border-t border-sidebar-border/50">
@@ -302,27 +186,17 @@ export function AppSidebar() {
                 align="start"
                 sideOffset={4}
               >
-                <DropdownMenuItem asChild>
-                  <Link to="/network" className="flex items-center gap-2 cursor-pointer">
-                    <Network className="size-4" />
-                    Network
-                    {notifications.network && (
-                      <span className="ml-auto h-2 w-2 rounded-full bg-destructive" />
-                    )}
-                  </Link>
-                </DropdownMenuItem>
                 {isAdmin && (
                   <>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
                         <Settings className="size-4" />
                         Admin Panel
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                   </>
                 )}
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 cursor-pointer text-destructive">
                   <LogOut className="size-4" />
                   Sign Out

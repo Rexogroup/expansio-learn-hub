@@ -9,12 +9,6 @@ import { LessonManager } from "@/components/admin/LessonManager";
 import { BrandManager } from "@/components/admin/BrandManager";
 import { SalesCallManager } from "@/components/admin/SalesCallManager";
 import { InviteManager } from "@/components/admin/InviteManager";
-import OnboardingManager from "@/components/admin/OnboardingManager";
-import { ToolCategoryManager } from "@/components/admin/ToolCategoryManager";
-import { ToolManager } from "@/components/admin/ToolManager";
-import KnowledgeBaseManager from "@/components/admin/KnowledgeBaseManager";
-import { ServiceCategoryManager } from "@/components/admin/ServiceCategoryManager";
-import { BusinessProfileManager } from "@/components/admin/BusinessProfileManager";
 import { toast } from "sonner";
 
 export default function Admin() {
@@ -78,58 +72,34 @@ export default function Admin() {
         <p className="text-muted-foreground">Manage courses, sections, and lessons</p>
       </div>
 
-        <Tabs defaultValue="courses" className="w-full">
-          <TabsList className="grid w-full max-w-7xl grid-cols-12">
-            <TabsTrigger value="courses">Courses</TabsTrigger>
-            <TabsTrigger value="sections">Sections</TabsTrigger>
-            <TabsTrigger value="lessons">Lessons</TabsTrigger>
-            <TabsTrigger value="brands">Brands</TabsTrigger>
-            <TabsTrigger value="sales-calls">Sales Calls</TabsTrigger>
-            <TabsTrigger value="invites">Invites</TabsTrigger>
-            <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
-            <TabsTrigger value="business-profiles">ICP Profiles</TabsTrigger>
-            <TabsTrigger value="tool-categories">Tool Categories</TabsTrigger>
-            <TabsTrigger value="tools">Tools</TabsTrigger>
-            <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
-            <TabsTrigger value="service-categories">Services</TabsTrigger>
-          </TabsList>
-          <TabsContent value="courses" className="mt-6">
-            <CourseManager />
-          </TabsContent>
-          <TabsContent value="sections" className="mt-6">
-            <SectionManager />
-          </TabsContent>
-          <TabsContent value="lessons" className="mt-6">
-            <LessonManager />
-          </TabsContent>
-          <TabsContent value="brands" className="mt-6">
-            <BrandManager />
-          </TabsContent>
-          <TabsContent value="sales-calls" className="mt-6">
-            <SalesCallManager />
-          </TabsContent>
-          <TabsContent value="invites" className="mt-6">
-            <InviteManager />
-          </TabsContent>
-          <TabsContent value="onboarding" className="mt-6">
-            <OnboardingManager />
-          </TabsContent>
-          <TabsContent value="business-profiles" className="mt-6">
-            <BusinessProfileManager />
-          </TabsContent>
-          <TabsContent value="tool-categories" className="mt-6">
-            <ToolCategoryManager />
-          </TabsContent>
-          <TabsContent value="tools" className="mt-6">
-            <ToolManager />
-          </TabsContent>
-          <TabsContent value="knowledge-base" className="mt-6">
-            <KnowledgeBaseManager />
-          </TabsContent>
-          <TabsContent value="service-categories" className="mt-6">
-            <ServiceCategoryManager />
-          </TabsContent>
-        </Tabs>
+      <Tabs defaultValue="courses" className="w-full">
+        <TabsList className="grid w-full max-w-4xl grid-cols-6">
+          <TabsTrigger value="courses">Courses</TabsTrigger>
+          <TabsTrigger value="sections">Sections</TabsTrigger>
+          <TabsTrigger value="lessons">Lessons</TabsTrigger>
+          <TabsTrigger value="brands">Brands</TabsTrigger>
+          <TabsTrigger value="sales-calls">Sales Calls</TabsTrigger>
+          <TabsTrigger value="invites">Invites</TabsTrigger>
+        </TabsList>
+        <TabsContent value="courses" className="mt-6">
+          <CourseManager />
+        </TabsContent>
+        <TabsContent value="sections" className="mt-6">
+          <SectionManager />
+        </TabsContent>
+        <TabsContent value="lessons" className="mt-6">
+          <LessonManager />
+        </TabsContent>
+        <TabsContent value="brands" className="mt-6">
+          <BrandManager />
+        </TabsContent>
+        <TabsContent value="sales-calls" className="mt-6">
+          <SalesCallManager />
+        </TabsContent>
+        <TabsContent value="invites" className="mt-6">
+          <InviteManager />
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }

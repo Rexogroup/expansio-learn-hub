@@ -45,13 +45,7 @@ export default function Auth() {
       .select("completed")
       .eq("user_id", userId);
     
-    const allCompleted = data?.length === 4 && data.every(p => p.completed);
-    
-    if (allCompleted) {
-      navigate("/courses");
-    } else {
-      navigate("/onboarding");
-    }
+    navigate("/courses");
   };
 
   useEffect(() => {
