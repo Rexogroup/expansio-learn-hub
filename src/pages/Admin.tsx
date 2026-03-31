@@ -101,6 +101,9 @@ export default function Admin() {
         <TabsContent value="invites" className="mt-6">
           <InviteManager />
         </TabsContent>
+        <TabsContent value="users" className="mt-6">
+          <UserManager />
+        </TabsContent>
       </Tabs>
     </main>
   );
