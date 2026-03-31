@@ -9,6 +9,7 @@ import { LessonManager } from "@/components/admin/LessonManager";
 import { BrandManager } from "@/components/admin/BrandManager";
 import { SalesCallManager } from "@/components/admin/SalesCallManager";
 import { InviteManager } from "@/components/admin/InviteManager";
+import { UserManager } from "@/components/admin/UserManager";
 import { toast } from "sonner";
 
 export default function Admin() {
